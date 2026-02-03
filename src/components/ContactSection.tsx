@@ -30,22 +30,22 @@ export const ContactSection = () => {
     {
       icon: MapPin,
       title: 'Dirección',
-      content: 'Av. Principal #123, Centro Histórico\nEdificio Institucional, Piso 3',
+      content: 'Sector Glorias Patrias, Calle 1 Los Eucaliptos,\nentre Av. Gonzalo Picón y Tulio Febres',
     },
     {
       icon: Clock,
       title: 'Horario de Atención',
-      content: 'Lunes a Viernes: 8:00 AM - 6:00 PM\nSábados: 9:00 AM - 1:00 PM',
+      content: 'De Lunes a Viernes\n8:00 a.m a 12:00 p.m\n1:00 p.m a 4:00 p.m',
     },
     {
       icon: Phone,
       title: 'Teléfono',
-      content: '+58 (212) 555-0123\n+58 (212) 555-0124',
+      content: '0274-2623898',
     },
     {
       icon: Mail,
       title: 'Correo Electrónico',
-      content: 'info@ebime.gob.ve\natencion@ebime.gob.ve',
+      content: 'ibimeinformatica@gmail.com',
     },
   ];
 

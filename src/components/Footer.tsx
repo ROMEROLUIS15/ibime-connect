@@ -1,10 +1,10 @@
 import { BookOpen, Twitter, Facebook, Instagram, Linkedin } from 'lucide-react';
 
 const quickLinks = [
-  { label: 'Editorial', href: '#editorial' },
+  { label: 'IBIME', href: '#ibime' },
   { label: 'Eventos', href: '#eventos' },
   { label: 'Servicios', href: '#servicios' },
-  { label: 'Noticias', href: '#cartelera' },
+  { label: 'Cartelera', href: '#cartelera' },
 ];
 
 const socialLinks = [
@@ -27,13 +27,13 @@ export const Footer = () => {
                 <BookOpen className="w-7 h-7 text-accent-foreground" />
               </div>
               <div>
-                <span className="text-2xl font-display font-bold">eBIMe</span>
-                <p className="text-xs text-primary-foreground/60">Red de Bibliotecas Metropolitanas</p>
+                <span className="text-2xl font-display font-bold">IBIME</span>
+                <p className="text-xs text-primary-foreground/60">Instituto de Bibliotecas e Información</p>
               </div>
             </a>
             <p className="text-primary-foreground/70 max-w-md leading-relaxed mb-6">
-              Comprometidos con la educación, la cultura y el desarrollo de nuestra comunidad. 
-              Acercando el conocimiento a todos los ciudadanos a través de nuestra red de bibliotecas públicas.
+              Instituto Autónomo de Servicios de Bibliotecas e Información del Estado Bolivariano de Mérida. 
+              Comprometidos con la educación, la cultura y el desarrollo de nuestra comunidad.
             </p>
             {/* Social Links */}
             <div className="flex gap-3">
@@ -71,11 +71,11 @@ export const Footer = () => {
           <div>
             <h3 className="font-display font-bold text-lg mb-6">Datos Institucionales</h3>
             <address className="not-italic text-primary-foreground/70 space-y-3">
-              <p>Av. Principal #123</p>
-              <p>Centro Histórico</p>
-              <p>Edificio Institucional, Piso 3</p>
-              <p className="pt-2">Tel: +58 (212) 555-0123</p>
-              <p>Email: info@ebime.gob.ve</p>
+              <p>Sector Glorias Patrias</p>
+              <p>Calle 1 Los Eucaliptos</p>
+              <p>Entre Av. Gonzalo Picón y Tulio Febres</p>
+              <p className="pt-2">Tel: 0274-2623898</p>
+              <p>Email: ibimeinformatica@gmail.com</p>
             </address>
           </div>
         </div>
@@ -84,7 +84,7 @@ export const Footer = () => {
         <div className="py-6 border-t border-primary-foreground/10">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-primary-foreground/60">
             <p>
-              © {new Date().getFullYear()} eBIMe - Red de Bibliotecas Metropolitanas. Todos los derechos reservados.
+              © Copyright IBIME. All Rights Reserved
             </p>
             <div className="flex gap-6">
               <a href="#" className="hover:text-accent transition-colors">

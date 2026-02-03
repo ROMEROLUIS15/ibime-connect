@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { Menu, X, ChevronDown, BookOpen } from 'lucide-react';
-import governorPortrait from '@/assets/governor-portrait.jpg';
 
 interface MenuItem {
   label: string;
@@ -10,12 +9,13 @@ interface MenuItem {
 
 const menuItems: MenuItem[] = [
   { label: 'Inicio', href: '#inicio' },
-  { label: 'Evento', href: '#eventos' },
+  { label: 'IBIME', href: '#ibime' },
+  { label: 'Eventos', href: '#eventos' },
   { label: 'Fondo Editorial', href: '#editorial' },
   { label: 'Cartelera Informativa', href: '#cartelera' },
   { label: 'Servicios', href: '#servicios' },
   {
-    label: 'Comunidad eBIMe',
+    label: 'Comunidad IBIME',
     href: '#comunidad',
     children: [
       { label: 'Sistema de Estudios', href: '#estudios' },
@@ -38,7 +38,7 @@ const menuItems: MenuItem[] = [
       },
     ],
   },
-  { label: 'COA', href: '#coa' },
+  { label: 'Koha', href: '#koha' },
   { label: 'Libro Hablado', href: '#libro-hablado' },
   { label: 'Contacto', href: '#contacto' },
 ];
@@ -145,7 +145,7 @@ const MobileMenu = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void 
         }`}
       >
         <div className="flex items-center justify-between p-4 border-b border-border">
-          <span className="text-lg font-display font-bold text-secondary">eBIMe</span>
+          <span className="text-lg font-display font-bold text-secondary">IBIME</span>
           <button
             onClick={onClose}
             className="p-2 text-muted-foreground hover:text-foreground"
@@ -175,7 +175,7 @@ export const Navbar = () => {
                 <BookOpen className="w-7 h-7 text-primary-foreground" />
               </div>
               <div className="hidden sm:block">
-                <span className="text-2xl font-display font-bold text-gradient">eBIMe</span>
+                <span className="text-2xl font-display font-bold text-gradient">IBIME</span>
                 <p className="text-xs text-muted-foreground">Red de Bibliotecas</p>
               </div>
             </a>
@@ -187,17 +187,12 @@ export const Navbar = () => {
               ))}
             </div>
 
-            {/* Institutional Block */}
+            {/* Institutional Block - Reserved space for logo */}
             <div className="hidden md:flex items-center gap-3 pl-4 border-l border-border">
               <div className="text-right">
-                <p className="text-xs text-muted-foreground">Alcalde</p>
-                <p className="text-sm font-semibold text-foreground">Arnaldo Sánchez</p>
+                <p className="text-xl font-display font-bold text-gradient">IBIME</p>
+                <p className="text-xs text-muted-foreground">Estado Bolivariano de Mérida</p>
               </div>
-              <img
-                src={governorPortrait}
-                alt="Alcalde Arnaldo Sánchez"
-                className="w-12 h-12 rounded-full object-cover border-2 border-accent shadow-md"
-              />
             </div>
 
             {/* Mobile Menu Button */}
