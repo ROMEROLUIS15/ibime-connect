@@ -8,9 +8,9 @@ import communityEvent from '@/assets/community-event.jpg';
 const slides = [
   {
     image: heroBanner,
-    title: 'Bienvenidos a eBIMe',
-    subtitle: 'Red de Bibliotecas Metropolitanas',
-    description: 'Educación, cultura y comunidad al servicio de todos los ciudadanos',
+    title: 'Bienvenidos a IBIME',
+    subtitle: 'Instituto de Bibliotecas e Información',
+    description: 'Educación, cultura y comunidad al servicio de todos los merideños',
   },
   {
     image: libraryActivity,
