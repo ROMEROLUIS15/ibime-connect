@@ -1,4 +1,5 @@
-import { BookOpen, Twitter, Facebook, Instagram, Linkedin } from 'lucide-react';
+import { Twitter, Facebook, Instagram, Linkedin } from 'lucide-react';
+import logoIBIME from '@/assets/logo-ibime.png';
 
 const quickLinks = [
   { label: 'IBIME', href: '#ibime' },
@@ -23,13 +24,11 @@ export const Footer = () => {
           {/* Brand */}
           <div className="lg:col-span-2">
             <a href="#inicio" className="flex items-center gap-3 mb-6">
-              <div className="w-12 h-12 rounded-lg bg-accent flex items-center justify-center">
-                <BookOpen className="w-7 h-7 text-accent-foreground" />
-              </div>
-              <div>
-                <span className="text-2xl font-display font-bold">IBIME</span>
-                <p className="text-xs text-primary-foreground/60">Instituto de Bibliotecas e Información</p>
-              </div>
+              <img 
+                src={logoIBIME} 
+                alt="IBIME - Instituto de Bibliotecas e Información del Estado Bolivariano de Mérida" 
+                className="h-16 w-auto object-contain brightness-0 invert"
+              />
             </a>
             <p className="text-primary-foreground/70 max-w-md leading-relaxed mb-6">
               Instituto Autónomo de Servicios de Bibliotecas e Información del Estado Bolivariano de Mérida. 
