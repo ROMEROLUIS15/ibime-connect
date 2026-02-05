@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
+import logoIBIME from '@/assets/logo-ibime.png';
 
 export const ContactSection = () => {
   const { toast } = useToast();
@@ -64,8 +65,22 @@ export const ContactSection = () => {
         </div>
 
         <div className="grid lg:grid-cols-2 gap-12">
-          {/* Contact Info */}
+          {/* Contact Info with Logo */}
           <div className="space-y-6">
+            {/* Logo and Institutional Text */}
+            <div className="card-institutional text-center p-8 bg-gradient-institutional">
+              <img 
+                src={logoIBIME} 
+                alt="IBIME - Instituto de Bibliotecas e Información del Estado Bolivariano de Mérida" 
+                className="h-24 w-auto object-contain mx-auto mb-4 brightness-0 invert"
+              />
+              <p className="text-primary-foreground font-medium leading-relaxed">
+                Instituto Autónomo de Servicios de Bibliotecas e Información del Estado Bolivariano de Mérida.
+              </p>
+              <p className="text-primary-foreground/80 text-sm mt-2">
+                Comprometidos con la educación, la cultura y el desarrollo de nuestra comunidad.
+              </p>
+            </div>
             {contactInfo.map((item, index) => (
               <div
                 key={index}
