@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Menu, X, ChevronDown, BookOpen } from 'lucide-react';
+import { Menu, X, ChevronDown } from 'lucide-react';
+import logoIBIME from '@/assets/logo-ibime.png';
 
 interface MenuItem {
   label: string;
@@ -171,13 +172,11 @@ export const Navbar = () => {
           <div className="flex items-center justify-between py-2">
             {/* Logo */}
             <a href="#inicio" className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-lg bg-gradient-institutional flex items-center justify-center">
-                <BookOpen className="w-7 h-7 text-primary-foreground" />
-              </div>
-              <div className="hidden sm:block">
-                <span className="text-2xl font-display font-bold text-gradient">IBIME</span>
-                <p className="text-xs text-muted-foreground">Red de Bibliotecas</p>
-              </div>
+              <img 
+                src={logoIBIME} 
+                alt="IBIME - Instituto de Bibliotecas e Información del Estado Bolivariano de Mérida" 
+                className="h-14 w-auto object-contain"
+              />
             </a>
 
             {/* Desktop Navigation */}
