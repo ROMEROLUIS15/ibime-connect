@@ -8,8 +8,9 @@
 
 @layer base {
   :root {
-    /* Colores principales institucionales */
-    --background: 210 20% 98%;
+    /* Paleta basada en el logo IBIME */
+    /* Fondo limpio y profesional */
+    --background: 45 30% 98%;
     --foreground: 222 47% 11%;
 
     --card: 0 0% 100%;
@@ -18,102 +19,102 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 11%;
 
-    /* Azul oscuro - Gobierno y formalidad */
+    /* Azul oscuro del logo - Gobierno y formalidad */
     --primary: 222 47% 20%;
     --primary-foreground: 0 0% 100%;
 
-    /* Morado - Cultura y conocimiento */
-    --secondary: 270 50% 40%;
+    /* Morado del logo - Cultura y conocimiento */
+    --secondary: 280 60% 45%;
     --secondary-foreground: 0 0% 100%;
 
-    /* Tonos suaves */
-    --muted: 210 20% 96%;
-    --muted-foreground: 215 16% 47%;
+    /* Tonos suaves con tinte cálido */
+    --muted: 45 20% 95%;
+    --muted-foreground: 222 20% 40%;
 
-    /* Amarillo - Energía y cercanía */
-    --accent: 45 93% 47%;
+    /* Amarillo del logo - Energía y cercanía */
+    --accent: 45 100% 50%;
     --accent-foreground: 222 47% 11%;
 
-    /* Rojo - Identidad y fuerza institucional */
-    --destructive: 0 72% 51%;
+    /* Rojo del logo - Identidad y fuerza institucional */
+    --destructive: 0 80% 50%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    --ring: 222 47% 20%;
+    --border: 45 20% 88%;
+    --input: 45 20% 90%;
+    --ring: 280 60% 45%;
 
     --radius: 0.75rem;
 
-    /* Colores adicionales eBIMe */
-    --ebime-yellow: 45 93% 47%;
-    --ebime-red: 0 72% 51%;
-    --ebime-purple: 270 50% 40%;
+    /* Colores oficiales del logo IBIME */
+    --ebime-yellow: 45 100% 50%;
+    --ebime-red: 0 80% 50%;
+    --ebime-purple: 280 60% 45%;
     --ebime-blue: 222 47% 20%;
-    --ebime-green: 142 52% 45%;
-    --ebime-light-green: 142 52% 90%;
+    --ebime-green: 142 60% 40%;
+    --ebime-light-green: 142 50% 92%;
 
-    /* Gradientes institucionales */
-    --gradient-primary: linear-gradient(135deg, hsl(222, 47%, 20%) 0%, hsl(270, 50%, 40%) 100%);
-    --gradient-accent: linear-gradient(135deg, hsl(45, 93%, 47%) 0%, hsl(45, 93%, 60%) 100%);
-    --gradient-hero: linear-gradient(135deg, hsl(222, 47%, 15%) 0%, hsl(270, 50%, 35%) 50%, hsl(222, 47%, 25%) 100%);
-    --gradient-card: linear-gradient(180deg, hsl(0, 0%, 100%) 0%, hsl(210, 20%, 98%) 100%);
+    /* Gradientes institucionales armonizados */
+    --gradient-primary: linear-gradient(135deg, hsl(222, 47%, 20%) 0%, hsl(280, 60%, 45%) 100%);
+    --gradient-accent: linear-gradient(135deg, hsl(45, 100%, 50%) 0%, hsl(45, 100%, 60%) 100%);
+    --gradient-hero: linear-gradient(135deg, hsl(222, 47%, 18%) 0%, hsl(280, 60%, 40%) 50%, hsl(222, 47%, 22%) 100%);
+    --gradient-card: linear-gradient(180deg, hsl(0, 0%, 100%) 0%, hsl(45, 30%, 98%) 100%);
     
-    /* Sombras */
+    /* Sombras con tinte cálido */
     --shadow-sm: 0 1px 2px 0 hsl(222 47% 11% / 0.05);
-    --shadow-md: 0 4px 6px -1px hsl(222 47% 11% / 0.1), 0 2px 4px -2px hsl(222 47% 11% / 0.1);
-    --shadow-lg: 0 10px 15px -3px hsl(222 47% 11% / 0.1), 0 4px 6px -4px hsl(222 47% 11% / 0.1);
-    --shadow-xl: 0 20px 25px -5px hsl(222 47% 11% / 0.1), 0 8px 10px -6px hsl(222 47% 11% / 0.1);
-    --shadow-card: 0 4px 20px -2px hsl(222 47% 11% / 0.08);
-    --shadow-hover: 0 10px 40px -10px hsl(222 47% 11% / 0.2);
+    --shadow-md: 0 4px 6px -1px hsl(222 47% 11% / 0.08), 0 2px 4px -2px hsl(222 47% 11% / 0.06);
+    --shadow-lg: 0 10px 15px -3px hsl(222 47% 11% / 0.08), 0 4px 6px -4px hsl(222 47% 11% / 0.06);
+    --shadow-xl: 0 20px 25px -5px hsl(222 47% 11% / 0.1), 0 8px 10px -6px hsl(222 47% 11% / 0.08);
+    --shadow-card: 0 4px 20px -2px hsl(280 60% 45% / 0.06);
+    --shadow-hover: 0 10px 40px -10px hsl(280 60% 45% / 0.15);
 
-    /* Sidebar (mantener compatibilidad) */
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
+    /* Sidebar */
+    --sidebar-background: 45 30% 98%;
+    --sidebar-foreground: 222 47% 20%;
     --sidebar-primary: 222 47% 20%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 270 50% 95%;
-    --sidebar-accent-foreground: 270 50% 40%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 222 47% 20%;
+    --sidebar-accent: 280 60% 95%;
+    --sidebar-accent-foreground: 280 60% 45%;
+    --sidebar-border: 45 20% 88%;
+    --sidebar-ring: 280 60% 45%;
   }
 
   .dark {
     --background: 222 47% 8%;
-    --foreground: 210 40% 98%;
+    --foreground: 45 30% 96%;
 
     --card: 222 47% 11%;
-    --card-foreground: 210 40% 98%;
+    --card-foreground: 45 30% 96%;
 
     --popover: 222 47% 11%;
-    --popover-foreground: 210 40% 98%;
+    --popover-foreground: 45 30% 96%;
 
-    --primary: 45 93% 47%;
+    --primary: 45 100% 50%;
     --primary-foreground: 222 47% 11%;
 
-    --secondary: 270 50% 50%;
+    --secondary: 280 60% 55%;
     --secondary-foreground: 0 0% 100%;
 
-    --muted: 217 33% 17%;
-    --muted-foreground: 215 20% 65%;
+    --muted: 222 30% 15%;
+    --muted-foreground: 45 20% 70%;
 
-    --accent: 45 93% 47%;
+    --accent: 45 100% 50%;
     --accent-foreground: 222 47% 11%;
 
-    --destructive: 0 62% 30%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 70% 40%;
+    --destructive-foreground: 45 30% 96%;
 
-    --border: 217 33% 17%;
-    --input: 217 33% 17%;
-    --ring: 45 93% 47%;
+    --border: 222 30% 18%;
+    --input: 222 30% 18%;
+    --ring: 45 100% 50%;
 
     --sidebar-background: 222 47% 8%;
-    --sidebar-foreground: 240 5% 96%;
-    --sidebar-primary: 45 93% 47%;
+    --sidebar-foreground: 45 30% 96%;
+    --sidebar-primary: 45 100% 50%;
     --sidebar-primary-foreground: 222 47% 11%;
-    --sidebar-accent: 270 50% 20%;
-    --sidebar-accent-foreground: 270 50% 80%;
-    --sidebar-border: 217 33% 17%;
-    --sidebar-ring: 45 93% 47%;
+    --sidebar-accent: 280 60% 25%;
+    --sidebar-accent-foreground: 280 60% 75%;
+    --sidebar-border: 222 30% 18%;
+    --sidebar-ring: 45 100% 50%;
   }
 }
 

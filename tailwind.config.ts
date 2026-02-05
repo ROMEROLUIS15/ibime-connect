@@ -61,7 +61,15 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
-        // Colores específicos eBIMe
+        // Colores oficiales IBIME (basados en el logo)
+        ibime: {
+          yellow: "hsl(var(--ebime-yellow))",
+          red: "hsl(var(--ebime-red))",
+          purple: "hsl(var(--ebime-purple))",
+          blue: "hsl(var(--ebime-blue))",
+          green: "hsl(var(--ebime-green))",
+          "light-green": "hsl(var(--ebime-light-green))",
+        },
         ebime: {
           yellow: "hsl(var(--ebime-yellow))",
           red: "hsl(var(--ebime-red))",
