@@ -21,18 +21,19 @@ export const Footer = () => {
       <div className="container mx-auto px-4">
         {/* Main Footer */}
         <div className="py-16 grid md:grid-cols-2 lg:grid-cols-4 gap-10">
-          {/* Brand */}
+          {/* Brand with Logo */}
           <div className="lg:col-span-2">
-            <a href="#inicio" className="flex items-center gap-3 mb-6">
+            <a href="#inicio" className="inline-block mb-6">
               <img 
                 src={logoIBIME} 
                 alt="IBIME - Instituto de Bibliotecas e Información del Estado Bolivariano de Mérida" 
-                className="h-16 w-auto object-contain brightness-0 invert"
+                className="h-20 w-auto object-contain brightness-0 invert"
               />
             </a>
-            <p className="text-primary-foreground/70 max-w-md leading-relaxed mb-6">
-              Instituto Autónomo de Servicios de Bibliotecas e Información del Estado Bolivariano de Mérida. 
-              Comprometidos con la educación, la cultura y el desarrollo de nuestra comunidad.
+            <p className="text-primary-foreground/80 max-w-md leading-relaxed mb-6 text-lg">
+              <strong>Instituto Autónomo de Servicios de Bibliotecas e Información del Estado Bolivariano de Mérida.</strong>
+              <br />
+              <span className="text-primary-foreground/60">Comprometidos con la educación, la cultura y el desarrollo de nuestra comunidad.</span>
             </p>
             {/* Social Links */}
             <div className="flex gap-3">
