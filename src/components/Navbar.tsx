@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Menu, X, ChevronDown } from 'lucide-react';
 import logoIBIME from '@/assets/logo-ibime.png';
+import gobernadorLogo from '@/assets/gobernador-logo.png';
 
 interface MenuItem {
   label: string;
@@ -186,12 +187,13 @@ export const Navbar = () => {
               ))}
             </div>
 
-            {/* Institutional Block - Reserved space for logo */}
-            <div className="hidden md:flex items-center gap-3 pl-4 border-l border-border">
-              <div className="text-right">
-                <p className="text-xl font-display font-bold text-gradient">IBIME</p>
-                <p className="text-xs text-muted-foreground">Estado Bolivariano de Mérida</p>
-              </div>
+            {/* Governor Logo */}
+            <div className="hidden sm:flex items-center pl-4 border-l border-border/50">
+              <img 
+                src={gobernadorLogo} 
+                alt="Gobernador del Estado Bolivariano de Mérida" 
+                className="h-10 md:h-12 lg:h-14 w-auto object-contain"
+              />
             </div>
 
             {/* Mobile Menu Button */}
