@@ -80,8 +80,17 @@ export const Footer = () => {
           </div>
         </div>
 
-        {/* Bottom Footer */}
-        <div className="py-6 border-t border-primary-foreground/10">
+        {/* Logo Box & Bottom Footer */}
+        <div className="py-8 border-t border-primary-foreground/10">
+          <div className="flex flex-col items-center mb-6">
+            <div className="bg-card rounded-xl p-4 mb-4">
+              <img 
+                src={logoIBIME} 
+                alt="IBIME - Instituto de Bibliotecas e Información del Estado Bolivariano de Mérida" 
+                className="h-16 w-auto object-contain"
+              />
+            </div>
+          </div>
           <div className="flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-primary-foreground/60">
             <p>
               © Copyright IBIME. All Rights Reserved

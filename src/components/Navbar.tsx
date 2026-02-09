@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Menu, X, ChevronDown } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import logoIBIME from '@/assets/logo-ibime.png';
 import gobernadorLogo from '@/assets/gobernador-logo.png';
 
@@ -13,7 +14,7 @@ const menuItems: MenuItem[] = [
   { label: 'Inicio', href: '#inicio' },
   { label: 'IBIME', href: '#ibime' },
   { label: 'Eventos', href: '#eventos' },
-  { label: 'Fondo Editorial', href: '#editorial' },
+  { label: 'Fondo Editorial', href: '/fondo-editorial' },
   { label: 'Cartelera Informativa', href: '#cartelera' },
   { label: 'Servicios', href: '#servicios' },
   {
@@ -40,14 +41,23 @@ const menuItems: MenuItem[] = [
       },
     ],
   },
-  { label: 'Koha', href: '#koha' },
-  { label: 'Libro Hablado', href: '#libro-hablado' },
+  { label: 'Koha', href: '/koha' },
+  { label: 'Libro Hablado', href: '/libro-hablado' },
   { label: 'Contacto', href: '#contacto' },
 ];
 
 const DropdownMenu = ({ item, depth = 0 }: { item: MenuItem; depth?: number }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const navigate = useNavigate();
   const hasChildren = item.children && item.children.length > 0;
+  const isRoute = item.href.startsWith('/');
+
+  const handleClick = (e: React.MouseEvent) => {
+    if (isRoute) {
+      e.preventDefault();
+      navigate(item.href);
+    }
+  };
 
   return (
     <div
@@ -57,6 +67,7 @@ const DropdownMenu = ({ item, depth = 0 }: { item: MenuItem; depth?: number }) =
     >
       <a
         href={item.href}
+        onClick={handleClick}
         className={`flex items-center gap-1 px-3 py-2 text-sm font-medium transition-colors rounded-md
           ${depth === 0 
             ? 'text-foreground hover:text-secondary hover:bg-secondary/10' 
@@ -82,6 +93,7 @@ const DropdownMenu = ({ item, depth = 0 }: { item: MenuItem; depth?: number }) =
 };
 
 const MobileMenu = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
+  const navigate = useNavigate();
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
 
   const toggleExpand = (label: string) => {
@@ -104,7 +116,13 @@ const MobileMenu = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void 
         >
           <a
             href={item.href}
-            onClick={onClose}
+            onClick={(e) => {
+              if (item.href.startsWith('/')) {
+                e.preventDefault();
+                navigate(item.href);
+              }
+              onClose();
+            }}
             className="text-foreground font-medium flex-1"
           >
             {item.label}
