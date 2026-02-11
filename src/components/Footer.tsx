@@ -23,12 +23,14 @@ export const Footer = () => {
         <div className="py-16 grid md:grid-cols-2 lg:grid-cols-4 gap-10">
           {/* Brand with Logo */}
           <div className="lg:col-span-2">
-            <a href="#inicio" className="inline-block mb-6">
-              <img 
-                src={logoIBIME} 
-                alt="IBIME - Instituto de Bibliotecas e Información del Estado Bolivariano de Mérida" 
-                className="h-20 w-auto object-contain brightness-0 invert"
-              />
+          <a href="#inicio" className="inline-block mb-6">
+              <div className="bg-white rounded-lg p-3 w-20 h-20 flex items-center justify-center">
+                <img 
+                  src={logoIBIME} 
+                  alt="IBIME - Instituto de Bibliotecas e Información del Estado Bolivariano de Mérida" 
+                  className="w-full h-full object-contain"
+                />
+              </div>
             </a>
             <p className="text-primary-foreground/80 max-w-md leading-relaxed mb-6 text-lg">
               <strong>Instituto Autónomo de Servicios de Bibliotecas e Información del Estado Bolivariano de Mérida.</strong>
@@ -80,17 +82,8 @@ export const Footer = () => {
           </div>
         </div>
 
-        {/* Logo Box & Bottom Footer */}
+        {/* Bottom Footer */}
         <div className="py-8 border-t border-primary-foreground/10">
-          <div className="flex flex-col items-center mb-6">
-            <div className="bg-card rounded-xl p-4 mb-4">
-              <img 
-                src={logoIBIME} 
-                alt="IBIME - Instituto de Bibliotecas e Información del Estado Bolivariano de Mérida" 
-                className="h-16 w-auto object-contain"
-              />
-            </div>
-          </div>
           <div className="flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-primary-foreground/60">
             <p>
               © Copyright IBIME. All Rights Reserved
