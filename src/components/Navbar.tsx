@@ -1,8 +1,29 @@
 import { useState } from 'react';
 import { Menu, X, ChevronDown } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import logoIBIME from '@/assets/logo-ibime.png';
 import gobernadorLogo from '@/assets/gobernador-logo.png';
+
+const useHashNavigation = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const handleNavClick = (href: string, e: React.MouseEvent) => {
+    if (href.startsWith('/')) {
+      e.preventDefault();
+      navigate(href);
+    } else if (href.startsWith('#')) {
+      // If we're not on the home page, navigate there first
+      if (location.pathname !== '/') {
+        e.preventDefault();
+        navigate('/' + href);
+      }
+      // If we're on home page, default anchor behavior works
+    }
+  };
+
+  return handleNavClick;
+};
 
 interface MenuItem {
   label: string;
@@ -48,15 +69,11 @@ const menuItems: MenuItem[] = [
 
 const DropdownMenu = ({ item, depth = 0 }: { item: MenuItem; depth?: number }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const navigate = useNavigate();
+  const handleNavClick = useHashNavigation();
   const hasChildren = item.children && item.children.length > 0;
-  const isRoute = item.href.startsWith('/');
 
   const handleClick = (e: React.MouseEvent) => {
-    if (isRoute) {
-      e.preventDefault();
-      navigate(item.href);
-    }
+    handleNavClick(item.href, e);
   };
 
   return (
@@ -93,7 +110,7 @@ const DropdownMenu = ({ item, depth = 0 }: { item: MenuItem; depth?: number }) =
 };
 
 const MobileMenu = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
-  const navigate = useNavigate();
+  const handleNavClick = useHashNavigation();
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
 
   const toggleExpand = (label: string) => {
@@ -117,10 +134,7 @@ const MobileMenu = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void 
           <a
             href={item.href}
             onClick={(e) => {
-              if (item.href.startsWith('/')) {
-                e.preventDefault();
-                navigate(item.href);
-              }
+              handleNavClick(item.href, e);
               onClose();
             }}
             className="text-foreground font-medium flex-1"
@@ -183,6 +197,7 @@ const MobileMenu = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void 
 
 export const Navbar = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const handleNavClick = useHashNavigation();
 
   return (
     <>
@@ -190,7 +205,7 @@ export const Navbar = () => {
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between py-2">
             {/* Logo */}
-            <a href="#inicio" className="flex items-center gap-3">
+            <a href="/#inicio" onClick={(e) => handleNavClick('#inicio', e)} className="flex items-center gap-3">
               <img 
                 src={logoIBIME} 
                 alt="IBIME - Instituto de Bibliotecas e Información del Estado Bolivariano de Mérida" 
