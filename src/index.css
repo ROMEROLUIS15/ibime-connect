@@ -174,7 +174,7 @@
   /* Navbar institucional */
   .navbar-institutional {
     @apply backdrop-blur-md border-b;
-    background: hsl(var(--background) / 0.95);
+    background: hsl(0 0% 100% / 0.97);
     border-color: hsl(var(--border));
   }
 
