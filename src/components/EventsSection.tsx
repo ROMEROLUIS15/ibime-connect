@@ -1,5 +1,9 @@
 import { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Calendar, MapPin } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar, MapPin, Loader2, X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 import eventLiterary from '@/assets/event-literary.jpg';
 import eventChildren from '@/assets/event-children.jpg';
 import eventDigital from '@/assets/event-digital.jpg';
@@ -39,9 +43,81 @@ const events = [
   },
 ];
 
+const RegistrationModal = ({ event, onClose }: { event: typeof events[0]; onClose: () => void }) => {
+  const { toast } = useToast();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formData, setFormData] = useState({ name: '', email: '', phone: '' });
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    try {
+      const { error } = await supabase.from('course_registrations').insert({
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone || null,
+        course_name: event.title,
+      });
+      if (error) throw error;
+      toast({
+        title: '¡Inscripción exitosa!',
+        description: `Te has inscrito en "${event.title}". Te contactaremos pronto.`,
+      });
+      onClose();
+    } catch {
+      toast({
+        title: 'Error al inscribirse',
+        description: 'Hubo un problema. Intenta de nuevo.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="absolute inset-0 bg-foreground/60 backdrop-blur-sm" />
+      <div
+        className="relative bg-card rounded-2xl shadow-xl w-full max-w-md p-6 animate-slide-up"
+        onClick={e => e.stopPropagation()}
+      >
+        <button onClick={onClose} className="absolute top-4 right-4 text-muted-foreground hover:text-foreground">
+          <X className="w-5 h-5" />
+        </button>
+        <h3 className="text-xl font-display font-bold text-foreground mb-1">Inscripción</h3>
+        <p className="text-sm text-muted-foreground mb-5">{event.title} — {event.date}</p>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label htmlFor="reg-name" className="block text-sm font-medium text-foreground mb-1">Nombre Completo *</label>
+            <Input id="reg-name" name="name" value={formData.name} onChange={handleChange} required className="h-11" />
+          </div>
+          <div>
+            <label htmlFor="reg-email" className="block text-sm font-medium text-foreground mb-1">Correo Electrónico *</label>
+            <Input id="reg-email" name="email" type="email" value={formData.email} onChange={handleChange} required className="h-11" />
+          </div>
+          <div>
+            <label htmlFor="reg-phone" className="block text-sm font-medium text-foreground mb-1">Teléfono (opcional)</label>
+            <Input id="reg-phone" name="phone" value={formData.phone} onChange={handleChange} className="h-11" />
+          </div>
+          <Button type="submit" className="w-full h-11 btn-hero" disabled={isSubmitting}>
+            {isSubmitting ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : null}
+            {isSubmitting ? 'Enviando...' : 'Confirmar Inscripción'}
+          </Button>
+        </form>
+      </div>
+    </div>
+  );
+};
+
 export const EventsSection = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
+  const [selectedEvent, setSelectedEvent] = useState<typeof events[0] | null>(null);
 
   useEffect(() => {
     if (!isAutoPlaying) return;
@@ -106,7 +182,10 @@ export const EventsSection = () => {
                       <p className="text-primary-foreground/80 leading-relaxed mb-6">
                         {event.description}
                       </p>
-                      <button className="btn-hero self-start">
+                      <button
+                        className="btn-hero self-start"
+                        onClick={() => setSelectedEvent(event)}
+                      >
                         Inscribirse
                       </button>
                     </div>
@@ -149,6 +228,10 @@ export const EventsSection = () => {
           </div>
         </div>
       </div>
+
+      {selectedEvent && (
+        <RegistrationModal event={selectedEvent} onClose={() => setSelectedEvent(null)} />
+      )}
     </section>
   );
 };
