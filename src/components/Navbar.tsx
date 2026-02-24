@@ -128,8 +128,9 @@ const MobileMenu = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void 
     return (
       <div key={item.label}>
         <div
-          className={`flex items-center justify-between px-4 py-3 border-b border-border/50
-            ${depth > 0 ? 'pl-' + (4 + depth * 4) : ''}`}
+          className={`flex items-center justify-between px-4 py-3 border-b border-border/50 ${
+            depth === 0 ? '' : depth === 1 ? 'pl-8' : depth === 2 ? 'pl-12' : 'pl-16'
+          }`}
         >
           <a
             href={item.href}
