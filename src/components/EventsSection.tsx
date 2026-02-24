@@ -141,10 +141,13 @@ export const EventsSection = () => {
     <section id="eventos" className="py-20 bg-gradient-institutional text-primary-foreground">
       <div className="container mx-auto px-4">
         {/* Header */}
-        <div className="text-center mb-12">
-          <span className="inline-block px-4 py-2 mb-4 text-sm font-medium rounded-full bg-accent/20 text-accent border border-accent/30">
+        <div className="text-center mb-14 md:mb-16">
+          <button
+            type="button"
+            className="inline-block px-6 py-2.5 mb-4 text-sm md:text-base font-semibold rounded-full bg-white text-ibime-green shadow-sm hover:bg-ibime-light-green hover:shadow-md transition-colors transition-shadow"
+          >
             Agenda Cultural
-          </span>
+          </button>
           <h2 className="text-3xl md:text-4xl lg:text-5xl font-display font-bold">
             Próximos Eventos
           </h2>
@@ -159,7 +162,7 @@ export const EventsSection = () => {
             >
               {events.map(event => (
                 <div key={event.id} className="w-full flex-shrink-0">
-                  <div className="grid md:grid-cols-2 gap-0 bg-primary-foreground/10 backdrop-blur-sm rounded-2xl overflow-hidden">
+                  <div className="grid md:grid-cols-2 gap-0 bg-card text-foreground rounded-2xl overflow-hidden shadow-institutional">
                     <div className="aspect-video md:aspect-auto">
                       <img
                         src={event.image}
@@ -168,22 +171,22 @@ export const EventsSection = () => {
                       />
                     </div>
                     <div className="p-8 md:p-10 flex flex-col justify-center">
-                      <h3 className="text-2xl md:text-3xl font-display font-bold mb-4">
+                      <h3 className="text-2xl md:text-3xl lg:text-4xl font-sans font-extrabold mb-4">
                         {event.title}
                       </h3>
-                      <div className="flex items-center gap-2 text-accent mb-2">
+                      <div className="flex items-center gap-2 text-ibime-green mb-2">
                         <Calendar className="w-5 h-5" />
                         <span className="font-medium">{event.date}</span>
                       </div>
-                      <div className="flex items-center gap-2 text-primary-foreground/70 mb-4">
+                      <div className="flex items-center gap-2 text-muted-foreground mb-4">
                         <MapPin className="w-5 h-5" />
                         <span>{event.location}</span>
                       </div>
-                      <p className="text-primary-foreground/80 leading-relaxed mb-6">
+                      <p className="text-foreground/80 leading-relaxed mb-6">
                         {event.description}
                       </p>
                       <button
-                        className="btn-hero self-start"
+                        className="self-start inline-flex items-center px-6 py-3 rounded-lg bg-ibime-green text-white font-semibold shadow-md hover:bg-ibime-green/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-ibime-green focus-visible:ring-offset-background transition-colors"
                         onClick={() => setSelectedEvent(event)}
                       >
                         Inscribirse
@@ -198,13 +201,13 @@ export const EventsSection = () => {
           {/* Navigation */}
           <button
             onClick={prevSlide}
-            className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 md:-translate-x-12 p-3 rounded-full bg-primary-foreground/10 backdrop-blur-sm hover:bg-primary-foreground/20 transition-all"
+            className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 md:-translate-x-12 p-3 md:p-3.5 rounded-full bg-ibime-green text-white shadow-lg hover:bg-white hover:text-ibime-green transition-colors"
           >
             <ChevronLeft className="w-6 h-6" />
           </button>
           <button
             onClick={nextSlide}
-            className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 md:translate-x-12 p-3 rounded-full bg-primary-foreground/10 backdrop-blur-sm hover:bg-primary-foreground/20 transition-all"
+            className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 md:translate-x-12 p-3 md:p-3.5 rounded-full bg-ibime-green text-white shadow-lg hover:bg-white hover:text-ibime-green transition-colors"
           >
             <ChevronRight className="w-6 h-6" />
           </button>
@@ -220,8 +223,8 @@ export const EventsSection = () => {
                 }}
                 className={`w-2.5 h-2.5 rounded-full transition-all ${
                   index === currentIndex
-                    ? 'w-8 bg-accent'
-                    : 'bg-primary-foreground/40 hover:bg-primary-foreground/60'
+                    ? 'w-8 bg-white shadow-md'
+                    : 'bg-primary-foreground/40 hover:bg-primary-foreground/70'
                 }`}
               />
             ))}

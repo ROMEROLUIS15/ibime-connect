@@ -69,20 +69,20 @@ export const MissionVisionSection = () => {
         </div>
 
         {/* Stats */}
-        <div className="bg-gradient-institutional rounded-2xl p-8 md:p-12">
+        <div className="bg-gradient-institutional rounded-2xl px-8 md:px-12 py-12 md:py-16">
           <div className="text-center mb-8">
             <h3 className="text-2xl md:text-3xl font-display font-bold text-primary-foreground mb-2">
               Cifras Institucionales
             </h3>
             <p className="text-primary-foreground/70">Nuestro alcance en el Estado Bolivariano de Mérida</p>
           </div>
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
             {stats.map((stat, index) => (
               <div key={index} className="text-center">
                 <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-primary-foreground/10 flex items-center justify-center">
-                  <stat.icon className="w-8 h-8 text-accent" />
+                  <stat.icon className="w-8 h-8 text-primary-foreground" />
                 </div>
-                <p className="text-4xl md:text-5xl font-display font-bold text-primary-foreground mb-2">
+                <p className="text-4xl md:text-5xl font-display font-extrabold text-primary-foreground mb-2">
                   {stat.value}
                 </p>
                 <p className="text-primary-foreground/70">{stat.label}</p>

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Menu, X, ChevronDown } from 'lucide-react';
+import { Menu, X, ChevronDown, BookOpen } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import logoIBIME from '@/assets/logo-ibime.png';
 import gobernadorLogo from '@/assets/gobernador-logo.png';
@@ -188,8 +188,22 @@ const MobileMenu = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void 
             <X className="w-6 h-6" />
           </button>
         </div>
-        <div className="overflow-y-auto h-[calc(100%-64px)]">
-          {menuItems.map(item => renderMenuItem(item))}
+        <div className="overflow-y-auto h-[calc(100%-64px)] flex flex-col">
+          <div>
+            {menuItems.map(item => renderMenuItem(item))}
+          </div>
+          <div className="mt-auto p-4 border-t border-border/50">
+            <a
+              href="http://www.ibime.gob.ve"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Acceso al Catálogo de Biblioteca Koha"
+              className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-full border border-ibime-green text-ibime-green font-semibold hover:bg-ibime-green hover:text-white transition-colors transition-transform duration-300 hover:scale-[1.02]"
+            >
+              <BookOpen className="w-5 h-5" />
+              <span>Catálogo Koha</span>
+            </a>
+          </div>
         </div>
       </div>
     </div>
@@ -204,7 +218,7 @@ export const Navbar = () => {
     <>
       <nav className="navbar-institutional fixed top-0 left-0 right-0 z-40">
         <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between py-2">
+          <div className="flex items-center justify-between py-2 gap-4">
             {/* Logo */}
             <a href="/#inicio" onClick={(e) => handleNavClick('#inicio', e)} className="flex items-center gap-3">
               <img 
@@ -215,17 +229,29 @@ export const Navbar = () => {
             </a>
 
             {/* Desktop Navigation */}
-            <div className="hidden lg:flex items-center gap-1">
-              {menuItems.map((item, index) => (
-                <DropdownMenu key={index} item={item} />
-              ))}
+            <div className="hidden lg:flex items-center gap-4 flex-1 justify-center">
+              <div className="flex items-center gap-1">
+                {menuItems.map((item, index) => (
+                  <DropdownMenu key={index} item={item} />
+                ))}
+              </div>
+              <a
+                href="http://www.ibime.gob.ve"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Acceso al Catálogo de Biblioteca Koha"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-white text-white text-sm font-semibold hover:bg-ibime-green hover:border-ibime-green hover:text-white transition-colors transition-transform duration-300 hover:scale-[1.02]"
+              >
+                <BookOpen className="w-4 h-4" />
+                <span>Catálogo Koha</span>
+              </a>
             </div>
 
             {/* Governor Logo */}
             <div className="hidden sm:flex items-center pl-4 border-l border-border/50">
-              <img 
-                src={gobernadorLogo} 
-                alt="Gobernador del Estado Bolivariano de Mérida" 
+              <img
+                src={gobernadorLogo}
+                alt="Gobernador del Estado Bolivariano de Mérida"
                 className="h-10 md:h-12 lg:h-14 w-auto object-contain"
               />
             </div>

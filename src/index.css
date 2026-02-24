@@ -8,113 +8,113 @@
 
 @layer base {
   :root {
-    /* Paleta basada en el logo IBIME */
-    /* Fondo limpio y profesional */
-    --background: 45 30% 98%;
-    --foreground: 222 47% 11%;
+    /* Paleta institucional para gobierno (IBIME) */
+    /* Fondo muy claro para legibilidad: #F8FAFC */
+    --background: 210 40% 98%;
+    --foreground: 222 47% 14%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card-foreground: 222 47% 14%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    --popover-foreground: 222 47% 14%;
 
-    /* Azul oscuro del logo - Gobierno y formalidad */
-    --primary: 222 47% 20%;
+    /* Azul marino profundo para encabezados y elementos principales: #1A365D */
+    --primary: 215 56% 23%;
     --primary-foreground: 0 0% 100%;
 
-    /* Morado del logo - Cultura y conocimiento */
-    --secondary: 280 60% 45%;
+    /* Verde bosque como color secundario y de acento institucional: #2D6A4F (ligeramente más vibrante) */
+    --secondary: 153 48% 32%;
     --secondary-foreground: 0 0% 100%;
 
-    /* Tonos suaves con tinte cálido */
-    --muted: 45 20% 95%;
-    --muted-foreground: 222 20% 40%;
+    /* Grises neutros y fríos para fondos secundarios */
+    --muted: 210 30% 96%;
+    --muted-foreground: 218 15% 35%;
 
-    /* Amarillo del logo - Energía y cercanía */
-    --accent: 45 100% 50%;
-    --accent-foreground: 222 47% 11%;
+    /* Usamos el mismo verde bosque como acento principal para coherencia institucional */
+    --accent: 153 50% 33%;
+    --accent-foreground: 0 0% 100%;
 
-    /* Rojo del logo - Identidad y fuerza institucional */
-    --destructive: 0 80% 50%;
+    /* Rojo para estados de error, con buen contraste */
+    --destructive: 0 70% 45%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 45 20% 88%;
-    --input: 45 20% 90%;
-    --ring: 280 60% 45%;
+    --border: 210 20% 88%;
+    --input: 210 25% 92%;
+    --ring: 215 56% 23%;
 
     --radius: 0.75rem;
 
-    /* Colores oficiales del logo IBIME */
-    --ebime-yellow: 45 100% 50%;
-    --ebime-red: 0 80% 50%;
-    --ebime-purple: 280 60% 45%;
-    --ebime-blue: 222 47% 20%;
-    --ebime-green: 142 60% 40%;
-    --ebime-light-green: 142 50% 92%;
+    /* Colores IBIME mapeados a la nueva identidad */
+    --ebime-yellow: 40 90% 55%;
+    --ebime-red: 0 70% 50%;
+    --ebime-purple: 215 56% 23%;
+    --ebime-blue: 215 56% 23%;
+    --ebime-green: 153 50% 33%;
+    --ebime-light-green: 153 40% 90%;
 
-    /* Gradientes institucionales armonizados */
-    --gradient-primary: linear-gradient(135deg, hsl(222, 47%, 20%) 0%, hsl(280, 60%, 45%) 100%);
-    --gradient-accent: linear-gradient(135deg, hsl(45, 100%, 50%) 0%, hsl(45, 100%, 60%) 100%);
-    --gradient-hero: linear-gradient(135deg, hsl(222, 47%, 18%) 0%, hsl(280, 60%, 40%) 50%, hsl(222, 47%, 22%) 100%);
-    --gradient-card: linear-gradient(180deg, hsl(0, 0%, 100%) 0%, hsl(45, 30%, 98%) 100%);
+    /* Gradientes institucionales con azul marino y verde bosque (sutil luz desde la esquina superior izquierda) */
+    --gradient-primary: linear-gradient(135deg, hsl(215, 56%, 28%) 0%, hsl(215, 56%, 23%) 35%, hsl(153, 50%, 28%) 100%);
+    --gradient-accent: linear-gradient(135deg, hsl(153, 50%, 36%) 0%, hsl(153, 50%, 30%) 100%);
+    --gradient-hero: linear-gradient(135deg, hsl(215, 56%, 26%) 0%, hsl(215, 56%, 20%) 35%, hsl(153, 50%, 26%) 70%, hsl(215, 56%, 22%) 100%);
+    --gradient-card: linear-gradient(180deg, hsl(0, 0%, 100%) 0%, hsl(210, 40%, 98%) 100%);
     
-    /* Sombras con tinte cálido */
-    --shadow-sm: 0 1px 2px 0 hsl(222 47% 11% / 0.05);
-    --shadow-md: 0 4px 6px -1px hsl(222 47% 11% / 0.08), 0 2px 4px -2px hsl(222 47% 11% / 0.06);
-    --shadow-lg: 0 10px 15px -3px hsl(222 47% 11% / 0.08), 0 4px 6px -4px hsl(222 47% 11% / 0.06);
-    --shadow-xl: 0 20px 25px -5px hsl(222 47% 11% / 0.1), 0 8px 10px -6px hsl(222 47% 11% / 0.08);
-    --shadow-card: 0 4px 20px -2px hsl(280 60% 45% / 0.06);
-    --shadow-hover: 0 10px 40px -10px hsl(280 60% 45% / 0.15);
+    /* Sombras discretas basadas en el azul marino */
+    --shadow-sm: 0 1px 2px 0 hsl(215 56% 23% / 0.05);
+    --shadow-md: 0 4px 6px -1px hsl(215 56% 23% / 0.08), 0 2px 4px -2px hsl(215 56% 23% / 0.06);
+    --shadow-lg: 0 10px 15px -3px hsl(215 56% 23% / 0.08), 0 4px 6px -4px hsl(215 56% 23% / 0.06);
+    --shadow-xl: 0 20px 25px -5px hsl(215 56% 23% / 0.1), 0 8px 10px -6px hsl(215 56% 23% / 0.08);
+    --shadow-card: 0 10px 30px -10px hsl(215 56% 10% / 0.25), 0 4px 12px -6px hsl(215 56% 10% / 0.15);
+    --shadow-hover: 0 18px 45px -18px hsl(215 56% 10% / 0.35);
 
-    /* Sidebar */
-    --sidebar-background: 45 30% 98%;
-    --sidebar-foreground: 222 47% 20%;
-    --sidebar-primary: 222 47% 20%;
+    /* Sidebar institucional */
+    --sidebar-background: 210 40% 98%;
+    --sidebar-foreground: 222 47% 18%;
+    --sidebar-primary: 215 56% 23%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 280 60% 95%;
-    --sidebar-accent-foreground: 280 60% 45%;
-    --sidebar-border: 45 20% 88%;
-    --sidebar-ring: 280 60% 45%;
+    --sidebar-accent: 153 40% 94%;
+    --sidebar-accent-foreground: 153 40% 28%;
+    --sidebar-border: 210 20% 88%;
+    --sidebar-ring: 215 56% 23%;
   }
 
   .dark {
-    --background: 222 47% 8%;
-    --foreground: 45 30% 96%;
+    --background: 215 40% 8%;
+    --foreground: 210 40% 96%;
 
-    --card: 222 47% 11%;
-    --card-foreground: 45 30% 96%;
+    --card: 215 35% 12%;
+    --card-foreground: 210 40% 96%;
 
-    --popover: 222 47% 11%;
-    --popover-foreground: 45 30% 96%;
+    --popover: 215 35% 12%;
+    --popover-foreground: 210 40% 96%;
 
-    --primary: 45 100% 50%;
-    --primary-foreground: 222 47% 11%;
+    --primary: 215 56% 65%;
+    --primary-foreground: 215 40% 10%;
 
-    --secondary: 280 60% 55%;
-    --secondary-foreground: 0 0% 100%;
+    --secondary: 153 45% 55%;
+    --secondary-foreground: 215 40% 10%;
 
-    --muted: 222 30% 15%;
-    --muted-foreground: 45 20% 70%;
+    --muted: 215 30% 16%;
+    --muted-foreground: 210 20% 78%;
 
-    --accent: 45 100% 50%;
-    --accent-foreground: 222 47% 11%;
+    --accent: 153 45% 55%;
+    --accent-foreground: 215 40% 10%;
 
-    --destructive: 0 70% 40%;
-    --destructive-foreground: 45 30% 96%;
+    --destructive: 0 70% 50%;
+    --destructive-foreground: 210 40% 96%;
 
-    --border: 222 30% 18%;
-    --input: 222 30% 18%;
-    --ring: 45 100% 50%;
+    --border: 215 30% 20%;
+    --input: 215 30% 20%;
+    --ring: 215 56% 65%;
 
-    --sidebar-background: 222 47% 8%;
-    --sidebar-foreground: 45 30% 96%;
-    --sidebar-primary: 45 100% 50%;
-    --sidebar-primary-foreground: 222 47% 11%;
-    --sidebar-accent: 280 60% 25%;
-    --sidebar-accent-foreground: 280 60% 75%;
-    --sidebar-border: 222 30% 18%;
-    --sidebar-ring: 45 100% 50%;
+    --sidebar-background: 215 40% 8%;
+    --sidebar-foreground: 210 40% 96%;
+    --sidebar-primary: 215 56% 65%;
+    --sidebar-primary-foreground: 215 40% 10%;
+    --sidebar-accent: 153 35% 24%;
+    --sidebar-accent-foreground: 153 45% 75%;
+    --sidebar-border: 215 30% 20%;
+    --sidebar-ring: 215 56% 65%;
   }
 }
 
@@ -140,20 +140,20 @@
 @layer components {
   /* Botón hero institucional */
   .btn-hero {
-    @apply px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-300;
+    @apply px-8 py-4 rounded-lg font-semibold text-lg transition-transform transition-colors duration-300;
     background: var(--gradient-accent);
     color: hsl(var(--foreground));
-    box-shadow: var(--shadow-md);
+    box-shadow: 0 10px 25px hsl(215 56% 12% / 0.28);
   }
   
   .btn-hero:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-lg);
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 16px 40px hsl(215 56% 10% / 0.38);
   }
 
   /* Tarjeta institucional */
   .card-institutional {
-    @apply rounded-xl p-6 transition-all duration-300;
+    @apply rounded-xl p-6 transition-transform transition-shadow duration-300 border border-border/70;
     background: var(--gradient-card);
     box-shadow: var(--shadow-card);
   }
@@ -186,11 +186,13 @@
       radial-gradient(circle at 40% 80%, hsl(var(--ebime-green) / 0.03) 0%, transparent 50%);
   }
 
-  /* Badge institucional */
+  /* Badge institucional (con ligera sensación de glassmorphism) */
   .badge-institutional {
     @apply inline-flex items-center px-3 py-1 rounded-full text-sm font-medium;
-    background: hsl(var(--ebime-purple) / 0.1);
-    color: hsl(var(--ebime-purple));
+    background: hsla(0, 0%, 100%, 0.09);
+    color: hsl(var(--ebime-green));
+    border: 1px solid hsla(0, 0%, 100%, 0.22);
+    backdrop-filter: blur(8px);
   }
 
   /* Animación de entrada */
@@ -212,14 +214,13 @@
 
   /* Botón flotante */
   .floating-btn {
-    @apply fixed z-50 p-3 rounded-full transition-all duration-300;
-    background: var(--gradient-primary);
-    box-shadow: var(--shadow-lg);
+    @apply fixed z-50 rounded-full flex items-center justify-center transition-transform duration-300;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
   }
 
   .floating-btn:hover {
-    transform: scale(1.1);
-    box-shadow: var(--shadow-xl);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
   }
 }
 
@@ -234,6 +235,10 @@
 
   .bg-gradient-hero {
     background: var(--gradient-hero);
+  }
+
+  .bg-footer-navy {
+    background-color: #1A365D;
   }
 
   .shadow-institutional {

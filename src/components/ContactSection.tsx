@@ -74,35 +74,40 @@ export const ContactSection = () => {
   ];
 
   return (
-    <section id="contacto" className="py-20 bg-muted/30">
+    <section id="contacto" className="pt-24 md:pt-28 pb-28 md:pb-32 bg-muted/30">
       <div className="container mx-auto px-4">
         {/* Header */}
         <div className="text-center mb-16">
-          <span className="badge-institutional mb-4">Contáctanos</span>
-          <h2 className="text-3xl md:text-4xl lg:text-5xl font-display font-bold text-foreground mb-4">
+          <button
+            type="button"
+            className="inline-flex items-center px-6 py-2.5 mb-4 text-sm md:text-base font-semibold rounded-full bg-ibime-green text-white shadow-md hover:bg-ibime-green/90 hover:shadow-lg transition-colors transition-shadow"
+          >
+            Contáctanos
+          </button>
+          <h2 className="text-3xl md:text-4xl lg:text-5xl font-display font-extrabold text-foreground mb-4">
             Estamos para <span className="text-gradient">Servirte</span>
           </h2>
-          <p className="text-muted-foreground max-w-2xl mx-auto text-lg">
+          <p className="max-w-2xl mx-auto text-lg font-medium text-[#374151]">
             ¿Tienes alguna pregunta o sugerencia? No dudes en comunicarte con nosotros.
           </p>
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-12">
+        <div className="grid lg:grid-cols-2 gap-12 items-stretch">
           {/* Contact Info */}
-          <div className="space-y-6">
+          <div className="space-y-6 flex flex-col justify-center h-full">
             {contactInfo.map((item, index) => (
               <div
                 key={index}
-                className="card-institutional flex gap-4"
+                className="card-institutional flex gap-4 shadow-md hover:shadow-lg"
               >
-                <div className="w-14 h-14 rounded-xl bg-gradient-institutional flex items-center justify-center flex-shrink-0">
-                  <item.icon className="w-6 h-6 text-primary-foreground" />
+                <div className="w-16 h-16 rounded-xl bg-ibime-green flex items-center justify-center flex-shrink-0 shadow-md">
+                  <item.icon className="w-7 h-7 text-white" />
                 </div>
                 <div>
-                  <h3 className="font-display font-bold text-foreground mb-1">
+                  <h3 className="font-display font-semibold text-foreground mb-1">
                     {item.title}
                   </h3>
-                  <p className="text-muted-foreground whitespace-pre-line">
+                  <p className="text-[#374151] whitespace-pre-line">
                     {item.content}
                   </p>
                 </div>
@@ -111,7 +116,7 @@ export const ContactSection = () => {
           </div>
 
           {/* Contact Form */}
-          <div className="card-institutional">
+          <div className="card-institutional flex flex-col justify-center h-full">
             <h3 className="text-2xl font-display font-bold text-foreground mb-6">
               Envíanos un Mensaje
             </h3>
@@ -127,7 +132,7 @@ export const ContactSection = () => {
                   onChange={handleChange}
                   placeholder="Tu nombre"
                   required
-                  className="h-12"
+                  className="h-12 bg-[#F8FAFC] border border-border/80 focus-visible:border-ibime-green focus-visible:ring-2 focus-visible:ring-ibime-green/70 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                 />
               </div>
               <div>
@@ -142,7 +147,7 @@ export const ContactSection = () => {
                   onChange={handleChange}
                   placeholder="tu@email.com"
                   required
-                  className="h-12"
+                  className="h-12 bg-[#F8FAFC] border border-border/80 focus-visible:border-ibime-green focus-visible:ring-2 focus-visible:ring-ibime-green/70 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                 />
               </div>
               <div>
@@ -157,9 +162,14 @@ export const ContactSection = () => {
                   placeholder="¿En qué podemos ayudarte?"
                   required
                   rows={5}
+                  className="bg-[#F8FAFC] border border-border/80 focus-visible:border-ibime-green focus-visible:ring-2 focus-visible:ring-ibime-green/70 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                 />
               </div>
-              <Button type="submit" className="w-full h-12 btn-hero" disabled={isSubmitting}>
+              <Button
+                type="submit"
+                className="w-full h-12 inline-flex items-center justify-center rounded-full bg-ibime-green text-white font-semibold shadow-md hover:bg-ibime-green/90 hover:shadow-lg transform hover:-translate-y-0.5 transition-colors transition-transform"
+                disabled={isSubmitting}
+              >
                 {isSubmitting ? (
                   <Loader2 className="w-5 h-5 mr-2 animate-spin" />
                 ) : (
