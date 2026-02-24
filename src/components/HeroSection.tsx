@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+
 import heroBanner from '@/assets/hero-banner.jpg';
 import libraryActivity from '@/assets/library-activity.jpg';
 import communityEvent from '@/assets/community-event.jpg';
@@ -50,7 +50,7 @@ export const HeroSection = () => {
             index === currentSlide ? 'opacity-100 z-10' : 'opacity-0 z-0'
           }`}
         >
-          <div className="absolute inset-0 bg-gradient-hero opacity-70 z-10" />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/20 to-black/40 z-10" />
           <img
             src={slide.image}
             alt={slide.title}
@@ -67,25 +67,29 @@ export const HeroSection = () => {
                     : 'opacity-0 translate-y-10'
                 }`}
               >
-                <span className="inline-block px-4 py-2 mb-6 text-sm font-medium rounded-full bg-accent/20 text-accent border border-accent/30">
+                <span className="inline-block px-4 py-2 mb-6 text-sm font-bold rounded-full bg-white/20 text-white border border-white/30 backdrop-blur-sm">
                   {slide.subtitle}
                 </span>
-                <h1 className="text-4xl md:text-6xl lg:text-7xl font-display font-bold text-primary-foreground mb-6 leading-tight">
+                <h1 className="text-4xl md:text-6xl lg:text-7xl font-display font-bold text-white mb-6 leading-tight" style={{ textShadow: '0 2px 8px rgba(0,0,0,0.6)' }}>
                   {slide.title}
                 </h1>
-                <p className="text-lg md:text-xl text-primary-foreground/80 mb-8 max-w-2xl mx-auto">
+                <p className="text-lg md:text-xl text-white font-medium mb-8 max-w-2xl mx-auto" style={{ textShadow: '0 1px 4px rgba(0,0,0,0.5)' }}>
                   {slide.description}
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                  <Button className="btn-hero">
+                  <a
+                    href="#ibime"
+                    className="inline-flex items-center justify-center px-8 py-4 rounded-lg font-bold text-lg text-white bg-secondary hover:bg-secondary/80 hover:scale-105 transition-all duration-300"
+                    style={{ boxShadow: '0 10px 25px rgba(0,0,0,0.3)' }}
+                  >
                     Conocer más
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="px-8 py-4 text-lg border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10 backdrop-blur-sm"
+                  </a>
+                  <a
+                    href="#servicios"
+                    className="inline-flex items-center justify-center px-8 py-4 text-lg font-bold rounded-lg border-2 border-white text-white hover:bg-white/20 backdrop-blur-sm transition-all duration-300"
                   >
                     Nuestros Servicios
-                  </Button>
+                  </a>
                 </div>
               </div>
             </div>

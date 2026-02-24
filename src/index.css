@@ -140,15 +140,16 @@
 @layer components {
   /* Botón hero institucional */
   .btn-hero {
-    @apply px-8 py-4 rounded-lg font-semibold text-lg transition-transform transition-colors duration-300;
-    background: var(--gradient-accent);
-    color: hsl(var(--foreground));
-    box-shadow: 0 10px 25px hsl(215 56% 12% / 0.28);
+    @apply px-8 py-4 rounded-lg font-bold text-lg transition-all duration-300;
+    background: hsl(var(--secondary));
+    color: #FFFFFF;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
   }
   
   .btn-hero:hover {
-    transform: translateY(-2px) scale(1.02);
-    box-shadow: 0 16px 40px hsl(215 56% 10% / 0.38);
+    transform: translateY(-2px) scale(1.05);
+    background: hsl(153 50% 28%);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
   }
 
   /* Tarjeta institucional */
