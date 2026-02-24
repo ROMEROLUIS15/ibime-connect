@@ -216,11 +216,11 @@ export const Navbar = () => {
 
   return (
     <>
-      <nav className="navbar-institutional fixed top-0 left-0 right-0 z-40">
+      <nav className="fixed top-0 left-0 right-0 z-40 bg-white border-b border-border">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between py-2 gap-4">
-            {/* Logo */}
-            <a href="/#inicio" onClick={(e) => handleNavClick('#inicio', e)} className="flex items-center gap-3">
+            {/* Logo IBIME - izquierda */}
+            <a href="/#inicio" onClick={(e) => handleNavClick('#inicio', e)} className="flex-shrink-0 flex items-center">
               <img 
                 src={logoIBIME} 
                 alt="IBIME - Instituto de Bibliotecas e Información del Estado Bolivariano de Mérida" 
@@ -228,8 +228,8 @@ export const Navbar = () => {
               />
             </a>
 
-            {/* Desktop Navigation */}
-            <div className="hidden lg:flex items-center gap-4 flex-1 justify-center">
+            {/* Desktop Navigation - centrado */}
+            <div className="hidden lg:flex items-center flex-1 justify-center">
               <div className="flex items-center gap-1">
                 {menuItems.map((item, index) => (
                   <DropdownMenu key={index} item={item} />
@@ -240,15 +240,15 @@ export const Navbar = () => {
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="Acceso al Catálogo de Biblioteca Koha"
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-white text-white text-sm font-semibold hover:bg-ibime-green hover:border-ibime-green hover:text-white transition-colors transition-transform duration-300 hover:scale-[1.02]"
+                className="ml-3 inline-flex items-center gap-2 px-4 py-2 rounded-full border border-secondary text-secondary text-sm font-semibold hover:bg-secondary hover:text-white transition-colors duration-300 hover:scale-[1.02]"
               >
                 <BookOpen className="w-4 h-4" />
                 <span>Catálogo Koha</span>
               </a>
             </div>
 
-            {/* Governor Logo */}
-            <div className="hidden sm:flex items-center pl-4 border-l border-border/50">
+            {/* Governor Logo - derecha */}
+            <div className="hidden sm:flex items-center flex-shrink-0 pl-4 border-l border-border/50">
               <img
                 src={gobernadorLogo}
                 alt="Gobernador del Estado Bolivariano de Mérida"
