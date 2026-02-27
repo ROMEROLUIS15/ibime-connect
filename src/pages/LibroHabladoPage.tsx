@@ -35,11 +35,17 @@ const LibroHabladoPage = () => {
         {/* Hero */}
         <section className="py-20 bg-gradient-institutional text-primary-foreground">
           <div className="container mx-auto px-4 text-center">
-            <span className="inline-block px-4 py-2 mb-6 text-sm font-medium rounded-full bg-accent/20 text-accent border border-accent/30">
+            <span
+              className="inline-block px-4 py-2 mb-6 text-sm font-bold rounded-full bg-white/10 text-white border border-white/30 backdrop-blur-sm"
+              style={{ color: '#FFFFFF' }}
+            >
               Inclusión Cultural
             </span>
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-display font-bold mb-6">
-              Libro <span className="text-accent">Hablado</span>
+            <h1
+              className="text-4xl md:text-5xl lg:text-6xl font-display font-bold mb-6"
+              style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.6)' }}
+            >
+              Libro <span style={{ color: '#FFFFFF' }}>Hablado</span>
             </h1>
             <p className="text-lg md:text-xl text-primary-foreground/80 max-w-2xl mx-auto mb-8">
               Programa de audiolibros del IBIME dedicado a hacer accesible la lectura 
@@ -55,7 +61,7 @@ const LibroHabladoPage = () => {
         <section className="py-20 section-pattern">
           <div className="container mx-auto px-4">
             <div className="text-center mb-16">
-              <h2 className="text-3xl md:text-4xl font-display font-bold text-foreground mb-4">
+              <h2 className="text-3xl md:text-4xl font-display font-bold text-foreground mb-4" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.6)' }}>
                 Beneficios del <span className="text-gradient">Programa</span>
               </h2>
             </div>
@@ -77,7 +83,7 @@ const LibroHabladoPage = () => {
         <section className="py-20 bg-muted/30">
           <div className="container mx-auto px-4 max-w-4xl">
             <div className="card-institutional text-center">
-              <h2 className="text-3xl font-display font-bold text-foreground mb-6">
+              <h2 className="text-3xl font-display font-bold text-foreground mb-6" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.6)' }}>
                 Sobre el Programa
               </h2>
               <p className="text-muted-foreground text-lg leading-relaxed mb-4">

@@ -5,13 +5,7 @@ const quickLinks = [
   { label: 'IBIME', href: '#ibime' },
   { label: 'Eventos', href: '#eventos' },
   { label: 'Servicios', href: '#servicios' },
-  { label: 'Cartelera', href: '#cartelera' },
-  {
-    label: 'Catálogo Koha',
-    href: 'http://www.ibime.gob.ve',
-    external: true,
-    ariaLabel: 'Acceso al Catálogo de Biblioteca Koha',
-  },
+  { label: 'Cartelera', href: '#cartelera' }
 ];
 
 const socialLinks = [
@@ -27,7 +21,7 @@ const socialLinks = [
 
 export const Footer = () => {
   return (
-    <footer className="bg-footer-navy text-primary-foreground">
+    <footer className="w-full bg-footer-navy text-primary-foreground">
       <div className="container mx-auto px-4">
         {/* Main Footer */}
         <div className="py-16 grid md:grid-cols-2 lg:grid-cols-4 gap-10">
@@ -75,13 +69,6 @@ export const Footer = () => {
                   <a
                     href={link.href}
                     className="text-primary-foreground/90 hover:text-ibime-green transition-colors"
-                    {...(link.external
-                      ? {
-                          target: '_blank',
-                          rel: 'noopener noreferrer',
-                          'aria-label': link.ariaLabel,
-                        }
-                      : {})}
                   >
                     {link.label}
                   </a>
@@ -102,9 +89,10 @@ export const Footer = () => {
             </address>
           </div>
         </div>
-
-        {/* Bottom Footer */}
-        <div className="mt-4 py-6 border-t border-primary-foreground/15 bg-black/10">
+      </div>
+      {/* Bottom Footer (Full Width, edge-to-edge background) */}
+      <div className="w-full border-t border-primary-foreground/15 py-6">
+        <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-primary-foreground/75">
             <p>
               © Copyright IBIME. All Rights Reserved

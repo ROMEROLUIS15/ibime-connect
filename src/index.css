@@ -13,8 +13,8 @@
     --background: 210 40% 98%;
     --foreground: 222 47% 14%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 222 47% 14%;
+    --card: 0 0% 100%; /* Solid white for card background */
+    --card-foreground: 222 47% 14%; /* Keep text highly visible */
 
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 14%;

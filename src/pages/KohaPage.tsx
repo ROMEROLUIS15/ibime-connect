@@ -35,18 +35,24 @@ const KohaPage = () => {
         {/* Hero */}
         <section className="py-20 bg-gradient-institutional text-primary-foreground">
           <div className="container mx-auto px-4 text-center">
-            <span className="inline-block px-4 py-2 mb-6 text-sm font-medium rounded-full bg-accent/20 text-accent border border-accent/30">
+            <span
+              className="inline-block px-4 py-2 mb-6 text-sm font-medium rounded-full bg-white/10 text-white border border-accent/30 backdrop-blur-sm"
+              style={{ color: '#FFFFFF' }}
+            >
               Sistema Bibliotecario
             </span>
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-display font-bold mb-6">
-              Sistema <span className="text-accent">Koha</span>
+            <h1
+              className="text-4xl md:text-5xl lg:text-6xl font-display font-bold mb-6"
+              style={{ textShadow: '1px 1px 3px rgba(0,0,0,0.6)' }}
+            >
+              Sistema <span style={{ color: '#FFFFFF' }}>Koha</span>
             </h1>
             <p className="text-lg md:text-xl text-primary-foreground/80 max-w-2xl mx-auto mb-8">
               Koha es nuestro sistema integrado de gestión bibliotecaria de código abierto, 
               que permite a los usuarios buscar, reservar y gestionar recursos bibliográficos.
             </p>
             <Button className="btn-hero" asChild>
-              <a href="https://koha.ibime.gob.ve" target="_blank" rel="noopener noreferrer">
+              <a href="http://www.ibime.gob.ve:8001/" target="_blank" rel="noopener noreferrer">
                 <ExternalLink className="w-5 h-5 mr-2" />
                 Acceder a Koha
               </a>

@@ -1,9 +1,12 @@
 import { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
 
 import heroBanner from '@/assets/hero-banner.jpg';
 import libraryActivity from '@/assets/library-activity.jpg';
 import communityEvent from '@/assets/community-event.jpg';
+
+// Unified institutional "forest" green from Cifras Institucionales
+const IBIME_GREEN = '#15803d';
 
 const slides = [
   {
@@ -26,87 +29,162 @@ const slides = [
   },
 ];
 
+// Utilidad para smooth scroll
+function smoothScrollToId(id: string) {
+  const el = document.getElementById(id);
+  if (el) {
+    const y = el.getBoundingClientRect().top + window.pageYOffset - 80;
+    window.scrollTo({ top: y, behavior: 'smooth' });
+  }
+}
+
 export const HeroSection = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
 
   useEffect(() => {
     const timer = setInterval(() => {
-      setCurrentSlide(prev => (prev + 1) % slides.length);
+      setCurrentSlide((prev) => (prev + 1) % slides.length);
     }, 6000);
     return () => clearInterval(timer);
   }, []);
 
   const goToSlide = (index: number) => setCurrentSlide(index);
-  const prevSlide = () => setCurrentSlide(prev => (prev - 1 + slides.length) % slides.length);
-  const nextSlide = () => setCurrentSlide(prev => (prev + 1) % slides.length);
+  const prevSlide = () => setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length);
+  const nextSlide = () => setCurrentSlide((prev) => (prev + 1) % slides.length);
 
   return (
     <section id="inicio" className="relative h-screen min-h-[600px] overflow-hidden pt-16">
       {/* Slides */}
-      {slides.map((slide, index) => (
-        <div
-          key={index}
-          className={`absolute inset-0 transition-opacity duration-1000 ${
-            index === currentSlide ? 'opacity-100 z-10' : 'opacity-0 z-0'
-          }`}
-        >
-          <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/20 to-black/40 z-10" />
-          <img
-            src={slide.image}
-            alt={slide.title}
-            className="w-full h-full object-cover"
-          />
-          
-          {/* Content */}
-          <div className="absolute inset-0 z-20 flex items-center justify-center">
-            <div className="container mx-auto px-4">
+      {slides.map((slide, index) => {
+        // Add vertical offset ONLY to the "Espacios de Conocimiento" slide for symmetry
+        const isEspacios =
+          slide.title === 'Espacios de Conocimiento' && slide.subtitle === 'Bibliotecas Modernas';
+
+        return (
+          <div
+            key={index}
+            className={`absolute inset-0 transition-opacity duration-1000 ${
+              index === currentSlide ? 'opacity-100 z-10' : 'opacity-0 z-0'
+            }`}
+          >
+            {/* Background with bottom-up gradient overlay */}
+            <div className="absolute inset-0">
+              <img
+                src={slide.image}
+                alt={slide.title}
+                className="w-full h-full object-cover"
+                style={{
+                  filter: 'brightness(0.97) saturate(1.06)',
+                }}
+              />
+              <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-black/60 to-transparent" />
+            </div>
+
+            {/* Standardized content vertical alignment */}
+            <div className="absolute inset-0 z-20 flex flex-col justify-center items-center h-full">
               <div
-                className={`max-w-3xl mx-auto text-center transition-all duration-700 ${
-                  index === currentSlide
-                    ? 'opacity-100 translate-y-0'
-                    : 'opacity-0 translate-y-10'
-                }`}
+                className={[
+                  'max-w-3xl w-full mx-auto flex flex-col items-center justify-center text-center transition-all duration-700',
+                  index === currentSlide ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10',
+                  isEspacios ? 'pt-24' : 'pt-0',
+                ].join(' ')}
+                style={{ minHeight: 0 }}
               >
-                <span className="inline-block px-4 py-2 mb-6 text-sm font-bold rounded-full bg-white/20 text-white border border-white/30 backdrop-blur-sm">
+                {/* Glassmorphic Top Badge */}
+                <span
+                  className="inline-block px-5 py-2 mb-8 rounded-full font-bold text-white border border-white/20 backdrop-blur-md bg-white/10"
+                  style={{
+                    textShadow: '2px 2px 6px rgba(0,0,0,0.9)',
+                    fontWeight: 700,
+                  }}
+                >
                   {slide.subtitle}
                 </span>
-                <h1 className="text-4xl md:text-6xl lg:text-7xl font-display font-bold text-white mb-6 leading-tight" style={{ textShadow: '0 2px 8px rgba(0,0,0,0.6)' }}>
+
+                {/* Main Headline */}
+                <h1
+                  className="text-4xl md:text-6xl lg:text-7xl font-display font-extrabold text-white mb-6"
+                  style={{
+                    textShadow: '2px 2px 4px rgba(0,0,0,0.85)',
+                  }}
+                >
                   {slide.title}
                 </h1>
-                <p className="text-lg md:text-xl text-white font-medium mb-8 max-w-2xl mx-auto" style={{ textShadow: '0 1px 4px rgba(0,0,0,0.5)' }}>
+
+                {/* Description / Secondary Phrase */}
+                <p
+                  className="text-lg md:text-xl font-semibold text-white mb-10 max-w-2xl mx-auto"
+                  style={{
+                    textShadow: '2px 2px 6px rgba(0,0,0,0.9)',
+                  }}
+                >
                   {slide.description}
                 </p>
-                <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                  <a
-                    href="#ibime"
-                    className="inline-flex items-center justify-center px-8 py-4 rounded-lg font-bold text-lg text-white bg-secondary hover:bg-secondary/80 hover:scale-105 transition-all duration-300"
-                    style={{ boxShadow: '0 10px 25px rgba(0,0,0,0.3)' }}
+
+                {/* Perfectly symmetrical CTA Buttons */}
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-4 w-full mb-0">
+                  {/* Primary CTA: IBIME Green, solid and bold */}
+                  <button
+                    type="button"
+                    className="flex items-center justify-center h-14 min-w-[140px] px-8 rounded-lg font-bold text-lg text-white transition-all duration-200 opacity-100"
+                    style={{
+                      background: IBIME_GREEN,
+                      boxShadow: '0 8px 24px #15803d33, 0 1.5px 8px #2224',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                    onClick={() => smoothScrollToId('servicios')}
                   >
                     Conocer más
-                  </a>
-                  <a
-                    href="#servicios"
-                    className="inline-flex items-center justify-center px-8 py-4 text-lg font-bold rounded-lg border-2 border-white text-white hover:bg-white/20 backdrop-blur-sm transition-all duration-300"
+                  </button>
+                  {/* Secondary CTA: outlined glassmorphic */}
+                  <button
+                    type="button"
+                    className="flex items-center justify-center h-14 min-w-[140px] px-8 rounded-lg font-bold text-lg border-2 border-white text-white bg-white/10 backdrop-blur-md transition-all duration-200 hover:bg-white/20 focus:outline-none"
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                    onClick={() => smoothScrollToId('servicios')}
                   >
                     Nuestros Servicios
-                  </a>
+                  </button>
+                </div>
+
+                {/* ChevronDown: perfectly centered and visible */}
+                <div className="flex items-center justify-center mt-14">
+                  <button
+                    type="button"
+                    onClick={() => smoothScrollToId('servicios')}
+                    aria-label="Bajar a servicios"
+                    className="bg-transparent border-0 outline-none flex items-center justify-center"
+                  >
+                    <ChevronDown
+                      className="w-10 h-10 text-white opacity-85 animate-bounce"
+                      style={{ textShadow: '2px 2px 6px rgba(0,0,0,0.9)' }}
+                    />
+                  </button>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
 
       {/* Navigation Arrows */}
       <button
         onClick={prevSlide}
-        className="absolute left-4 top-1/2 -translate-y-1/2 z-30 p-3 rounded-full bg-primary-foreground/10 backdrop-blur-sm text-primary-foreground hover:bg-primary-foreground/20 transition-all"
+        className="absolute left-4 top-1/2 -translate-y-1/2 z-30 p-3 rounded-full bg-primary-foreground/10 backdrop-blur-sm text-primary-foreground hover:bg-primary-foreground/20 transition-all flex items-center justify-center"
+        aria-label="Slide anterior"
       >
         <ChevronLeft className="w-6 h-6" />
       </button>
       <button
         onClick={nextSlide}
-        className="absolute right-4 top-1/2 -translate-y-1/2 z-30 p-3 rounded-full bg-primary-foreground/10 backdrop-blur-sm text-primary-foreground hover:bg-primary-foreground/20 transition-all"
+        className="absolute right-4 top-1/2 -translate-y-1/2 z-30 p-3 rounded-full bg-primary-foreground/10 backdrop-blur-sm text-primary-foreground hover:bg-primary-foreground/20 transition-all flex items-center justify-center"
+        aria-label="Siguiente slide"
       >
         <ChevronRight className="w-6 h-6" />
       </button>
@@ -117,20 +195,22 @@ export const HeroSection = () => {
           <button
             key={index}
             onClick={() => goToSlide(index)}
-            className={`w-3 h-3 rounded-full transition-all ${
+            aria-label={`Ir a slide ${index + 1}`}
+            className={`h-3 rounded-full transition-all duration-200 ${
               index === currentSlide
-                ? 'w-10 bg-accent'
-                : 'bg-primary-foreground/40 hover:bg-primary-foreground/60'
+                ? 'w-10'
+                : 'w-3'
             }`}
+            style={{
+              border: 'none',
+              outline: 'none',
+              background: index === currentSlide ? IBIME_GREEN : 'rgba(255,255,255,0.4)',
+              boxShadow: index === currentSlide
+                ? `${IBIME_GREEN}66 0 1px 5px` // Soft shadow with brand green
+                : undefined,
+            }}
           />
         ))}
-      </div>
-
-      {/* Scroll indicator */}
-      <div className="absolute bottom-20 left-1/2 -translate-x-1/2 z-30 animate-bounce">
-        <div className="w-6 h-10 rounded-full border-2 border-primary-foreground/30 flex items-start justify-center p-2">
-          <div className="w-1.5 h-3 rounded-full bg-accent animate-pulse-soft" />
-        </div>
       </div>
     </section>
   );

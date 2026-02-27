@@ -1,9 +1,15 @@
 import { useState } from 'react';
-import { Menu, X, ChevronDown, BookOpen } from 'lucide-react';
+import { Menu, X, ChevronDown } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import logoIBIME from '@/assets/logo-ibime.png';
 import gobernadorLogo from '@/assets/gobernador-logo.png';
 
+// Unified Primary Green (forest green brand): Hex #15803d
+const IBIME_GREEN = "#15803d";
+
+/**
+ * Handles smooth scroll and navigation for hash/route links.
+ */
 const useHashNavigation = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -13,12 +19,12 @@ const useHashNavigation = () => {
       e.preventDefault();
       navigate(href);
     } else if (href.startsWith('#')) {
-      // If we're not on the home page, navigate there first
+      // If not on homepage, navigate with hash
       if (location.pathname !== '/') {
         e.preventDefault();
         navigate('/' + href);
       }
-      // If we're on home page, default anchor behavior works
+      // else default anchor behavior works
     }
   };
 
@@ -67,14 +73,53 @@ const menuItems: MenuItem[] = [
   { label: 'Contacto', href: '#contacto' },
 ];
 
+// Returns true if the (root) item is "active" for current hash
+const useActiveNav = () => {
+  const location = useLocation();
+  return (href: string) => {
+    // For now, just match hash for anchors or path for pages
+    if (href.startsWith('/')) {
+      return location.pathname === href;
+    }
+    if (href.startsWith('#')) {
+      return location.hash === href;
+    }
+    return false;
+  };
+};
+
+/**
+ * Brand-aware DropdownMenu.
+ */
 const DropdownMenu = ({ item, depth = 0 }: { item: MenuItem; depth?: number }) => {
   const [isOpen, setIsOpen] = useState(false);
   const handleNavClick = useHashNavigation();
+  const isActive = useActiveNav();
   const hasChildren = item.children && item.children.length > 0;
 
   const handleClick = (e: React.MouseEvent) => {
     handleNavClick(item.href, e);
   };
+
+  // Brand hover/active styles:
+  const hoverBase =
+    'transition-colors rounded-md';
+  const base =
+    depth === 0
+      ? 'text-foreground'
+      : 'text-foreground/80';
+
+  // For hover/active: brand green text and subtle green bg
+  const hover =
+    depth === 0
+      ? `hover:text-white hover:bg-[${IBIME_GREEN}]`
+      : `hover:text-[${IBIME_GREEN}] hover:bg-[${IBIME_GREEN}] hover:bg-opacity-10`;
+
+  // If item is active, brand green text & bold
+  const active =
+    isActive(item.href)
+      ? `text-[${IBIME_GREEN}] font-bold bg-[${IBIME_GREEN}] bg-opacity-10`
+      : '';
 
   return (
     <div
@@ -85,11 +130,24 @@ const DropdownMenu = ({ item, depth = 0 }: { item: MenuItem; depth?: number }) =
       <a
         href={item.href}
         onClick={handleClick}
-        className={`flex items-center gap-1 px-3 py-2 text-sm font-medium transition-colors rounded-md
-          ${depth === 0 
-            ? 'text-foreground hover:text-secondary hover:bg-secondary/10' 
-            : 'text-foreground/80 hover:text-secondary hover:bg-secondary/5'
-          }`}
+        className={`
+          flex items-center gap-1 px-3 py-2 text-sm font-medium
+          ${hoverBase}
+          ${base}
+          ${hover}
+          ${active}
+        `}
+        style={{
+          color: isActive(item.href)
+            ? IBIME_GREEN
+            : undefined,
+          fontWeight: isActive(item.href)
+            ? 700
+            : undefined,
+          backgroundColor: isActive(item.href) && depth === 0
+            ? '#15803d20'
+            : undefined,
+        }}
       >
         {item.label}
         {hasChildren && <ChevronDown className="w-4 h-4" />}
@@ -109,8 +167,12 @@ const DropdownMenu = ({ item, depth = 0 }: { item: MenuItem; depth?: number }) =
   );
 };
 
+/**
+ * Mobile menu with unified brand hover & active styles.
+ */
 const MobileMenu = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
   const handleNavClick = useHashNavigation();
+  const isActive = useActiveNav();
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
 
   const toggleExpand = (label: string) => {
@@ -128,9 +190,11 @@ const MobileMenu = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void 
     return (
       <div key={item.label}>
         <div
-          className={`flex items-center justify-between px-4 py-3 border-b border-border/50 ${
-            depth === 0 ? '' : depth === 1 ? 'pl-8' : depth === 2 ? 'pl-12' : 'pl-16'
-          }`}
+          className={`
+            flex items-center justify-between px-4 py-3 border-b border-border/50
+            ${depth === 0 ? '' : depth === 1 ? 'pl-8' : depth === 2 ? 'pl-12' : 'pl-16'}
+            group
+          `}
         >
           <a
             href={item.href}
@@ -138,17 +202,34 @@ const MobileMenu = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void 
               handleNavClick(item.href, e);
               onClose();
             }}
-            className="text-foreground font-medium flex-1"
+            className={`
+              font-medium flex-1 
+              transition-colors rounded-md
+              ${isActive(item.href)
+                ? 'text-white font-bold bg-[${IBIME_GREEN}]'
+                : 'text-foreground'
+              }
+              hover:bg-[${IBIME_GREEN}] hover:text-white
+            `}
+            style={{
+              background: isActive(item.href) ? IBIME_GREEN : undefined,
+              color: isActive(item.href) ? '#fff' : undefined,
+              fontWeight: isActive(item.href) ? 700 : undefined,
+            }}
           >
             {item.label}
           </a>
           {hasChildren && (
             <button
               onClick={() => toggleExpand(item.label)}
-              className="p-2 text-muted-foreground"
+              className="p-2 text-muted-foreground hover:text-[${IBIME_GREEN}] focus:outline-none"
+              type="button"
             >
               <ChevronDown
                 className={`w-5 h-5 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                style={{
+                  color: isExpanded ? IBIME_GREEN : undefined,
+                }}
               />
             </button>
           )}
@@ -180,10 +261,15 @@ const MobileMenu = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void 
         }`}
       >
         <div className="flex items-center justify-between p-4 border-b border-border">
-          <span className="text-lg font-display font-bold text-secondary">IBIME</span>
+          <span
+            className="text-lg font-display font-bold"
+            style={{ color: IBIME_GREEN }}
+          >
+            IBIME
+          </span>
           <button
             onClick={onClose}
-            className="p-2 text-muted-foreground hover:text-foreground"
+            className="p-2 text-muted-foreground hover:text-[${IBIME_GREEN}] transition-colors"
           >
             <X className="w-6 h-6" />
           </button>
@@ -191,18 +277,6 @@ const MobileMenu = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void 
         <div className="overflow-y-auto h-[calc(100%-64px)] flex flex-col">
           <div>
             {menuItems.map(item => renderMenuItem(item))}
-          </div>
-          <div className="mt-auto p-4 border-t border-border/50">
-            <a
-              href="http://www.ibime.gob.ve"
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="Acceso al Catálogo de Biblioteca Koha"
-              className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-full border border-ibime-green text-ibime-green font-semibold hover:bg-ibime-green hover:text-white transition-colors transition-transform duration-300 hover:scale-[1.02]"
-            >
-              <BookOpen className="w-5 h-5" />
-              <span>Catálogo Koha</span>
-            </a>
           </div>
         </div>
       </div>
@@ -219,50 +293,47 @@ export const Navbar = () => {
       <nav className="fixed top-0 left-0 right-0 z-40 bg-white border-b border-border">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between py-2 gap-4">
-            {/* Logo IBIME - izquierda */}
-            <a href="/#inicio" onClick={(e) => handleNavClick('#inicio', e)} className="flex-shrink-0 flex items-center">
+            {/* Logo IBIME - left */}
+            <a
+              href="/#inicio"
+              onClick={(e) => handleNavClick('#inicio', e)}
+              className="flex-shrink-0 flex items-center"
+            >
               <img 
                 src={logoIBIME} 
-                alt="IBIME - Instituto de Bibliotecas e Información del Estado Bolivariano de Mérida" 
+                alt="IBIME" 
                 className="h-14 w-auto object-contain"
               />
             </a>
 
-            {/* Desktop Navigation - centrado */}
-            <div className="hidden lg:flex items-center flex-1 justify-center">
+            {/* Navigation - centered */}
+            <div className="hidden lg:flex items-center justify-center flex-1">
               <div className="flex items-center gap-1">
                 {menuItems.map((item, index) => (
                   <DropdownMenu key={index} item={item} />
                 ))}
               </div>
-              <a
-                href="http://www.ibime.gob.ve"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Acceso al Catálogo de Biblioteca Koha"
-                className="ml-3 inline-flex items-center gap-2 px-4 py-2 rounded-full border border-secondary text-secondary text-sm font-semibold hover:bg-secondary hover:text-white transition-colors duration-300 hover:scale-[1.02]"
+            </div>
+
+            {/* Logo Gobernación - right */}
+            <div className="flex items-center gap-4">
+              <div className="hidden sm:block flex-shrink-0 pl-4 border-l border-border/50">
+                <img
+                  src={gobernadorLogo}
+                  alt="Gobernación de Mérida"
+                  className="h-10 md:h-12 lg:h-14 w-auto object-contain"
+                />
+              </div>
+
+              {/* Mobile Menu Button */}
+              <button
+                className="lg:hidden p-2 text-foreground hover:text-[${IBIME_GREEN}] transition-colors"
+                onClick={() => setMobileMenuOpen(true)}
+                aria-label="Abrir menú"
               >
-                <BookOpen className="w-4 h-4" />
-                <span>Catálogo Koha</span>
-              </a>
+                <Menu className="w-6 h-6" />
+              </button>
             </div>
-
-            {/* Governor Logo - derecha */}
-            <div className="hidden sm:flex items-center flex-shrink-0 pl-4 border-l border-border/50">
-              <img
-                src={gobernadorLogo}
-                alt="Gobernador del Estado Bolivariano de Mérida"
-                className="h-10 md:h-12 lg:h-14 w-auto object-contain"
-              />
-            </div>
-
-            {/* Mobile Menu Button */}
-            <button
-              className="lg:hidden p-2 text-foreground hover:text-secondary transition-colors"
-              onClick={() => setMobileMenuOpen(true)}
-            >
-              <Menu className="w-6 h-6" />
-            </button>
           </div>
         </div>
       </nav>
