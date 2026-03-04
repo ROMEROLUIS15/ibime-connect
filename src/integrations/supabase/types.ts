@@ -7,8 +7,6 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "14.1"
   }
@@ -65,25 +63,74 @@ export type Database = {
         }
         Relationships: []
       }
+      ibime_knowledge: {
+        Row: {
+          id: string
+          category: 'libro' | 'evento' | 'tramite' | 'horario' | 'curso' | 'servicio' | 'contacto'
+          title: string
+          content: string
+          keywords: string[] | null
+          embedding: number[] | null
+          source_url: string | null
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          category: 'libro' | 'evento' | 'tramite' | 'horario' | 'curso' | 'servicio' | 'contacto'
+          title: string
+          content: string
+          keywords?: string[] | null
+          embedding?: number[] | null
+          source_url?: string | null
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          category?: 'libro' | 'evento' | 'tramite' | 'horario' | 'curso' | 'servicio' | 'contacto'
+          title?: string
+          content?: string
+          keywords?: string[] | null
+          embedding?: number[] | null
+          source_url?: string | null
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
-    Views: {
-      [_ in never]: never
-    }
+    Views: Record<string, never>
     Functions: {
-      [_ in never]: never
+      match_ibime_knowledge: {
+        Args: {
+          query_embedding: number[]
+          match_threshold?: number
+          match_count?: number
+          filter_category?: 'libro' | 'evento' | 'tramite' | 'horario' | 'curso' | 'servicio' | 'contacto' | null
+        }
+        Returns: {
+          id: string
+          category: 'libro' | 'evento' | 'tramite' | 'horario' | 'curso' | 'servicio' | 'contacto'
+          title: string
+          content: string
+          similarity: number
+        }[]
+      }
     }
     Enums: {
-      [_ in never]: never
+      knowledge_category: 'libro' | 'evento' | 'tramite' | 'horario' | 'curso' | 'servicio' | 'contacto'
     }
-    CompositeTypes: {
-      [_ in never]: never
-    }
+    CompositeTypes: Record<string, never>
   }
 }
 
 type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
 
-type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
+type DefaultSchema = DatabaseWithoutInternals["public"]
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
@@ -195,11 +242,15 @@ export type CompositeTypes<
 }
   ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
-    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+    ? DefaultSchema["CompositeTypes"] extends Record<string, never>
+      ? never
+      : DefaultSchema["CompositeTypes"][CompositeTypeName]
     : never
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      knowledge_category: ['libro', 'evento', 'tramite', 'horario', 'curso', 'servicio', 'contacto'] as const,
+    },
   },
 } as const

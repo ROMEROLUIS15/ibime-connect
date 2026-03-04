@@ -1,41 +1,36 @@
+/* ─── @import SIEMPRE PRIMERO — antes de cualquier otra regla ─── */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:wght@500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 /* eBIMe Design System - Portal Institucional Gubernamental */
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:wght@500;600;700&display=swap');
-
 @layer base {
   :root {
     /* Paleta institucional para gobierno (IBIME) */
-    /* Fondo muy claro para legibilidad: #F8FAFC */
     --background: 210 40% 98%;
     --foreground: 222 47% 14%;
 
-    --card: 0 0% 100%; /* Solid white for card background */
-    --card-foreground: 222 47% 14%; /* Keep text highly visible */
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 14%;
 
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 14%;
 
-    /* Azul marino profundo para encabezados y elementos principales: #1A365D */
     --primary: 215 56% 23%;
     --primary-foreground: 0 0% 100%;
 
-    /* Verde bosque como color secundario y de acento institucional: #2D6A4F (ligeramente más vibrante) */
     --secondary: 153 48% 32%;
     --secondary-foreground: 0 0% 100%;
 
-    /* Grises neutros y fríos para fondos secundarios */
     --muted: 210 30% 96%;
     --muted-foreground: 218 15% 35%;
 
-    /* Usamos el mismo verde bosque como acento principal para coherencia institucional */
     --accent: 153 50% 33%;
     --accent-foreground: 0 0% 100%;
 
-    /* Rojo para estados de error, con buen contraste */
     --destructive: 0 70% 45%;
     --destructive-foreground: 0 0% 100%;
 
@@ -45,7 +40,6 @@
 
     --radius: 0.75rem;
 
-    /* Colores IBIME mapeados a la nueva identidad */
     --ebime-yellow: 40 90% 55%;
     --ebime-red: 0 70% 50%;
     --ebime-purple: 215 56% 23%;
@@ -53,13 +47,11 @@
     --ebime-green: 153 50% 33%;
     --ebime-light-green: 153 40% 90%;
 
-    /* Gradientes institucionales con azul marino y verde bosque (sutil luz desde la esquina superior izquierda) */
     --gradient-primary: linear-gradient(135deg, hsl(215, 56%, 28%) 0%, hsl(215, 56%, 23%) 35%, hsl(153, 50%, 28%) 100%);
     --gradient-accent: linear-gradient(135deg, hsl(153, 50%, 36%) 0%, hsl(153, 50%, 30%) 100%);
     --gradient-hero: linear-gradient(135deg, hsl(215, 56%, 26%) 0%, hsl(215, 56%, 20%) 35%, hsl(153, 50%, 26%) 70%, hsl(215, 56%, 22%) 100%);
     --gradient-card: linear-gradient(180deg, hsl(0, 0%, 100%) 0%, hsl(210, 40%, 98%) 100%);
     
-    /* Sombras discretas basadas en el azul marino */
     --shadow-sm: 0 1px 2px 0 hsl(215 56% 23% / 0.05);
     --shadow-md: 0 4px 6px -1px hsl(215 56% 23% / 0.08), 0 2px 4px -2px hsl(215 56% 23% / 0.06);
     --shadow-lg: 0 10px 15px -3px hsl(215 56% 23% / 0.08), 0 4px 6px -4px hsl(215 56% 23% / 0.06);
@@ -67,7 +59,6 @@
     --shadow-card: 0 10px 30px -10px hsl(215 56% 10% / 0.25), 0 4px 12px -6px hsl(215 56% 10% / 0.15);
     --shadow-hover: 0 18px 45px -18px hsl(215 56% 10% / 0.35);
 
-    /* Sidebar institucional */
     --sidebar-background: 210 40% 98%;
     --sidebar-foreground: 222 47% 18%;
     --sidebar-primary: 215 56% 23%;
@@ -138,7 +129,6 @@
 }
 
 @layer components {
-  /* Botón hero institucional */
   .btn-hero {
     @apply px-8 py-4 rounded-lg font-bold text-lg transition-all duration-300;
     background: hsl(var(--secondary));
@@ -152,7 +142,6 @@
     box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
   }
 
-  /* Tarjeta institucional */
   .card-institutional {
     @apply rounded-xl p-6 transition-transform transition-shadow duration-300 border border-border/70;
     background: var(--gradient-card);
@@ -164,7 +153,6 @@
     box-shadow: var(--shadow-hover);
   }
 
-  /* Gradiente de texto */
   .text-gradient {
     background: var(--gradient-primary);
     -webkit-background-clip: text;
@@ -172,14 +160,12 @@
     background-clip: text;
   }
 
-  /* Navbar institucional */
   .navbar-institutional {
     @apply backdrop-blur-md border-b;
     background: hsl(0 0% 100% / 0.97);
     border-color: hsl(var(--border));
   }
 
-  /* Sección con patrón de fondo */
   .section-pattern {
     background-image: 
       radial-gradient(circle at 20% 50%, hsl(var(--ebime-purple) / 0.05) 0%, transparent 50%),
@@ -187,7 +173,6 @@
       radial-gradient(circle at 40% 80%, hsl(var(--ebime-green) / 0.03) 0%, transparent 50%);
   }
 
-  /* Badge institucional (con ligera sensación de glassmorphism) */
   .badge-institutional {
     @apply inline-flex items-center px-3 py-1 rounded-full text-sm font-medium;
     background: hsla(0, 0%, 100%, 0.09);
@@ -196,7 +181,6 @@
     backdrop-filter: blur(8px);
   }
 
-  /* Animación de entrada */
   .animate-fade-in {
     animation: fadeIn 0.6s ease-out forwards;
   }
@@ -213,7 +197,6 @@
     animation: slideInRight 0.6s ease-out forwards;
   }
 
-  /* Botón flotante */
   .floating-btn {
     @apply fixed z-50 rounded-full flex items-center justify-center transition-transform duration-300;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
@@ -252,54 +235,28 @@
 }
 
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 @keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes slideInLeft {
-  from {
-    opacity: 0;
-    transform: translateX(-30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
+  from { opacity: 0; transform: translateX(-30px); }
+  to { opacity: 1; transform: translateX(0); }
 }
 
 @keyframes slideInRight {
-  from {
-    opacity: 0;
-    transform: translateX(30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
+  from { opacity: 0; transform: translateX(30px); }
+  to { opacity: 1; transform: translateX(0); }
 }
 
 @keyframes float {
-  0%, 100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-10px);
-  }
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
 }
 
 .animate-float {

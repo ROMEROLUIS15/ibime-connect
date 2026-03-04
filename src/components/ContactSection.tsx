@@ -8,12 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 export const ContactSection = () => {
   const { toast } = useToast();
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    message: '',
-  });
-
+  const [formData, setFormData] = useState({ name: '', email: '', message: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -27,15 +22,13 @@ export const ContactSection = () => {
           email: formData.email,
           message: formData.message,
         });
-
       if (error) throw error;
-
       toast({
         title: '¡Mensaje enviado!',
         description: 'Gracias por contactarnos. Te responderemos pronto.',
       });
       setFormData({ name: '', email: '', message: '' });
-    } catch (error) {
+    } catch {
       toast({
         title: 'Error al enviar',
         description: 'Hubo un problema al enviar tu mensaje. Intenta de nuevo.',
@@ -74,7 +67,8 @@ export const ContactSection = () => {
   ];
 
   return (
-    <section id="contacto" className="pt-24 md:pt-28 pb-28 md:pb-32 bg-muted/30">
+    // FIX: pb-28/pb-32 → pb-16/pb-20 — elimina el espacio en blanco antes del footer
+    <section id="contacto" className="pt-24 md:pt-28 pb-16 md:pb-20 bg-muted/30">
       <div className="container mx-auto px-4">
         {/* Header */}
         <div className="text-center mb-16">
@@ -96,10 +90,7 @@ export const ContactSection = () => {
           {/* Contact Info */}
           <div className="space-y-6 flex flex-col justify-center h-full">
             {contactInfo.map((item, index) => (
-              <div
-                key={index}
-                className="card-institutional flex gap-4 shadow-md hover:shadow-lg"
-              >
+              <div key={index} className="card-institutional flex gap-4 shadow-md hover:shadow-lg">
                 <div className="w-16 h-16 rounded-xl bg-ibime-green flex items-center justify-center flex-shrink-0 shadow-md">
                   <item.icon className="w-7 h-7 text-white" />
                 </div>
@@ -107,9 +98,7 @@ export const ContactSection = () => {
                   <h3 className="font-display font-semibold text-foreground mb-1">
                     {item.title}
                   </h3>
-                  <p className="text-[#374151] whitespace-pre-line">
-                    {item.content}
-                  </p>
+                  <p className="text-[#374151] whitespace-pre-line">{item.content}</p>
                 </div>
               </div>
             ))}
@@ -126,12 +115,8 @@ export const ContactSection = () => {
                   Nombre Completo
                 </label>
                 <Input
-                  id="name"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleChange}
-                  placeholder="Tu nombre"
-                  required
+                  id="name" name="name" value={formData.name}
+                  onChange={handleChange} placeholder="Tu nombre" required
                   className="h-12 bg-[#F8FAFC] border border-border/80 focus-visible:border-ibime-green focus-visible:ring-2 focus-visible:ring-ibime-green/70 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                 />
               </div>
@@ -140,13 +125,8 @@ export const ContactSection = () => {
                   Correo Electrónico
                 </label>
                 <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  placeholder="tu@email.com"
-                  required
+                  id="email" name="email" type="email" value={formData.email}
+                  onChange={handleChange} placeholder="tu@email.com" required
                   className="h-12 bg-[#F8FAFC] border border-border/80 focus-visible:border-ibime-green focus-visible:ring-2 focus-visible:ring-ibime-green/70 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                 />
               </div>
@@ -155,13 +135,9 @@ export const ContactSection = () => {
                   Mensaje
                 </label>
                 <Textarea
-                  id="message"
-                  name="message"
-                  value={formData.message}
-                  onChange={handleChange}
-                  placeholder="¿En qué podemos ayudarte?"
-                  required
-                  rows={5}
+                  id="message" name="message" value={formData.message}
+                  onChange={handleChange} placeholder="¿En qué podemos ayudarte?"
+                  required rows={5}
                   className="bg-[#F8FAFC] border border-border/80 focus-visible:border-ibime-green focus-visible:ring-2 focus-visible:ring-ibime-green/70 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                 />
               </div>
