@@ -69,7 +69,7 @@ export const MissionVisionSection = () => {
         </div>
 
         {/* Stats */}
-        <div className="bg-gradient-institutional rounded-2xl px-8 md:px-12 py-12 md:py-16">
+        <div id="cifras-institucionales" className="bg-gradient-institutional rounded-2xl px-8 md:px-12 py-12 md:py-16">
           <div className="text-center mb-8">
             <h3 className="text-2xl md:text-3xl font-display font-bold text-primary-foreground mb-2">
               Cifras Institucionales

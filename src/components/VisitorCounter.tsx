@@ -37,12 +37,16 @@ export const VisitorCounter = () => {
     );
 
     observer.observe(sectionRef.current);
-
     return () => observer.disconnect();
   }, [hasAnimated, targetCount]);
 
   return (
-    <section ref={sectionRef} className="py-14 md:py-16 bg-gradient-institutional">
+    // ── FIX: añadido id="visitantes" para que useFloatingButtonsTheme lo detecte
+    <section
+      ref={sectionRef}
+      id="visitantes"
+      className="py-14 md:py-16 bg-gradient-institutional"
+    >
       <div className="container mx-auto px-4">
         <div className="flex flex-col md:flex-row items-center justify-center gap-6 text-center md:text-left">
           <div className="w-16 h-16 rounded-full bg-ibime-green/80 border border-white/40 flex items-center justify-center shadow-lg">

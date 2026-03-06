@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { useFloatingButtonsTheme } from '@/hooks/useFloatingButtonsTheme';
 
 interface Message {
   id: number;
@@ -21,16 +22,14 @@ export function IBIMEAssistant() {
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const { isDark } = useFloatingButtonsTheme();
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isTyping]);
 
-  // Focus al abrir + reset de mensajes a bienvenida si se reabre limpio
   useEffect(() => {
-    if (isOpen) {
-      setTimeout(() => inputRef.current?.focus(), 150);
-    }
+    if (isOpen) setTimeout(() => inputRef.current?.focus(), 150);
   }, [isOpen]);
 
   const handleSendMessage = () => {
@@ -59,24 +58,29 @@ export function IBIMEAssistant() {
   const fmt = (d: Date) =>
     d.toLocaleTimeString("es-VE", { hour: "2-digit", minute: "2-digit" });
 
-  // Estilo base compartido con FloatingButtons — 44px, círculo, misma sombra
-  const sharedBtn: React.CSSProperties = {
-    width: 44,
-    height: 44,
-    borderRadius: "50%",
-    border: "none",
-    cursor: "pointer",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    flexShrink: 0,
-    transition: "transform 0.2s, box-shadow 0.2s",
-    boxShadow: "0 4px 14px rgba(0,0,0,0.18), 0 1px 4px rgba(0,0,0,0.10)",
-  };
+  // ── Estilos dinámicos del botón trigger ───────────────────────
+  const triggerStyle: React.CSSProperties = isDark
+    ? {
+        // Sobre sección oscura → BLANCO glassmorphism, ícono verde
+        background: 'rgba(255, 255, 255, 0.92)',
+        backdropFilter: 'blur(12px)',
+        WebkitBackdropFilter: 'blur(12px)',
+        border: '1.5px solid rgba(255,255,255,0.55)',
+        boxShadow: '0 8px 28px rgba(0,0,0,0.28), 0 2px 8px rgba(0,0,0,0.14)',
+      }
+    : {
+        // Sobre sección clara → VERDE institucional, ícono blanco
+        background: 'linear-gradient(135deg, #15803d, #166534)',
+        backdropFilter: 'none',
+        WebkitBackdropFilter: 'none',
+        border: '1.5px solid rgba(255,255,255,0.18)',
+        boxShadow: '0 4px 16px rgba(21,128,61,0.45), 0 1px 4px rgba(21,128,61,0.2)',
+      };
+
+  const iconColor = isDark ? '#15803d' : 'white';
 
   return (
     <>
-      {/* Stack flotante — mismo eje vertical que FloatingButtons (right-6) */}
       <div
         style={{
           position: "fixed",
@@ -91,31 +95,30 @@ export function IBIMEAssistant() {
       >
         {/* ── Ventana de Chat ── */}
         {isOpen && (
-          <div
-            style={{
-              width: "320px",
-              height: "420px",
-              display: "flex",
-              flexDirection: "column",
-              borderRadius: "16px",
-              overflow: "hidden",
-              background: "#ffffff",
-              border: "1px solid #e2e8f0",
-              boxShadow: "0 12px 40px rgba(0,0,0,0.16), 0 2px 8px rgba(0,0,0,0.07)",
-            }}
-          >
-            {/* Header */}
+          <div style={{
+            width: "320px",
+            height: "420px",
+            display: "flex",
+            flexDirection: "column",
+            borderRadius: "16px",
+            overflow: "hidden",
+            background: "#ffffff",
+            border: "1.5px solid rgba(255,255,255,0.5)",
+            boxShadow: "0 12px 40px rgba(0,0,0,0.22), 0 2px 10px rgba(0,0,0,0.10)",
+          }}>
+            {/* Header — siempre verde con borde definidor */}
             <div style={{
               background: "linear-gradient(135deg, #15803d, #166534)",
               padding: "10px 12px",
               display: "flex", alignItems: "center", justifyContent: "space-between",
               flexShrink: 0, minHeight: "52px",
+              borderBottom: "1.5px solid rgba(255,255,255,0.2)",
             }}>
               <div style={{ display: "flex", alignItems: "center", gap: "9px" }}>
                 <div style={{
                   width: 30, height: 30, borderRadius: "50%",
-                  background: "rgba(255,255,255,0.18)",
-                  border: "1.5px solid rgba(255,255,255,0.35)",
+                  background: "rgba(255,255,255,0.2)",
+                  border: "1.5px solid rgba(255,255,255,0.45)",
                   display: "flex", alignItems: "center", justifyContent: "center",
                   flexShrink: 0,
                 }}>
@@ -126,12 +129,12 @@ export function IBIMEAssistant() {
                 </div>
                 <div>
                   <p style={{ color: "white", fontWeight: 600, fontSize: 12,
-                    lineHeight: 1.2, margin: 0, textShadow: "0 1px 2px rgba(0,0,0,0.25)" }}>
+                    lineHeight: 1.2, margin: 0, textShadow: "0 1px 3px rgba(0,0,0,0.3)" }}>
                     Asistente IBIME
                   </p>
                   <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 2 }}>
                     <span style={{ width: 5, height: 5, borderRadius: "50%",
-                      background: "#4ade80", boxShadow: "0 0 4px #4ade80",
+                      background: "#4ade80", boxShadow: "0 0 6px #4ade80",
                       display: "inline-block" }} />
                     <span style={{ color: "#bbf7d0", fontSize: 10 }}>En línea</span>
                   </div>
@@ -139,7 +142,9 @@ export function IBIMEAssistant() {
               </div>
               <button onClick={() => setIsOpen(false)} style={{
                 width: 26, height: 26, borderRadius: "50%",
-                background: "rgba(255,255,255,0.15)", border: "none", cursor: "pointer",
+                background: "rgba(255,255,255,0.18)",
+                border: "1px solid rgba(255,255,255,0.3)",
+                cursor: "pointer",
                 display: "flex", alignItems: "center", justifyContent: "center",
               }} aria-label="Cerrar">
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
@@ -180,7 +185,6 @@ export function IBIMEAssistant() {
                   </div>
                 </div>
               ))}
-
               {isTyping && (
                 <div style={{ display: "flex", justifyContent: "flex-start" }}>
                   <div style={{
@@ -250,38 +254,41 @@ export function IBIMEAssistant() {
           </div>
         )}
 
-        {/* ── Botón flotante — idéntico en forma/sombra al scroll-to-top ── */}
+        {/* ── Botón trigger con inversión dinámica suave 500ms ── */}
         <button
           onClick={() => setIsOpen((p) => !p)}
           style={{
-            ...sharedBtn,
-            background: isOpen
-              ? "#166534"
-              : "linear-gradient(135deg, #15803d, #166534)",
+            width: 44, height: 44,
+            borderRadius: "50%",
+            cursor: "pointer",
+            flexShrink: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            transition: "all 500ms ease, transform 200ms ease",
+            ...triggerStyle,
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.transform = "translateY(-2px)";
-            e.currentTarget.style.boxShadow = "0 6px 18px rgba(0,0,0,0.22), 0 2px 6px rgba(0,0,0,0.12)";
+            e.currentTarget.style.transform = "translateY(-3px) scale(1.06)";
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.transform = "translateY(0)";
-            e.currentTarget.style.boxShadow = "0 4px 14px rgba(0,0,0,0.18), 0 1px 4px rgba(0,0,0,0.10)";
+            e.currentTarget.style.transform = "translateY(0) scale(1)";
           }}
           aria-label={isOpen ? "Cerrar asistente" : "Abrir asistente virtual IBIME"}
         >
           {isOpen ? (
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none"
-              stroke="white" strokeWidth="2.5" strokeLinecap="round">
+              stroke={iconColor} strokeWidth="2.5" strokeLinecap="round">
               <line x1="18" y1="6" x2="6" y2="18" />
               <line x1="6" y1="6" x2="18" y2="18" />
             </svg>
           ) : (
             <svg width="19" height="19" viewBox="0 0 24 24" fill="none"
-              stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              stroke={iconColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-              <circle cx="9" cy="10" r="1" fill="white" stroke="none" />
-              <circle cx="12" cy="10" r="1" fill="white" stroke="none" />
-              <circle cx="15" cy="10" r="1" fill="white" stroke="none" />
+              <circle cx="9" cy="10" r="1" fill={iconColor} stroke="none" />
+              <circle cx="12" cy="10" r="1" fill={iconColor} stroke="none" />
+              <circle cx="15" cy="10" r="1" fill={iconColor} stroke="none" />
             </svg>
           )}
         </button>

@@ -1,15 +1,10 @@
 import { useState, useEffect } from 'react';
 import { ChevronUp, ChevronDown } from 'lucide-react';
-
-// FloatingButtons NO renderiza ningún botón en bottom-6 right-6.
-// Ese espacio está reservado para IBIMEAssistant.
-// La columna flotante completa queda así (de abajo hacia arriba):
-//   bottom-6   → IBIMEAssistant (chat)
-//   bottom-[68px] → Scroll to Bottom  (solo cuando showScrollTop=false)
-//   bottom-[68px] → Scroll to Top     (solo cuando showScrollTop=true)
+import { useFloatingButtonsTheme } from '@/hooks/useFloatingButtonsTheme';
 
 export const FloatingButtons = () => {
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const { isDark } = useFloatingButtonsTheme();
 
   useEffect(() => {
     const handleScroll = () => setShowScrollTop(window.scrollY > 400);
@@ -21,71 +16,92 @@ export const FloatingButtons = () => {
   const scrollToBottom = () =>
     window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
 
-  // Estilo base compartido — igual que el botón del IBIMEAssistant
+  // ── Estilos dinámicos ──────────────────────────────────────────
+  // isDark = true  → sobre sección verde/oscura → botón BLANCO glassmorphism
+  // isDark = false → sobre sección clara        → botón VERDE institucional
+  const dynamicStyle: React.CSSProperties = isDark
+    ? {
+        background: 'rgba(255, 255, 255, 0.92)',
+        backdropFilter: 'blur(12px)',
+        WebkitBackdropFilter: 'blur(12px)',
+        border: '1.5px solid rgba(255, 255, 255, 0.55)',
+        boxShadow: '0 8px 28px rgba(0,0,0,0.28), 0 2px 8px rgba(0,0,0,0.14)',
+      }
+    : {
+        background: 'linear-gradient(135deg, #15803d, #166534)',
+        backdropFilter: 'none',
+        WebkitBackdropFilter: 'none',
+        border: '1.5px solid rgba(255,255,255,0.18)',
+        boxShadow: '0 4px 16px rgba(21,128,61,0.45), 0 1px 4px rgba(21,128,61,0.2)',
+      };
+
+  const iconColor = isDark ? '#15803d' : 'white';
+
+  // Base compartida entre ambos botones
   const base: React.CSSProperties = {
     position: 'fixed',
     right: '24px',
-    bottom: '76px',          // justo encima del botón del asistente (24px + 44px + 8px gap)
+    bottom: '76px',        // encima del botón del asistente
     width: '44px',
     height: '44px',
     borderRadius: '50%',
-    border: 'none',
     cursor: 'pointer',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    zIndex: 9998,             // un nivel por debajo del asistente (9999)
-    boxShadow: '0 4px 14px rgba(0,0,0,0.18), 0 1px 4px rgba(0,0,0,0.10)',
-    transition: 'opacity 0.25s, transform 0.25s, box-shadow 0.2s',
+    zIndex: 9998,
+    // Transición suave 500ms al cruzar entre secciones
+    transition: 'all 500ms ease, opacity 250ms ease, transform 250ms ease',
+    ...dynamicStyle,
   };
 
   return (
     <>
-      {/* Scroll to Top — aparece al bajar */}
+      {/* Scroll to Top */}
       <button
         onClick={scrollToTop}
         style={{
           ...base,
-          background: 'linear-gradient(135deg, #15803d, #166534)',
           opacity: showScrollTop ? 1 : 0,
           transform: showScrollTop ? 'translateY(0)' : 'translateY(12px)',
           pointerEvents: showScrollTop ? 'auto' : 'none',
         }}
         onMouseEnter={(e) => {
-          e.currentTarget.style.transform = 'translateY(-2px)';
-          e.currentTarget.style.boxShadow = '0 6px 18px rgba(0,0,0,0.22), 0 2px 6px rgba(0,0,0,0.12)';
+          e.currentTarget.style.transform = 'translateY(-3px) scale(1.06)';
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.transform = 'translateY(0)';
-          e.currentTarget.style.boxShadow = '0 4px 14px rgba(0,0,0,0.18), 0 1px 4px rgba(0,0,0,0.10)';
+          e.currentTarget.style.transform = showScrollTop
+            ? 'translateY(0) scale(1)'
+            : 'translateY(12px) scale(1)';
         }}
         aria-label="Ir al inicio"
+        title="Volver al inicio"
       >
-        <ChevronUp color="white" size={20} strokeWidth={2.5} />
+        <ChevronUp color={iconColor} size={22} strokeWidth={2.5} />
       </button>
 
-      {/* Scroll to Bottom — aparece al estar arriba */}
+      {/* Scroll to Bottom */}
       <button
         onClick={scrollToBottom}
         style={{
           ...base,
-          background: '#ffffff',
-          border: '1px solid #e2e8f0',
           opacity: showScrollTop ? 0 : 1,
           transform: showScrollTop ? 'translateY(12px)' : 'translateY(0)',
           pointerEvents: showScrollTop ? 'none' : 'auto',
         }}
         onMouseEnter={(e) => {
-          e.currentTarget.style.transform = 'translateY(-2px)';
-          e.currentTarget.style.boxShadow = '0 6px 18px rgba(0,0,0,0.22), 0 2px 6px rgba(0,0,0,0.12)';
+          if (!showScrollTop)
+            e.currentTarget.style.transform = 'translateY(-3px) scale(1.06)';
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.transform = 'translateY(0)';
-          e.currentTarget.style.boxShadow = '0 4px 14px rgba(0,0,0,0.18), 0 1px 4px rgba(0,0,0,0.10)';
+          e.currentTarget.style.transform = showScrollTop
+            ? 'translateY(12px) scale(1)'
+            : 'translateY(0) scale(1)';
         }}
         aria-label="Ir al final"
+        title="Ir al final de la página"
       >
-        <ChevronDown color="#15803d" size={20} strokeWidth={2.5} />
+        <ChevronDown color={iconColor} size={22} strokeWidth={2.5} />
       </button>
     </>
   );
