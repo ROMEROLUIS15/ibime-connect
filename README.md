@@ -1,44 +1,55 @@
-# 🏛️ IBIME Connect — Plataforma Institucional
+# 🏛️ IBIME Connect — Plataforma Institucional del Estado Mérida
 
-[![Vercel Deployment](https://img.shields.io)](https://ibime-connect.vercel.app/)
+[![Vercel Deployment](https://img.shields.io)](https://ibime-connect.vercel.app)
 [![Supabase](https://img.shields.io)](https://supabase.com)
 [![React](https://img.shields.io)](https://reactjs.org)
 
-**IBIME Connect** es el ecosistema digital moderno del Instituto Autónomo de Servicios de Bibliotecas e Información del Estado Mérida (**IBIME**). Una plataforma diseñada para digitalizar la interacción ciudadana y facilitar el acceso a la cultura y la información.
+**IBIME Connect** es el ecosistema digital oficial del Instituto Autónomo de Servicios de Bibliotecas e Información del Estado Mérida (**IBIME**). Esta plataforma centraliza la interacción ciudadana, la gestión cultural y el acceso a la información pública mediante tecnologías de última generación.
 
-🔗 **Sitio Oficial:** [ibime-connect.vercel.app](https://ibime-connect.vercel.app/)
-
----
-
-## 🚀 Características Principales
-
-- **🤖 Asistente Virtual IA:** Integración de inteligencia artificial para consultas en tiempo real sobre servicios bibliotecarios y trámites.
-- **📅 Gestión de Eventos:** Cartelera interactiva y sistema de registro para talleres y ferias del libro.
-- **📩 Sistema de Contacto:** Backend integrado para la recepción de solicitudes ciudadanas mediante envíos automatizados (Resend).
-- **📂 Conocimiento Vectorial:** Base de datos inteligente con Supabase (pgvector) para respuestas precisas de la IA.
-- **✨ Interfaz Premium:** Diseño con Glassmorphism y Tailwind CSS, adaptado a la identidad visual institucional.
+🔗 **Acceso Público:** [ibime-connect.vercel.app](https://ibime-connect.vercel.app)
 
 ---
 
-## 🛠️ Stack Tecnológico
+## 🛠️ Capacidades Tecnológicas
+
+- **🤖 Inteligencia Artificial:** Asistente virtual con memoria de contexto para atención al ciudadano.
+- **📂 Memoria Vectorial:** Base de datos inteligente con **pgvector (Supabase)** para búsqueda de conocimiento.
+- **📩 Infraestructura de Contacto:** Gestión de comunicaciones mediante **Resend** para envíos transaccionales.
+- **✨ Diseño Institucional:** Interfaz premium con **Glassmorphism**, adaptada a la identidad visual de la Gobernación de Mérida.
+
+---
+
+## 🔒 Propiedad e Integridad
+
+Este repositorio contiene el código fuente **privado y exclusivo** de la institución. 
+
+- **Acceso Restringido:** El desarrollo y mantenimiento es realizado únicamente por el equipo técnico autorizado.
+- **Seguridad:** Implementa protección de variables de entorno, rotación de API Keys y políticas RLS (Row Level Security).
+- **Licencia:** Todos los derechos reservados © 2026 **IBIME**. Queda prohibida la reproducción o distribución total o parcial de este código sin autorización previa.
+
+---
+
+## 🚀 Stack de Desarrollo
 
 
-| Tecnología | Propósito |
+| Componente | Tecnología |
 | :--- | :--- |
-| **React + Vite** | Framework de frontend de alto rendimiento. |
-| **Supabase** | Backend as a Service (Base de datos y Auth). |
-| **TypeScript** | Programación robusta y tipado seguro. |
-| **Tailwind CSS** | Estilizado moderno y responsivo. |
-| **shadcn/ui** | Componentes de interfaz de alta calidad. |
-| **Resend** | Infraestructura para envío de correos electrónicos. |
+| **Frontend** | React 18 + Vite |
+| **Backend / DB** | Supabase (PostgreSQL) |
+| **Lenguaje** | TypeScript (Strict Mode) |
+| **Estilos** | Tailwind CSS + shadcn/ui |
+| **Emailing** | Resend API |
 
 ---
 
-## 💻 Configuración Local
+## ⚙️ Ejecución en Entorno de Desarrollo
 
-Si deseas colaborar o ejecutar este proyecto en tu entorno local (Debian/Windows):
+*Este apartado es exclusivo para el administrador del sistema en entornos Debian/Windows:*
 
-1. **Clonar el repositorio:**
-   ```bash
-   git clone https://github.com/ROMEROLUIS15/ibime-connect.git
+1. **Dependencias:** `npm install`
+2. **Entorno:** Configurar archivo `.env` con credenciales de Supabase (ID, URL, ANON_KEY).
+3. **Inicio:** `npm run dev`
+4. **Build:** `npm run build`
 
+---
+**Gobernación del Estado Mérida** — *Cultura y Tecnología para el Pueblo.*
