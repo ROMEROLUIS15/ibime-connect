@@ -1,73 +1,44 @@
-# Welcome to your Lovable project
+# 🏛️ IBIME Connect — Plataforma Institucional
 
-## Project info
+[![Vercel Deployment](https://img.shields.io)](https://ibime-connect.vercel.app/)
+[![Supabase](https://img.shields.io)](https://supabase.com)
+[![React](https://img.shields.io)](https://reactjs.org)
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+**IBIME Connect** es el ecosistema digital moderno del Instituto Autónomo de Servicios de Bibliotecas e Información del Estado Mérida (**IBIME**). Una plataforma diseñada para digitalizar la interacción ciudadana y facilitar el acceso a la cultura y la información.
 
-## How can I edit this code?
+🔗 **Sitio Oficial:** [ibime-connect.vercel.app](https://ibime-connect.vercel.app/)
 
-There are several ways of editing your application.
+---
 
-**Use Lovable**
+## 🚀 Características Principales
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+- **🤖 Asistente Virtual IA:** Integración de inteligencia artificial para consultas en tiempo real sobre servicios bibliotecarios y trámites.
+- **📅 Gestión de Eventos:** Cartelera interactiva y sistema de registro para talleres y ferias del libro.
+- **📩 Sistema de Contacto:** Backend integrado para la recepción de solicitudes ciudadanas mediante envíos automatizados (Resend).
+- **📂 Conocimiento Vectorial:** Base de datos inteligente con Supabase (pgvector) para respuestas precisas de la IA.
+- **✨ Interfaz Premium:** Diseño con Glassmorphism y Tailwind CSS, adaptado a la identidad visual institucional.
 
-Changes made via Lovable will be committed automatically to this repo.
+---
 
-**Use your preferred IDE**
+## 🛠️ Stack Tecnológico
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+| Tecnología | Propósito |
+| :--- | :--- |
+| **React + Vite** | Framework de frontend de alto rendimiento. |
+| **Supabase** | Backend as a Service (Base de datos y Auth). |
+| **TypeScript** | Programación robusta y tipado seguro. |
+| **Tailwind CSS** | Estilizado moderno y responsivo. |
+| **shadcn/ui** | Componentes de interfaz de alta calidad. |
+| **Resend** | Infraestructura para envío de correos electrónicos. |
 
-Follow these steps:
+---
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+## 💻 Configuración Local
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+Si deseas colaborar o ejecutar este proyecto en tu entorno local (Debian/Windows):
 
-# Step 3: Install the necessary dependencies.
-npm i
+1. **Clonar el repositorio:**
+   ```bash
+   git clone https://github.com/ROMEROLUIS15/ibime-connect.git
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
-
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
