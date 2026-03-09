@@ -48,8 +48,11 @@ Este repositorio contiene el código fuente **privado y exclusivo** de la instit
 
 1. **Dependencias:** `npm install`
 2. **Entorno:** Configurar archivo `.env` con credenciales de Supabase (ID, URL, ANON_KEY).
-3. **Inicio:** `npm run dev`
-4. **Build:** `npm run build`
+3. - VITE_SUPABASE_PROJECT_ID="tu_project_id"
+   - VITE_SUPABASE_PUBLISHABLE_KEY="tu_publishable_key"
+   - VITE_SUPABASE_URL="https:"//tu_proyecto.supabase.co"
+4. **Inicio:** `npm run dev`
+5. **Build:** `npm run build`
 
 ---
-**Gobernación del Estado Mérida** — *Cultura y Tecnología para el Pueblo.*
+**IBIME | Instituto Autónomo de Servicios de Bibliotecas e Información del Estado Bolivariano de Mérida.*
