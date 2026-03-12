@@ -1,73 +1,58 @@
-# Welcome to your Lovable project
+# 🏛️ IBIME Connect — Plataforma Institucional del Estado Mérida
 
-## Project info
+[![Vercel Deployment](https://img.shields.io)](https://ibime-connect.vercel.app)
+[![Supabase](https://img.shields.io)](https://supabase.com)
+[![React](https://img.shields.io)](https://reactjs.org)
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+**IBIME Connect** es el ecosistema digital oficial del Instituto Autónomo de Servicios de Bibliotecas e Información del Estado Mérida (**IBIME**). Esta plataforma centraliza la interacción ciudadana, la gestión cultural y el acceso a la información pública mediante tecnologías de última generación.
 
-## How can I edit this code?
+🔗 **Acceso Público:** [ibime-connect.vercel.app](https://ibime-connect.vercel.app)
 
-There are several ways of editing your application.
+---
 
-**Use Lovable**
+## 🛠️ Capacidades Tecnológicas
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+- **🤖 Inteligencia Artificial:** Asistente virtual con memoria de contexto para atención al ciudadano.
+- **📂 Memoria Vectorial:** Base de datos inteligente con **pgvector (Supabase)** para búsqueda de conocimiento.
+- **📩 Infraestructura de Contacto:** Gestión de comunicaciones mediante **Resend** para envíos transaccionales.
+- **✨ Diseño Institucional:** Interfaz premium con **Glassmorphism**, adaptada a la identidad visual de la Gobernación de Mérida.
 
-Changes made via Lovable will be committed automatically to this repo.
+---
 
-**Use your preferred IDE**
+## 🔒 Propiedad e Integridad
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+Este repositorio contiene el código fuente **privado y exclusivo** de la institución. 
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+- **Acceso Restringido:** El desarrollo y mantenimiento es realizado únicamente por el equipo técnico autorizado.
+- **Seguridad:** Implementa protección de variables de entorno, rotación de API Keys y políticas RLS (Row Level Security).
+- **Licencia:** Todos los derechos reservados © 2026 **IBIME**. Queda prohibida la reproducción o distribución total o parcial de este código sin autorización previa.
 
-Follow these steps:
+---
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+## 🚀 Stack de Desarrollo
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
 
-# Step 3: Install the necessary dependencies.
-npm i
+| Componente | Tecnología |
+| :--- | :--- |
+| **Frontend** | React 18 + Vite |
+| **Backend / DB** | Supabase (PostgreSQL) |
+| **Lenguaje** | TypeScript (Strict Mode) |
+| **Estilos** | Tailwind CSS + shadcn/ui |
+| **Emailing** | Resend API |
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
+---
 
-**Edit a file directly in GitHub**
+## ⚙️ Ejecución en Entorno de Desarrollo
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+*Este apartado es exclusivo para el administrador del sistema en entornos Debian/Windows:*
 
-**Use GitHub Codespaces**
+1. **Dependencias:** `npm install`
+2. **Entorno:** Configurar archivo `.env` con credenciales de Supabase (ID, URL, ANON_KEY).
+3. - VITE_SUPABASE_PROJECT_ID="tu_project_id"
+   - VITE_SUPABASE_PUBLISHABLE_KEY="tu_publishable_key"
+   - VITE_SUPABASE_URL="https:"//tu_proyecto.supabase.co"
+4. **Inicio:** `npm run dev`
+5. **Build:** `npm run build`
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+---
+**IBIME | Instituto Autónomo de Servicios de Bibliotecas e Información del Estado Bolivariano de Mérida.*
