@@ -68,7 +68,8 @@ const RegistrationModal = ({ event, onClose }: { event: typeof events[0]; onClos
         description: `Te has inscrito en "${event.title}". Te contactaremos pronto.`,
       });
       onClose();
-    } catch {
+    } catch (err) {
+      console.error("Supabase insert error:", err);
       toast({
         title: 'Error al inscribirse',
         description: 'Hubo un problema. Intenta de nuevo.',

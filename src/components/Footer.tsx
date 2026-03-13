@@ -79,7 +79,7 @@ export const Footer = () => {
                   aria-label={social.label}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center justify-center rounded-full border transition-all duration-200 hover:bg-ibime-green hover:border-ibime-green hover:text-white hover:scale-110"
+                  className="flex items-center justify-center rounded-full border transition-all duration-200 hover:bg-white/10 hover:border-white hover:text-white hover:scale-110"
                   style={{
                     width: 36, height: 36,
                     borderColor: 'rgba(255,255,255,0.25)',
@@ -105,7 +105,7 @@ export const Footer = () => {
                 <li key={i}>
                   <a
                     href={link.href}
-                    className="text-primary-foreground/70 hover:text-ibime-green transition-colors"
+                    className="text-primary-foreground/70 hover:text-white transition-colors"
                     style={{ fontSize: 13.5 }}
                   >
                     {link.label}
@@ -140,7 +140,7 @@ export const Footer = () => {
                 <Mail size={15} className="flex-shrink-0 text-ibime-green/80" />
                 <a
                   href="mailto:contactoibime@gmail.com"
-                  className="hover:text-ibime-green transition-colors break-all"
+                  className="hover:text-white transition-colors break-all"
                 >
                   contactoibime@gmail.com
                 </a>
@@ -157,10 +157,10 @@ export const Footer = () => {
             style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.55)' }}>
             <p>© {new Date().getFullYear()} IBIME. Todos los derechos reservados.</p>
             <div className="flex gap-5">
-              <a href="#" className="hover:text-ibime-green transition-colors">
+              <a href="#" className="hover:text-white transition-colors">
                 Políticas de Privacidad
               </a>
-              <a href="#" className="hover:text-ibime-green transition-colors">
+              <a href="#" className="hover:text-white transition-colors">
                 Términos de Uso
               </a>
             </div>
