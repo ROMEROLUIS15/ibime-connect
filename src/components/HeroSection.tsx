@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 import heroBanner from '@/assets/hero-banner.jpg';
 import libraryActivity from '@/assets/library-activity.jpg';
@@ -56,9 +56,7 @@ export const HeroSection = () => {
     <section id="inicio" className="relative h-screen min-h-[600px] overflow-hidden pt-16">
       {/* Slides */}
       {slides.map((slide, index) => {
-        // Add vertical offset ONLY to the "Espacios de Conocimiento" slide for symmetry
-        const isEspacios =
-          slide.title === 'Espacios de Conocimiento' && slide.subtitle === 'Bibliotecas Modernas';
+        // Removemos la asimetría para que los botones nunca salten al cambiar de slide
 
         return (
           <div
@@ -86,7 +84,6 @@ export const HeroSection = () => {
                 className={[
                   'max-w-3xl w-full mx-auto flex flex-col items-center justify-center text-center transition-all duration-700',
                   index === currentSlide ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10',
-                  isEspacios ? 'pt-24' : 'pt-0',
                 ].join(' ')}
                 style={{ minHeight: 0 }}
               >
@@ -153,20 +150,6 @@ export const HeroSection = () => {
                   </button>
                 </div>
 
-                {/* ChevronDown: perfectly centered and visible */}
-                <div className="flex items-center justify-center mt-14">
-                  <button
-                    type="button"
-                    onClick={() => smoothScrollToId('servicios')}
-                    aria-label="Bajar a servicios"
-                    className="bg-transparent border-0 outline-none flex items-center justify-center"
-                  >
-                    <ChevronDown
-                      className="w-10 h-10 text-white opacity-85 animate-bounce"
-                      style={{ textShadow: '2px 2px 6px rgba(0,0,0,0.9)' }}
-                    />
-                  </button>
-                </div>
               </div>
             </div>
           </div>
@@ -176,21 +159,21 @@ export const HeroSection = () => {
       {/* Navigation Arrows */}
       <button
         onClick={prevSlide}
-        className="absolute left-4 top-1/2 -translate-y-1/2 z-30 p-3 rounded-full bg-primary-foreground/10 backdrop-blur-sm text-primary-foreground hover:bg-primary-foreground/20 transition-all flex items-center justify-center"
+        className="hidden md:flex absolute left-4 top-1/2 -translate-y-1/2 z-30 p-3 rounded-full bg-primary-foreground/10 backdrop-blur-sm text-primary-foreground hover:bg-primary-foreground/20 transition-all items-center justify-center"
         aria-label="Slide anterior"
       >
         <ChevronLeft className="w-6 h-6" />
       </button>
       <button
         onClick={nextSlide}
-        className="absolute right-4 top-1/2 -translate-y-1/2 z-30 p-3 rounded-full bg-primary-foreground/10 backdrop-blur-sm text-primary-foreground hover:bg-primary-foreground/20 transition-all flex items-center justify-center"
+        className="hidden md:flex absolute right-4 top-1/2 -translate-y-1/2 z-30 p-3 rounded-full bg-primary-foreground/10 backdrop-blur-sm text-primary-foreground hover:bg-primary-foreground/20 transition-all items-center justify-center"
         aria-label="Siguiente slide"
       >
         <ChevronRight className="w-6 h-6" />
       </button>
 
       {/* Dots */}
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-30 flex gap-3">
+      <div className="absolute bottom-10 md:bottom-12 left-1/2 -translate-x-1/2 z-30 flex gap-3">
         {slides.map((_, index) => (
           <button
             key={index}

@@ -62,7 +62,7 @@ export const ContactSection = () => {
     {
       icon: Mail,
       title: 'Correo Electrónico',
-      content: 'ibimeinformatica@gmail.com',
+      content: 'contactoibime@gmail.com',
     },
   ];
 

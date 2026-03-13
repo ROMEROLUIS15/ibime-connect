@@ -51,14 +51,14 @@ export const NewsSection = () => {
     <section id="cartelera" className="py-20 bg-muted/30">
       <div className="container mx-auto px-4">
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-end md:justify-between mb-12">
-          <div>
+        <div className="flex flex-col md:flex-row items-center md:items-end justify-between mb-12 text-center md:text-left">
+          <div className="flex flex-col items-center md:items-start w-full md:w-auto">
             <span className="badge-institutional mb-4">Actualidad</span>
             <h2 className="text-3xl md:text-4xl lg:text-5xl font-display font-bold text-foreground">
               Cartelera <span className="text-gradient">Informativa</span>
             </h2>
           </div>
-          <Button variant="outline" className="mt-4 md:mt-0 group">
+          <Button variant="outline" className="mt-6 md:mt-0 group whitespace-nowrap">
             Ver todas las noticias
             <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
           </Button>
