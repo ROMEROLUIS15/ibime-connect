@@ -1,1 +1,4 @@
-project_id = "hfuxsnkfswxjokrhkplx"
+project_id = "pcfohplpomrsqflwsyah"
+
+[functions.ibime-chat]
+verify_jwt = false

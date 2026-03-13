@@ -40,8 +40,8 @@ export const FloatingButtons = () => {
   // Base compartida entre ambos botones
   const base: React.CSSProperties = {
     position: 'fixed',
-    right: '24px',
-    bottom: '76px',        // encima del botón del asistente
+    right: '27px',         // centrado geométrico con el asistente (50px vs 44px)
+    bottom: '94px',        // más cerca del asistente (dejando rango para la onda)
     width: '44px',
     height: '44px',
     borderRadius: '50%',

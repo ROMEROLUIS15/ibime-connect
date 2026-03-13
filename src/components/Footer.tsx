@@ -12,16 +12,16 @@ const quickLinks = [
 const YoutubeIcon = () => (
   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
     strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M22.54 6.42a2.78 2.78 0 0 0-1.95-1.96C18.88 4 12 4 12 4s-6.88 0-8.59.46A2.78 2.78 0 0 0 1.46 6.42 29 29 0 0 0 1 12a29 29 0 0 0 .46 5.58 2.78 2.78 0 0 0 1.95 1.96C5.12 20 12 20 12 20s6.88 0 8.59-.46a2.78 2.78 0 0 0 1.95-1.96A29 29 0 0 0 23 12a29 29 0 0 0-.46-5.58z"/>
-    <polygon points="9.75 15.02 15.5 12 9.75 8.98 9.75 15.02" fill="currentColor" stroke="none"/>
+    <path d="M22.54 6.42a2.78 2.78 0 0 0-1.95-1.96C18.88 4 12 4 12 4s-6.88 0-8.59.46A2.78 2.78 0 0 0 1.46 6.42 29 29 0 0 0 1 12a29 29 0 0 0 .46 5.58 2.78 2.78 0 0 0 1.95 1.96C5.12 20 12 20 12 20s6.88 0 8.59-.46a2.78 2.78 0 0 0 1.95-1.96A29 29 0 0 0 23 12a29 29 0 0 0-.46-5.58z" />
+    <polygon points="9.75 15.02 15.5 12 9.75 8.98 9.75 15.02" fill="currentColor" stroke="none" />
   </svg>
 );
 
 const socialLinks = [
-  { icon: Twitter,     href: 'https://x.com/IBIMEGOB',                                   label: 'Twitter / X' },
-  { icon: Facebook,    href: 'https://www.facebook.com/ibimegob',                         label: 'Facebook' },
-  { icon: Instagram,   href: 'https://www.instagram.com/ibimegob?igsh=bTBoN3JrNHRsaDBk', label: 'Instagram' },
-  { icon: YoutubeIcon, href: 'https://www.youtube.com/@ibime1800',                        label: 'YouTube' },
+  { icon: Twitter, href: 'https://x.com/IBIMEGOB', label: 'Twitter / X' },
+  { icon: Facebook, href: 'https://www.facebook.com/ibimegob', label: 'Facebook' },
+  { icon: Instagram, href: 'https://www.instagram.com/ibimegob?igsh=bTBoN3JrNHRsaDBk', label: 'Instagram' },
+  { icon: YoutubeIcon, href: 'https://www.youtube.com/@ibime1800', label: 'YouTube' },
 ];
 
 export const Footer = () => {
@@ -139,10 +139,10 @@ export const Footer = () => {
               <div className="flex items-center gap-2.5 text-primary-foreground/70">
                 <Mail size={15} className="flex-shrink-0 text-ibime-green/80" />
                 <a
-                  href="mailto:ibimeinformatica@gmail.com"
+                  href="mailto:contactoibime@gmail.com"
                   className="hover:text-ibime-green transition-colors break-all"
                 >
-                  ibimeinformatica@gmail.com
+                  contactoibime@gmail.com
                 </a>
               </div>
             </address>
