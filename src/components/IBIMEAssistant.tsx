@@ -9,19 +9,7 @@ interface Message {
   timestamp: Date;
 }
 
-// ── Ícono de robot SVG ────────────────────────────────────────────────────────
-const RobotIcon = ({ size = 22, color = "white" }: { size?: number; color?: string }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color}
-    strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="3" y="8" width="18" height="12" rx="3" />
-    <circle cx="9" cy="14" r="1.5" fill={color} stroke="none" />
-    <circle cx="15" cy="14" r="1.5" fill={color} stroke="none" />
-    <path d="M12 2v4" />
-    <circle cx="12" cy="2" r="1.2" fill={color} stroke="none" />
-    <path d="M3 13H1M23 13h-2" />
-    <path d="M9 20v1M15 20v1" />
-  </svg>
-);
+
 
 // ── Ícono de enviar ───────────────────────────────────────────────────────────
 const SendIcon = ({ color = "white" }: { color?: string }) => (
@@ -182,7 +170,7 @@ export function IBIMEAssistant() {
                     flexShrink: 0,
                     boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
                   }}>
-                    <RobotIcon size={22} color="white" />
+                    <img src="/buho-robot.jpeg" alt="Búho IA" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "10px" }} />
                   </div>
                   <div>
                     <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -246,7 +234,7 @@ export function IBIMEAssistant() {
                       background: "linear-gradient(135deg, #15803d, #166534)",
                       display: "flex", alignItems: "center", justifyContent: "center",
                     }}>
-                      <RobotIcon size={14} color="white" />
+                      <img src="/buho-robot.jpeg" alt="Búho" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "6px" }} />
                     </div>
                   )}
                   <div style={{
@@ -280,7 +268,7 @@ export function IBIMEAssistant() {
                     background: "linear-gradient(135deg, #15803d, #166534)",
                     display: "flex", alignItems: "center", justifyContent: "center",
                   }}>
-                    <RobotIcon size={14} color="white" />
+                    <img src="/buho-robot.jpeg" alt="Búho" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "6px" }} />
                   </div>
                   <div style={{
                     padding: "10px 14px", borderRadius: "14px 14px 14px 3px",
@@ -366,65 +354,86 @@ export function IBIMEAssistant() {
             }} />
           )}
 
-          {/* Etiqueta flotante (solo en desktop para no aglomerar el móvil) */}
+          {/* Etiqueta flotante (burbuja de texto estilo SAIMITO) */}
           {!isOpen && (
-            <div className="hidden md:block" style={{
-              position: "absolute",
-              right: 58,
-              whiteSpace: "nowrap",
-              background: isDark ? "rgba(255,255,255,0.95)" : "#15803d",
-              color: isDark ? "#15803d" : "white",
-              fontSize: 11.5, fontWeight: 600,
-              padding: "5px 10px", borderRadius: 20,
-              boxShadow: "0 2px 10px rgba(0,0,0,0.15)",
-              border: isDark ? "1px solid rgba(21,128,61,0.2)" : "none",
-              animation: "ibime-label-fade 0.4s ease",
-              pointerEvents: "none",
-            }}>
-              🤖 Asistente IA
+            <div className="ibime-floating-label">
+              Asistente IA
             </div>
           )}
 
           <button
             onClick={() => setIsOpen((p) => !p)}
             style={{
-              width: 50, height: 50,
+              width: 80, height: 80,
               borderRadius: "50%",
               cursor: "pointer",
               display: "flex", alignItems: "center", justifyContent: "center",
               transition: "all 500ms ease, transform 200ms ease",
-              background: triggerBg,
-              border: isDark
-                ? "1.5px solid rgba(255,255,255,0.55)"
-                : "1.5px solid rgba(255,255,255,0.18)",
-              boxShadow: isDark
-                ? "0 8px 28px rgba(0,0,0,0.28)"
-                : "0 4px 20px rgba(21,128,61,0.5)",
+              background: "white",
+              border: "3px solid #15803d",
+              boxShadow: "0 8px 32px rgba(0,0,0,0.2)",
               position: "relative",
               zIndex: 1,
+              overflow: isOpen ? "hidden" : "visible",
             }}
-            onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-3px) scale(1.06)"; }}
+            onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-4px) scale(1.04)"; }}
             onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0) scale(1)"; }}
             aria-label={isOpen ? "Cerrar asistente" : "Abrir Asistente IA del IBIME"}
           >
             {isOpen ? (
-              <span style={{ color: iconColor, fontSize: 18, fontWeight: 700, lineHeight: 1 }}>✕</span>
+              <span style={{ color: "#15803d", fontSize: 24, fontWeight: 700, lineHeight: 1 }}>✕</span>
             ) : (
-              <RobotIcon size={24} color={iconColor} />
+              <img src="/buho-robot.jpeg" alt="Asistente IA" style={{ 
+                width: "100%", height: "100%", 
+                objectFit: "cover", 
+                borderRadius: "50%",
+                transform: "scale(1.15) translateY(-4px)",
+                boxShadow: "0 4px 12px rgba(0,0,0,0.15)"
+              }} />
             )}
           </button>
         </div>
       </div>
 
       <style>{`
+        .ibime-floating-label {
+          position: absolute;
+          top: -48px;
+          left: 50%;
+          white-space: nowrap;
+          background: #ffffff;
+          color: #1e293b;
+          font-size: 12.5px;
+          font-weight: 700;
+          padding: 7px 14px;
+          border-radius: 16px;
+          box-shadow: 0 4px 14px rgba(0,0,0,0.18);
+          border: 2px solid #e2e8f0;
+          animation: ibime-bounce 2.5s ease-in-out infinite;
+          pointer-events: none;
+          z-index: 10;
+        }
+
+        @media (max-width: 640px) {
+          .ibime-floating-label {
+            font-size: 11px;
+            padding: 5px 10px;
+            top: -40px;
+          }
+        }
+
         @keyframes ibime-dot {
           0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }
           30% { transform: translateY(-5px); opacity: 1; }
         }
+        @keyframes ibime-bounce {
+          0%, 100% { transform: translateX(-50%) translateY(0); }
+          50% { transform: translateX(-50%) translateY(-5px); }
+        }
         @keyframes ibime-ring-pulse {
           0% { transform: scale(1); opacity: 0.7; }
-          70% { transform: scale(1.55); opacity: 0; }
-          100% { transform: scale(1.55); opacity: 0; }
+          70% { transform: scale(1.4); opacity: 0; }
+          100% { transform: scale(1.4); opacity: 0; }
         }
         @keyframes ibime-pulse-green {
           0%, 100% { opacity: 1; box-shadow: 0 0 6px #4ade80; }

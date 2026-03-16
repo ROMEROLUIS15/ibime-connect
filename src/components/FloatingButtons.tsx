@@ -46,7 +46,7 @@ export const FloatingButtons = () => {
     height: '44px',
     borderRadius: '50%',
     cursor: 'pointer',
-    display: 'flex',
+    display: 'none', /* oculto a petición, layout mantendrá estructura sin verse */
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 9998,
