@@ -203,13 +203,13 @@ export const EventsSection = () => {
           {/* Navigation */}
           <button
             onClick={prevSlide}
-            className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-2 md:-translate-x-6 lg:-translate-x-12 p-3 md:p-3.5 rounded-full bg-ibime-green text-white shadow-lg hover:bg-white hover:text-ibime-green transition-colors"
+            className="hidden md:flex absolute left-0 top-1/2 -translate-y-1/2 md:-translate-x-12 lg:-translate-x-20 p-3 md:p-3.5 rounded-full bg-ibime-green text-white shadow-lg hover:bg-white hover:text-ibime-green transition-colors items-center justify-center z-10"
           >
             <ChevronLeft className="w-6 h-6" />
           </button>
           <button
             onClick={nextSlide}
-            className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-2 md:translate-x-6 lg:translate-x-12 p-3 md:p-3.5 rounded-full bg-ibime-green text-white shadow-lg hover:bg-white hover:text-ibime-green transition-colors"
+            className="hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 md:translate-x-12 lg:translate-x-20 p-3 md:p-3.5 rounded-full bg-ibime-green text-white shadow-lg hover:bg-white hover:text-ibime-green transition-colors items-center justify-center z-10"
           >
             <ChevronRight className="w-6 h-6" />
           </button>
