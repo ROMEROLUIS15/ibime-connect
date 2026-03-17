@@ -26,6 +26,7 @@ export const ContactSection = () => {
       toast({
         title: '¡Mensaje enviado!',
         description: 'Gracias por contactarnos. Te responderemos pronto.',
+        className: 'bg-ibime-green text-white border-none shadow-2xl p-6 sm:p-8 max-w-[90vw] sm:max-w-md mx-auto rounded-xl',
       });
       setFormData({ name: '', email: '', message: '' });
     } catch {

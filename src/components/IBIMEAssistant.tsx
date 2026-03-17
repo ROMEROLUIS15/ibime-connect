@@ -346,7 +346,7 @@ export function IBIMEAssistant() {
           {!isOpen && (
             <div style={{
               position: "absolute",
-              width: 60, height: 60,
+              width: 45, height: 45,
               borderRadius: "50%",
               background: ringColor,
               animation: "ibime-ring-pulse 2s ease-out infinite",
@@ -356,7 +356,14 @@ export function IBIMEAssistant() {
 
           {/* Etiqueta flotante (burbuja de texto estilo SAIMITO) */}
           {!isOpen && (
-            <div className="ibime-floating-label">
+            <div 
+              className="ibime-floating-label"
+              style={{
+                background: isDark ? "#ffffff" : "#15803d",
+                color: isDark ? "#1e293b" : "#ffffff",
+                border: isDark ? "2px solid #e2e8f0" : "2px solid #14532d",
+              }}
+            >
               Asistente IA
             </div>
           )}
@@ -364,7 +371,7 @@ export function IBIMEAssistant() {
           <button
             onClick={() => setIsOpen((p) => !p)}
             style={{
-              width: 80, height: 80,
+              width: 60, height: 60,
               borderRadius: "50%",
               cursor: "pointer",
               display: "flex", alignItems: "center", justifyContent: "center",
@@ -381,7 +388,7 @@ export function IBIMEAssistant() {
             aria-label={isOpen ? "Cerrar asistente" : "Abrir Asistente IA del IBIME"}
           >
             {isOpen ? (
-              <span style={{ color: "#15803d", fontSize: 24, fontWeight: 700, lineHeight: 1 }}>✕</span>
+              <span style={{ color: "#15803d", fontSize: 20, fontWeight: 700, lineHeight: 1 }}>✕</span>
             ) : (
               <img src="/buho-robot.jpeg" alt="Asistente IA" style={{ 
                 width: "100%", height: "100%", 
@@ -398,15 +405,15 @@ export function IBIMEAssistant() {
       <style>{`
         .ibime-floating-label {
           position: absolute;
-          top: -48px;
+          top: -38px;
           left: 50%;
           white-space: nowrap;
           background: #ffffff;
           color: #1e293b;
-          font-size: 12.5px;
+          font-size: 11px;
           font-weight: 700;
-          padding: 7px 14px;
-          border-radius: 16px;
+          padding: 5px 10px;
+          border-radius: 12px;
           box-shadow: 0 4px 14px rgba(0,0,0,0.18);
           border: 2px solid #e2e8f0;
           animation: ibime-bounce 2.5s ease-in-out infinite;
@@ -416,9 +423,9 @@ export function IBIMEAssistant() {
 
         @media (max-width: 640px) {
           .ibime-floating-label {
-            font-size: 11px;
-            padding: 5px 10px;
-            top: -40px;
+            font-size: 10px;
+            padding: 4px 8px;
+            top: -32px;
           }
         }
 

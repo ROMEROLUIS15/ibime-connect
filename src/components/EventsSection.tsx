@@ -66,6 +66,7 @@ const RegistrationModal = ({ event, onClose }: { event: typeof events[0]; onClos
       toast({
         title: '¡Inscripción exitosa!',
         description: `Te has inscrito en "${event.title}". Te contactaremos pronto.`,
+        className: 'bg-ibime-green text-white border-none shadow-2xl p-6 sm:p-8 max-w-[90vw] sm:max-w-md mx-auto rounded-xl',
       });
       onClose();
     } catch (err) {
