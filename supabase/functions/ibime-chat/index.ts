@@ -1,13 +1,18 @@
-// Supabase Edge Function — runs in Deno runtime (not Node/Vite)
-// The type declarations below suppress IDE errors; Deno APIs are natively available at runtime.
+// Supabase Edge Function — ibime-chat (RAG-enabled)
+// 1. Generates an embedding for the user's last message via Gemini
+// 2. Retrieves relevant context from knowledge_base (pgvector)
+// 3. Injects context into the system prompt
+// 4. Calls Gemini to generate a grounded response
+
 declare const Deno: {
   serve: (handler: (req: Request) => Response | Promise<Response>) => void;
   env: { get: (key: string) => string | undefined };
 };
 
-
-const GEMINI_API_URL =
-  "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent";
+const GEMINI_GENERATE_URL =
+  "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
+const GEMINI_EMBED_URL =
+  "https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:embedContent";
 
 const IBIME_SYSTEM_PROMPT = `Eres el Asistente Virtual oficial del IBIME (Instituto Autónomo de Servicios de Bibliotecas e Información del Estado Bolivariano de Mérida, Venezuela).
 
@@ -48,22 +53,57 @@ Si el usuario pregunta por un libro específico, indícale que lo busque en el c
 - NUNCA inventes datos de libros, existencias o disponibilidad.
 - Usa un tono cálido, profesional e institucional.`;
 
-interface GeminiPart {
-  text: string;
+interface GeminiPart { text: string }
+interface GeminiContent { role: "user" | "model"; parts: GeminiPart[] }
+interface ChatMessage { role: "user" | "assistant"; text: string }
+interface KnowledgeRow { id: number; title: string; content: string; similarity: number }
+
+// ── Helper: get Gemini embedding ──────────────────────────────────────────────
+async function getEmbedding(text: string, apiKey: string): Promise<number[]> {
+  const res = await fetch(`${GEMINI_EMBED_URL}?key=${apiKey}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: "models/gemini-embedding-001",
+      content: { parts: [{ text }] },
+      outputDimensionality: 768,
+    }),
+  });
+  if (!res.ok) throw new Error(`Embedding error: ${res.status} ${await res.text()}`);
+  const data = await res.json();
+  return data?.embedding?.values ?? [];
 }
 
-interface GeminiContent {
-  role: "user" | "model";
-  parts: GeminiPart[];
+// ── Helper: retrieve context from Supabase ────────────────────────────────────
+async function retrieveContext(
+  embedding: number[],
+  supabaseUrl: string,
+  supabaseKey: string,
+  matchCount = 5,
+  matchThreshold = 0.5
+): Promise<KnowledgeRow[]> {
+  const res = await fetch(`${supabaseUrl}/rest/v1/rpc/match_knowledge`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "apikey": supabaseKey,
+      "Authorization": `Bearer ${supabaseKey}`,
+    },
+    body: JSON.stringify({
+      query_embedding: `[${embedding.join(",")}]`,
+      match_count: matchCount,
+      match_threshold: matchThreshold,
+    }),
+  });
+  if (!res.ok) {
+    console.error("match_knowledge error:", await res.text());
+    return [];
+  }
+  return res.json() as Promise<KnowledgeRow[]>;
 }
 
-interface ChatMessage {
-  role: "user" | "assistant";
-  text: string;
-}
-
+// ── Main handler ──────────────────────────────────────────────────────────────
 Deno.serve(async (req: Request) => {
-  // Handle CORS preflight
   if (req.method === "OPTIONS") {
     return new Response(null, {
       headers: {
@@ -81,9 +121,11 @@ Deno.serve(async (req: Request) => {
 
   try {
     const apiKey = Deno.env.get("GEMINI_API_KEY");
-    if (!apiKey) {
-      throw new Error("GEMINI_API_KEY no está configurada en los secretos de Supabase.");
-    }
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+
+    if (!apiKey) throw new Error("GEMINI_API_KEY no está configurada.");
+    if (!supabaseUrl || !supabaseKey) throw new Error("SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY no configuradas.");
 
     const { messages }: { messages: ChatMessage[] } = await req.json();
 
@@ -94,7 +136,33 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Convert messages to Gemini format (exclude the initial assistant greeting)
+    // ── 1. Get the user's latest message ─────────────────────────────────────
+    const userMessages = messages.filter((m) => m.role === "user");
+    const latestUserText = userMessages[userMessages.length - 1]?.text ?? "";
+
+    // ── 2. RAG: embed + retrieve ──────────────────────────────────────────────
+    let ragContext = "";
+    try {
+      const embedding = await getEmbedding(latestUserText, apiKey);
+      if (embedding.length > 0) {
+        const rows = await retrieveContext(embedding, supabaseUrl, supabaseKey);
+        if (rows.length > 0) {
+          ragContext =
+            "\n\n== CONTEXTO RECUPERADO DE LA BASE DE CONOCIMIENTOS ==\n" +
+            rows
+              .map((r, i) => `[${i + 1}] ${r.title ? `**${r.title}**\n` : ""}${r.content}`)
+              .join("\n\n") +
+            "\n\nUtiliza este contexto para responder con precisión. Si la información no está en el contexto ni en tus instrucciones, indícalo amablemente.";
+        }
+      }
+    } catch (ragError) {
+      // RAG failure is non-fatal — fall back to base system prompt
+      console.error("RAG retrieval failed (non-fatal):", ragError);
+    }
+
+    // ── 3. Build Gemini payload ───────────────────────────────────────────────
+    const systemPrompt = IBIME_SYSTEM_PROMPT + ragContext;
+
     const geminiHistory: GeminiContent[] = messages
       .filter((m) => m.role === "user" || m.role === "assistant")
       .map((m) => ({
@@ -102,20 +170,14 @@ Deno.serve(async (req: Request) => {
         parts: [{ text: m.text }],
       }));
 
-    // The last message must be from user - separate it as the current prompt
     const lastMessage = geminiHistory[geminiHistory.length - 1];
     const history = geminiHistory.slice(0, -1);
 
     const geminiPayload = {
-      system_instruction: {
-        parts: [{ text: IBIME_SYSTEM_PROMPT }],
-      },
-      contents: [
-        ...history,
-        lastMessage,
-      ],
+      system_instruction: { parts: [{ text: systemPrompt }] },
+      contents: [...history, lastMessage],
       generationConfig: {
-        temperature: 0.7,
+        temperature: 0.5,
         maxOutputTokens: 512,
         topP: 0.9,
       },
@@ -127,18 +189,21 @@ Deno.serve(async (req: Request) => {
       ],
     };
 
-    const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(geminiPayload),
-    });
+    // ── 4. Call Gemini ────────────────────────────────────────────────────────
+    const geminiResponse = await fetch(
+      `${GEMINI_GENERATE_URL}?key=${apiKey}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(geminiPayload),
+      }
+    );
 
     if (!geminiResponse.ok) {
       const errorBody = await geminiResponse.text();
       console.error("Gemini API error:", errorBody);
       throw new Error(`Error de la API de Gemini: ${geminiResponse.status} - ${errorBody}`);
     }
-
 
     const geminiData = await geminiResponse.json();
     const responseText =
@@ -147,23 +212,19 @@ Deno.serve(async (req: Request) => {
 
     return new Response(
       JSON.stringify({ text: responseText }),
-      {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : "Error interno del servidor.";
     console.error("ibime-chat error:", message);
     return new Response(
       JSON.stringify({
-        text: `Lo siento, hubo un problema al procesar tu consulta. Por favor llama al 0274-2623898 o escribe a contactoibime@gmail.com.`,
+        text: "Lo siento, hubo un problema al procesar tu consulta. Por favor llama al 0274-2623898 o escribe a contactoibime@gmail.com.",
         error: message,
       }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });
+
+export {};
