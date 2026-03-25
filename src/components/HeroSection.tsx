@@ -8,7 +8,15 @@ import communityEvent from '@/assets/community-event.jpg';
 // Unified institutional "forest" green from Cifras Institucionales
 const IBIME_GREEN = '#15803d';
 
-const slides = [
+interface Slide {
+  image: string;
+  title: string;
+  subtitle: string;
+  description: string;
+  objectPosition?: string;
+}
+
+const slides: Slide[] = [
   {
     image: heroBanner,
     title: 'Bienvenidos a IBIME',
@@ -73,7 +81,7 @@ export const HeroSection = () => {
                 alt={slide.title}
                 className="w-full h-full object-cover"
                 style={{
-                  objectPosition: (slide as any).objectPosition || 'center center',
+                  objectPosition: slide.objectPosition || 'center center',
                 }}
               />
               {/* Added a consistent dark overlay so text is legible against the bright white building */}

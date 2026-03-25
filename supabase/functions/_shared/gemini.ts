@@ -43,7 +43,7 @@ export interface GeminiContent { role: "user" | "model"; parts: GeminiPart[] }
 /**
  * Llama a Gemini para generar una respuesta
  */
-export async function generateContent(payload: any, apiKey: string): Promise<string> {
+export async function generateContent(payload: Record<string, unknown>, apiKey: string): Promise<string> {
   const res = await fetch(`${GEMINI_GENERATE_URL}?key=${apiKey}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },

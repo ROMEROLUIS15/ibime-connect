@@ -32,7 +32,11 @@ export function useFloatingButtonsTheme() {
 
       const obs = new IntersectionObserver(
         ([entry]) => {
-          entry.isIntersecting ? active.add(id) : active.delete(id);
+          if (entry.isIntersecting) {
+            active.add(id);
+          } else {
+            active.delete(id);
+          }
           setIsDark(active.size > 0);
         },
         {
@@ -57,7 +61,11 @@ export function useFloatingButtonsTheme() {
         const rect = el.getBoundingClientRect();
         const coversButtons = rect.top < vh && rect.bottom > buttonsY;
 
-        coversButtons ? active.add(id) : active.delete(id);
+        if (coversButtons) {
+          active.add(id);
+        } else {
+          active.delete(id);
+        }
       });
 
       setIsDark(active.size > 0);
