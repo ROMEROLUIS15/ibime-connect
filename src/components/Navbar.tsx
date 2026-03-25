@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Menu, X, ChevronDown } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import logoIBIME from '@/assets/logo-ibime.png';
-import gobernadorLogo from '@/assets/gobernador-logo.png';
+import gobernadorLogo from '@/assets/logo-gobernacion.png';
 
 const useHashNavigation = () => {
   const navigate = useNavigate();

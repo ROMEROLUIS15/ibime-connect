@@ -5,21 +5,15 @@
 // POST body: { title?: string, content: string, metadata?: object }
 // Auth:      Requires the Supabase service-role key (admin only)
 
+import { corsHeaders } from "../_shared/cors.ts";
+import { getEmbedding } from "../_shared/gemini.ts";
+
 declare const Deno: {
   serve: (handler: (req: Request) => Response | Promise<Response>) => void;
   env: { get: (key: string) => string | undefined };
 };
 
-const GEMINI_EMBED_URL =
-  "https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:embedContent";
-
 Deno.serve(async (req: Request) => {
-  const corsHeaders = {
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Headers":
-      "authorization, x-client-info, apikey, content-type",
-  };
-
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -46,28 +40,8 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // ── 1. Generate embedding ─────────────────────────────────────────────────
-    const embedRes = await fetch(`${GEMINI_EMBED_URL}?key=${geminiApiKey}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: "models/gemini-embedding-001",
-        content: { parts: [{ text: content }] },
-        outputDimensionality: 768,
-      }),
-    });
-
-    if (!embedRes.ok) {
-      const errText = await embedRes.text();
-      throw new Error(`Gemini embedding error: ${embedRes.status} — ${errText}`);
-    }
-
-    const embedData = await embedRes.json();
-    const embedding: number[] = embedData?.embedding?.values;
-
-    if (!embedding || embedding.length === 0) {
-      throw new Error("Empty embedding returned by Gemini.");
-    }
+    // ── 1. Generate embedding using shared util ───────────────────────────────
+    const embedding = await getEmbedding(content, geminiApiKey);
 
     // ── 2. Insert into knowledge_base via Supabase REST API ───────────────────
     const insertRes = await fetch(`${supabaseUrl}/rest/v1/knowledge_base`, {

@@ -14,6 +14,7 @@ const slides = [
     title: 'Bienvenidos a IBIME',
     subtitle: 'Instituto de Bibliotecas e Información',
     description: 'Educación, cultura y comunidad al servicio de todos los merideños',
+    objectPosition: 'center 20%', // Shift focus up to prevent the roof from getting cut off on wide screens
   },
   {
     image: libraryActivity,
@@ -72,10 +73,12 @@ export const HeroSection = () => {
                 alt={slide.title}
                 className="w-full h-full object-cover"
                 style={{
-                  filter: 'brightness(0.97) saturate(1.06)',
+                  objectPosition: (slide as any).objectPosition || 'center center',
                 }}
               />
-              <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-black/60 to-transparent" />
+              {/* Added a consistent dark overlay so text is legible against the bright white building */}
+              <div className="absolute inset-0 pointer-events-none bg-black/40 mix-blend-multiply" />
+              <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-black/80 via-transparent to-black/30" />
             </div>
 
             {/* Standardized content vertical alignment */}

@@ -4,15 +4,13 @@
 // 3. Injects context into the system prompt
 // 4. Calls Gemini to generate a grounded response
 
+import { corsHeaders } from "../_shared/cors.ts";
+import { getEmbedding, generateContent, GeminiContent } from "../_shared/gemini.ts";
+
 declare const Deno: {
   serve: (handler: (req: Request) => Response | Promise<Response>) => void;
   env: { get: (key: string) => string | undefined };
 };
-
-const GEMINI_GENERATE_URL =
-  "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
-const GEMINI_EMBED_URL =
-  "https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:embedContent";
 
 const IBIME_SYSTEM_PROMPT = `Eres el Asistente Virtual oficial del IBIME (Instituto Autónomo de Servicios de Bibliotecas e Información del Estado Bolivariano de Mérida, Venezuela).
 
@@ -53,26 +51,8 @@ Si el usuario pregunta por un libro específico, indícale que lo busque en el c
 - NUNCA inventes datos de libros, existencias o disponibilidad.
 - Usa un tono cálido, profesional e institucional.`;
 
-interface GeminiPart { text: string }
-interface GeminiContent { role: "user" | "model"; parts: GeminiPart[] }
 interface ChatMessage { role: "user" | "assistant"; text: string }
 interface KnowledgeRow { id: number; title: string; content: string; similarity: number }
-
-// ── Helper: get Gemini embedding ──────────────────────────────────────────────
-async function getEmbedding(text: string, apiKey: string): Promise<number[]> {
-  const res = await fetch(`${GEMINI_EMBED_URL}?key=${apiKey}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model: "models/gemini-embedding-001",
-      content: { parts: [{ text }] },
-      outputDimensionality: 768,
-    }),
-  });
-  if (!res.ok) throw new Error(`Embedding error: ${res.status} ${await res.text()}`);
-  const data = await res.json();
-  return data?.embedding?.values ?? [];
-}
 
 // ── Helper: retrieve context from Supabase ────────────────────────────────────
 async function retrieveContext(
@@ -105,19 +85,8 @@ async function retrieveContext(
 // ── Main handler ──────────────────────────────────────────────────────────────
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
-    return new Response(null, {
-      headers: {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "POST, OPTIONS",
-        "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-      },
-    });
+    return new Response(null, { headers: corsHeaders });
   }
-
-  const corsHeaders = {
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  };
 
   try {
     const apiKey = Deno.env.get("GEMINI_API_KEY");
@@ -156,7 +125,6 @@ Deno.serve(async (req: Request) => {
         }
       }
     } catch (ragError) {
-      // RAG failure is non-fatal — fall back to base system prompt
       console.error("RAG retrieval failed (non-fatal):", ragError);
     }
 
@@ -189,26 +157,8 @@ Deno.serve(async (req: Request) => {
       ],
     };
 
-    // ── 4. Call Gemini ────────────────────────────────────────────────────────
-    const geminiResponse = await fetch(
-      `${GEMINI_GENERATE_URL}?key=${apiKey}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(geminiPayload),
-      }
-    );
-
-    if (!geminiResponse.ok) {
-      const errorBody = await geminiResponse.text();
-      console.error("Gemini API error:", errorBody);
-      throw new Error(`Error de la API de Gemini: ${geminiResponse.status} - ${errorBody}`);
-    }
-
-    const geminiData = await geminiResponse.json();
-    const responseText =
-      geminiData?.candidates?.[0]?.content?.parts?.[0]?.text ??
-      "Lo siento, no pude generar una respuesta. Por favor intenta de nuevo.";
+    // ── 4. Call Gemini using shared utility ───────────────────────────────────
+    const responseText = await generateContent(geminiPayload, apiKey);
 
     return new Response(
       JSON.stringify({ text: responseText }),
