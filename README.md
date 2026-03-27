@@ -1,118 +1,113 @@
-# 🏛️ IBIME Connect — Plataforma Institucional del Estado Mérida
+# 🏛️ IBIME Connect — Plataforma Institucional Inteligente del Estado Mérida
 
 [![Vercel Deployment](https://img.shields.io/badge/Vercel-Deployed-000000?style=flat&logo=vercel)](https://ibime-connect.vercel.app)
 [![Supabase](https://img.shields.io/badge/Supabase-Backend-3ECF8E?style=flat&logo=supabase)](https://supabase.com)
 [![React](https://img.shields.io/badge/React-18-61DAFB?style=flat&logo=react)](https://reactjs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=flat&logo=typescript)](https://www.typescriptlang.org/)
 
-**IBIME Connect** es el ecosistema digital oficial del Instituto Autónomo de Servicios de Bibliotecas e Información del Estado Mérida (**IBIME**). Esta plataforma centraliza la interacción ciudadana, la gestión cultural y el acceso a la información pública mediante tecnologías de última generación y una **Arquitectura Modular Serverless**.
+**IBIME Connect** es el ecosistema digital oficial y modernizado del Instituto Autónomo de Servicios de Bibliotecas e Información del Estado Bolivariano de Mérida (**IBIME**). Esta plataforma representa un salto cualitativo hacia la digitalización institucional, centralizando el acceso a la cultura, la información ciudadana, los servicios bibliotecarios y el contacto directo con la comunidad mediante una experiencia de usuario (UX) premium y tecnologías Serverless de última generación.
 
-🔗 **Acceso Público:** [ibime-connect.vercel.app](https://ibime-connect.vercel.app)
-
----
-
-## 🌟 Logros Principales e Implemetaciones Clave (Reflejo Curricular)
-
-Este proyecto resalta mi capacidad para construir aplicaciones Full-Stack modernas, integrando Inteligencia Artificial, Bases de Datos Vectoriales y Diseño de Interfaces Premium.
-
-- **🤖 Asistente Virtual Inteligente con integración RAG (Retrieval-Augmented Generation):**
-  - Desarrollo de un chatbot institucional interactivo disponible 24/7, protagonizado por un "Búho Robótico" (mascota hecha a la medida).
-  - **Motor de IA:** Integración de la **API de Google Gemini** para la generación de respuestas en lenguaje natural contextualizadas con información pertinente a la institución.
-  - **Base de Datos Vectorial:** Implementación en PostgreSQL extendida con **`pgvector`** (vía Supabase) para el almacenamiento de *embeddings* estructurados, habilitando capacidades de búsqueda semántica de alta fidelidad.
-  - **Serverless Edge Functions:** Construcción y despliegue de módulos serverless mediante Supabase Edge Functions usando Deno (`ibime-chat`, `ibime-ingest`). Esto asegura el ocultamiento de las claves de la IA en todo momento y el escalado automático de los *endpoints*.
-
-- **📊 Gestión Backend de Eventos y Contacto Comunitario:**
-  - Diseño completo del esquema relacional en PostgreSQL (Supabase) para administrar los registros a eventos y manejar un buzón de contacto automatizado de manera concurrente.
-  - Implementación de políticas y lineamientos de seguridad a nivel de base de datos **(Row Level Security - RLS)** para salvaguardar la privacidad de la información generada por el usuario.
-  - Integración fluida front-to-back con **TanStack React Query**, posibilitando mutaciones ultra veloces (*optimistic UI updates*), invalidación de caché quirúrgica y validación de tipos cruzados en los formularios.
-
-- **🎨 Arquitectura de UI/UX, Accesibilidad y Diseño Resolutivo:**
-  - Construcción de una interfaz vibrante, fluida y con responsividad total (*Mobile-First*).
-  - Empleo orgánico de conceptos estéticos avanzados modernos, entre ellos, **Glassmorphism**, brindando un efecto de capas visuales profundo.
-  - Utilización experta de **Tailwind CSS** orquestado a componentes reutilizables sin cabeza altamente accesibles de **Radix UI** potenciados por el ecosistema **shadcn/ui**.
-  - Especial atención a detalle: soporte integral con autoconmutaciones para *Dark / Light Mode*, restyling robusto y personalizado para notificaciones (*Toasts*), adaptación en vivo de *branding* institucional (Logo/Coloring) y rectificaciones minuciosas en carruseles y otros elementos interactivos.
-  - Validaciones asíncronas en tiempo real provistas por **React Hook Form** amalgamado con **Zod** para integridad *End-to-End*.
+🔗 **Acceso Público del Proyecto:** [ibime-connect.vercel.app](https://ibime-connect.vercel.app)
 
 ---
 
-## 🚀 Tecnologías y Stack de Desarrollo
+## ✨ Características y Módulos Implementados
 
-El proyecto cuenta con una pila tecnológica *(Tech Stack)* moderna y fuertemente tipada:
+Este proyecto integra múltiples módulos de nivel empresarial diseñados para brindar la mejor experiencia digital al ciudadano, destacando los siguientes hitos de ingeniería y diseño:
 
-| Categoría | Tecnología Utilizada |
+### 🤖 Asistente Virtual Inteligente (IA Institucional)
+- **Chatbot con Arquitectura RAG (Retrieval-Augmented Generation):** Un asistente impulsado por IA disponible 24/7 (representado por el "Búho Robótico") capaz de responder consultas sobre requisitos, servicios e historia de la institución.
+- **Integración de Google Gemini API:** Generación de respuestas naturales y precisas. 
+- **Base de Datos Vectorial (`pgvector`):** Utilización de la base de datos PostgreSQL en Supabase para almacenar y buscar *embeddings* que otorgan el contexto institucional exacto a la IA.
+- **Edge Functions (Deno):** Todo el procesamiento de IA (`ibime-chat` e `ibime-ingest`) se ejecuta de manera segura bajo funciones Serverless, garantizando que ninguna clave de IA sea expuesta en el Frontend.
+
+### 🏛️ Ecosistema Institucional y de Servicios
+- **Módulos de Identidad:** Secciones inmersivas de Misión, Visión, Valores y Reseña Histórica de la institución.
+- **Páginas de Servicios Especializados:** Rutas dedicadas y enrutamiento SPA para los pilares del IBIME:
+  - **Catálogo Koha:** Interfaz informativa sobre el sistema integrado de gestión bibliotecaria.
+  - **Fondo Editorial:** Espacio dedicado a las publicaciones oficiales.
+  - **Libro Hablado:** Servicio inclusivo para personas con discapacidad visual.
+
+### 📰 Gestión de Contenidos Interactivas
+- **Sección de Eventos (Carruseles):** Presentación dinámica de conferencias, talleres y actividades a través de componentes táctiles (`embla-carousel-react`).
+- **Cartelera Informativa (Noticias):** Grilla optimizada para mostrar los comunicados de prensa y últimas novedades del Estado.
+- **Galería interactiva:** Repositorio visual de la infraestructura y actividades culturales del IBIME.
+
+### 🎨 Diseño Frontend Premium y Accesibilidad
+- **Arquitectura UI de Alto Nivel:** Combinación de *Tailwind CSS*, *shadcn/ui* y primitivas accesibles de *Radix UI* para lograr una interfaz moderna, limpia y altamente receptiva (*Mobile-First*).
+- **Estética Vanguardista:** Uso sutil de *Glassmorphism* (Efectos de vidrio esmerilado), gradientes institucionales y animaciones suaves para elevar la percepción de la marca gubernamental.
+- **Métricas Comunitarias:** Sistema en tiempo real de **Contador de Visitas** integrado para registrar la afluencia de ciudadanos a la plataforma.
+- **Modo Oscuro/Claro Inteligente:** Transición fluida y automática según las preferencias del visitante.
+
+---
+
+## 🚀 Arquitectura y Tech Stack
+
+El código fue desarrollado siguiendo patrones de **Clean Architecture** en el cliente, modularizando componentes, utilidades y adaptadores, bajo un stack fuertemente tipado:
+
+| Capa | Tecnologías |
 | :--- | :--- |
-| **Frontend Core** | React 18, Vite (SWC Loader), TypeScript (Strict Mode) |
-| **Estilos & UI** | Tailwind CSS, shadcn/ui, Radix UI Primitives, Lucide Icons |
-| **Manejo de Estado & Forms**| TanStack React Query, React Hook Form, Zod |
-| **Backend & Base de Datos** | Supabase, PostgreSQL, `pgvector` (Vector DB) |
-| **Funciones Serverless** | Supabase Edge Functions (Deno / TypeScript) |
-| **IA & LLMs** | Google Gemini API (Text Generation & Embeddings) |
-| **Autenticación** | Supabase Auth |
-| **Despliegue** | Vercel (Front), Supabase Cloud (Postgres & Edge) |
+| **Frontend Framework** | React 18, Vite (SWC Loader), TypeScript (Strict Mode) |
+| **Estilos y Componentes**| Tailwind CSS, shadcn/ui, Radix UI, Lucide Icons |
+| **Enrutamiento y Estado** | React Router DOM, TanStack React Query |
+| **Formularios e Inputs** | React Hook Form, Zod (Validación de Esquemas) |
+| **Backend as a Service** | Supabase (PostgreSQL, Row Level Security) |
+| **Manejo Vectorial** | `pgvector` extensión para PostgreSQL |
+| **Serverless Computing** | Supabase Edge Functions (Deno runtime) |
+| **Inteligencia Artificial**| Google Gemini API (Text & Embeddings) |
 
 ---
 
-## ⚙️ Configuración y Ejecución del Proyecto (Desarrollo Local)
+## ⚙️ Guía de Ejecución Local
 
-Sigue estos pasos operativos para levantar el entorno de desarrollo local y empezar a trabajar:
+Sigue estas instrucciones para desplegar el entorno de desarrollo local y colaborar en la plataforma:
 
-### 1. Prerrequisitos de Entorno
-- **Node.js**: Instalación de la versión v18 (LTS) o superior.
-- Gestor de paquetes `npm` (o equivalente).
-- Cuenta desarrollador habilitada en **Supabase** y **Google AI Studio**.
+### 1. Requisitos Previos
+- **Node.js** v18 LTS o superior.
+- **npm** (v9+) o **bun** / **yarn**.
+- CLI de Supabase (opcional para desarrollo local del backend).
 
-### 2. Instalación Integral
-Inicia la configuración en terminal clonando y armando módulos:
+### 2. Clonación e Instalación
 ```bash
-git clone <URL_DEL_REPOSITORIO>
+git clone https://github.com/ROMEROLUIS15/ibime-connect.git
 cd ibime-connect
 npm install
 ```
 
-### 3. Setup de Variables de Entorno (`.env`)
-Configura un archivo oculto `.env` alojándolo en el directorio raíz. Estas variables mapean del lado del cliente hacia el backend; consecuentemente, **alerta**: por ningún motivo expongas *service roles keys* ni claves de APIs externas pagas aquí.
+### 3. Variables de Entorno
+Crea un archivo `.env` en la raíz del proyecto tomando como referencia el `.env.example`. Llena las variables necesarias para conectar con el backend de Supabase:
 
 ```env
-VITE_SUPABASE_PROJECT_ID="tu_project_id"
-VITE_SUPABASE_PUBLISHABLE_KEY="tu_publishable_key"
-VITE_SUPABASE_URL="https://tu_proyecto.supabase.co"
+VITE_SUPABASE_URL="https://[TU_PROYECTO].supabase.co"
+VITE_SUPABASE_ANON_KEY="tu_anon_key_publica"
 ```
+*(No expongas la `GEMINI_API_KEY` ni el `SERVICE_ROLE_KEY` en el Frontend. Estas variables pertenecen exclusivamente a la caja fuerte de secretos del servidor).*
 
-*Importante: La `GEMINI_API_KEY` necesaria para darle vida al Asistente IA RAG se configura rigurosa y excepcionalmente dentro del bóveda del entorno CLI de Supabase (Backend en la nube).*
-
-### 4. Lanzamiento de Entorno de Desarrollo (HMR)
-Inicia compilación en caliente para visualización en navegador:
+### 4. Modo Desarrollo
+Inicia el servidor local impulsado por Vite:
 ```bash
 npm run dev
 ```
-La SPA (Single Page Application) estará accesible interactiva desde un host local: típicamente `http://localhost:5173`. Tiempos de renderizado son inmediatos por las cualidades de compilación esotéricas de Vite (SWC).
+La aplicación estará disponible de forma inmediata en `http://localhost:8080` (o el puerto indicado por consola), con recarga modular en caliente (HMR).
 
-### 5. Configuración y Despliegue de IA (RAG con Supabase CLI) - Opcional
-Comandos primarios para modificar parámetros en la Nube y despachar los controladores RAG en edge functions (si planeas actualizar prompts nativos del Asistente):
-
+### 5. Compilación a Producción
+Para exportar la versión minimizada y optimizada para la web:
 ```bash
-# Autenticarte en el Supabase CLI
-npx supabase login
-
-# Enlace al proyecto host de Supabase (identificador Ref)
-npx supabase link --project-ref [TU_PROJECT_REF]
-
-# Inyectar la llave criptográfica Gemini directo al Backend Secreto
-npx supabase secrets set GEMINI_API_KEY="AI..."
-
-# Despliegue continuo de los pipelines IA al Edge Node
-npx supabase functions deploy ibime-chat
-npx supabase functions deploy ibime-ingest
+npm run build
 ```
 
 ---
 
-## 🔒 Privacidad, Propiedad y Seguridad Vectorial
+## 🔒 Privacidad y Seguridad
 
-Este repositorio es una estructura de nivel gubernamental con principios elementales mitigados en su arquitectura:
-
-- **Contención y Privacidad Abstraída de IA:** El acceso primario al motor Gemini se canaliza exclusivamente mediante el Deno Runtime en Edge. Ni un solo *prompt engineering* crítico o llave foránea interinstitucional está visible en las herramientas de desarrollo (*DevTools*) corporativas ni desde el DOM web, resguardando todo el pipeline *Server-Side*.
-- **Control Restricto (RLS):** Las consultas INSERT/SELECT hacia el modelo están rígidamente blindadas limitando accesos y dictaminando mutaciones exclusivas a usuarios validados (Auth), protegiendo en contra del abuso o sobrescritura indeseada de la memoria vectorial.
+Como plataforma institucional, se implementaron medidas de resguardo estrictas:
+- **Zero-Exposure en IA:** El cliente React jamás "toca" directamente la API de Google Gemini. Todo prompt, embedding y consulta RAG fluye internamente entre la Base de Datos Vectorial de Supabase y las Edge Functions, garantizando confidencialidad.
+- **Row Level Security (RLS):** Las políticas de Postgres previenen inyecciones, accesos no autorizados a la telemetría e interacciones maliciosas sobre los eventos y correos de contacto.
+- **Validación Front-to-Back:** Zod inspecciona estrictamente el esquema de cualquier información enviada por el ciudadano (e.g. Formularios de Contacto), repeliendo *cargas útiles* corruptas antes de contactar al servidor.
 
 ---
-*Todos los derechos reservados © 2026. Desarrollo técnico operado para IBIME Mérida. Creado por un ingeniero amante de las soluciones Web eficientes y la IA.*
+
+<div align="center">
+  <small>Desarrollado y estructurado con altos estándares de calidad de software web.</small><br/>
+  <small>© 2026 Instituto Autónomo de Servicios de Bibliotecas e Información del Estado Bolivariano de Mérida.</small>
+</div>
