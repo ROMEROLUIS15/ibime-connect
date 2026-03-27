@@ -658,17 +658,17 @@ export function IBIMEAssistant(): JSX.Element {
       <style>{`
         .ibime-floating-label {
           position: absolute;
-          top: -38px;
+          top: -42px;
           left: 50%;
           white-space: nowrap;
           background: #ffffff;
           color: #1e293b;
-          font-size: 11px;
+          font-size: 10px;
           font-weight: 700;
-          padding: 5px 10px;
-          border-radius: 12px;
+          padding: 3px 8px;
+          border-radius: 8px;
           box-shadow: 0 4px 14px rgba(0,0,0,0.18);
-          border: 2px solid #e2e8f0;
+          border: 1px solid #e2e8f0;
           animation: ibime-bounce 2.5s ease-in-out infinite;
           pointer-events: none;
           z-index: 10;
@@ -676,9 +676,9 @@ export function IBIMEAssistant(): JSX.Element {
 
         @media (max-width: 640px) {
           .ibime-floating-label {
-            font-size: 10px;
-            padding: 4px 8px;
-            top: -32px;
+            font-size: 9px;
+            padding: 2.5px 6px;
+            top: -36px;
           }
         }
 

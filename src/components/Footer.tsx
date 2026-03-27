@@ -32,8 +32,8 @@ export const Footer = () => {
         {/* ── Grid principal ── */}
         <div className="py-12 grid grid-cols-1 md:grid-cols-12 gap-10">
 
-          {/* Columna Brand — 5/12 */}
-          <div className="md:col-span-5 flex flex-col">
+          {/* Columna Brand — 4/12 */}
+          <div className="md:col-span-4 flex flex-col">
             {/* Logo + nombre en fila, separados semánticamente */}
             <a href="#inicio" className="inline-flex items-center gap-4 mb-4 w-fit">
               <div
@@ -92,8 +92,8 @@ export const Footer = () => {
             </div>
           </div>
 
-          {/* Columna Enlaces — 3/12 */}
-          <div className="md:col-span-3">
+          {/* Columna Enlaces — 2/12 */}
+          <div className="md:col-span-2">
             <h3
               className="font-display font-bold text-white mb-5"
               style={{ fontSize: 14, letterSpacing: '0.04em', textTransform: 'uppercase' }}
@@ -115,8 +115,39 @@ export const Footer = () => {
             </ul>
           </div>
 
-          {/* Columna Datos — 4/12 */}
-          <div className="md:col-span-4">
+          {/* Columna Mapa — 3/12 */}
+          <div className="md:col-span-3">
+            <h3
+              className="font-display font-bold text-white mb-5"
+              style={{ fontSize: 14, letterSpacing: '0.04em', textTransform: 'uppercase' }}
+            >
+              Ubicación
+            </h3>
+            <a
+              href="https://www.google.com/maps/search/?api=1&query=Sector+Glorias+Patrias,+Calle+1+Los+Eucaliptos,+entre+Av+Gonzalo+Picon+y+Tulio+Febres,+Merida+Venezuela"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block w-full h-[220px] rounded-xl overflow-hidden border border-white/10 shadow-lg transition-transform duration-300 hover:scale-[1.02] active:scale-95 cursor-pointer relative group"
+              title="Ver en Google Maps"
+            >
+              {/* Overlay para capturar el click de forma limpia */}
+              <div className="absolute inset-0 z-10" />
+              <iframe
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3946.2223847426!2d-71.14444!3d8.590!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x8e64879f7fd8657d%3A0xe5426742617f657d!2sIBIME!5e0!3m2!1ses!2sve!4v1711467600000!5m2!1ses!2sve"
+                width="100%"
+                height="100%"
+                style={{ border: 0 }}
+                allowFullScreen={false}
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+                title="Google Maps IBIME"
+                className="pointer-events-none"
+              ></iframe>
+            </a>
+          </div>
+
+          {/* Columna Datos — 3/12 */}
+          <div className="md:col-span-3">
             <h3
               className="font-display font-bold text-white mb-5"
               style={{ fontSize: 14, letterSpacing: '0.04em', textTransform: 'uppercase' }}
