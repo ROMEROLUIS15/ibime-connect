@@ -2,10 +2,11 @@
 // 1. Generates an embedding for the user's last message via Gemini
 // 2. Retrieves relevant context from knowledge_base (pgvector)
 // 3. Injects context into the system prompt
-// 4. Calls Gemini to generate a grounded response
+// 4. Calls Groq (Llama 3) to generate a grounded response
 
 import { corsHeaders } from "../_shared/cors.ts";
-import { getEmbedding, generateContent, GeminiContent } from "../_shared/gemini.ts";
+import { getEmbedding } from "../_shared/gemini.ts";
+import { generateGroqCompletion, GroqMessage } from "../_shared/groq.ts";
 
 declare const Deno: {
   serve: (handler: (req: Request) => Response | Promise<Response>) => void;
@@ -89,11 +90,13 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const apiKey = Deno.env.get("GEMINI_API_KEY");
+    const geminiApiKey = Deno.env.get("GEMINI_API_KEY");
+    const groqApiKey = Deno.env.get("GROQ_API_KEY");
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
-    if (!apiKey) throw new Error("GEMINI_API_KEY no está configurada.");
+    if (!geminiApiKey) throw new Error("GEMINI_API_KEY no está configurada.");
+    if (!groqApiKey) throw new Error("GROQ_API_KEY no está configurada.");
     if (!supabaseUrl || !supabaseKey) throw new Error("SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY no configuradas.");
 
     const { messages }: { messages: ChatMessage[] } = await req.json();
@@ -112,7 +115,7 @@ Deno.serve(async (req: Request) => {
     // ── 2. RAG: embed + retrieve ──────────────────────────────────────────────
     let ragContext = "";
     try {
-      const embedding = await getEmbedding(latestUserText, apiKey);
+      const embedding = await getEmbedding(latestUserText, geminiApiKey);
       if (embedding.length > 0) {
         const rows = await retrieveContext(embedding, supabaseUrl, supabaseKey);
         if (rows.length > 0) {
@@ -128,37 +131,27 @@ Deno.serve(async (req: Request) => {
       console.error("RAG retrieval failed (non-fatal):", ragError);
     }
 
-    // ── 3. Build Gemini payload ───────────────────────────────────────────────
+    // ── 3. Build Groq payload ───────────────────────────────────────────────
     const systemPrompt = IBIME_SYSTEM_PROMPT + ragContext;
 
-    const geminiHistory: GeminiContent[] = messages
-      .filter((m) => m.role === "user" || m.role === "assistant")
-      .map((m) => ({
-        role: m.role === "assistant" ? "model" : "user",
-        parts: [{ text: m.text }],
-      }));
+    const groqMessages: GroqMessage[] = [
+      { role: "system", content: systemPrompt },
+      ...messages.map((m): GroqMessage => ({
+        role: m.role === "assistant" ? "assistant" : "user",
+        content: m.text,
+      }))
+    ];
 
-    const lastMessage = geminiHistory[geminiHistory.length - 1];
-    const history = geminiHistory.slice(0, -1);
-
-    const geminiPayload = {
-      system_instruction: { parts: [{ text: systemPrompt }] },
-      contents: [...history, lastMessage],
-      generationConfig: {
-        temperature: 0.5,
-        maxOutputTokens: 512,
-        topP: 0.9,
-      },
-      safetySettings: [
-        { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_MEDIUM_AND_ABOVE" },
-        { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_MEDIUM_AND_ABOVE" },
-        { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_MEDIUM_AND_ABOVE" },
-        { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_MEDIUM_AND_ABOVE" },
-      ],
+    const groqPayload = {
+      model: "llama3-8b-8192",
+      messages: groqMessages,
+      temperature: 0.5,
+      max_tokens: 512,
+      top_p: 0.9,
     };
 
-    // ── 4. Call Gemini using shared utility ───────────────────────────────────
-    const responseText = await generateContent(geminiPayload, apiKey);
+    // ── 4. Call Groq using shared utility ───────────────────────────────────
+    const responseText = await generateGroqCompletion(groqPayload, groqApiKey);
 
     return new Response(
       JSON.stringify({ text: responseText }),
@@ -178,3 +171,4 @@ Deno.serve(async (req: Request) => {
 });
 
 export {};
+
