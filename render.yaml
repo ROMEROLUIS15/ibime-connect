@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: ibime-backend
+    runtime: node
+    plan: free # Puedes cambiarlo a starter o superior si necesitas más recursos
+    region: oregon # O la región que prefieras (frankfurt, ohio, etc.)
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    rootContext: backend # Indica que este servicio vive dentro de la carpeta backend
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: NODE_VERSION
+        value: 18.20.0
+      - key: SUPABASE_URL
+        sync: false # Deberás poner el valor manualmente en el dashboard de Render
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
