@@ -36,21 +36,28 @@ export class SupabaseAssistantAdapter implements IAssistantPort {
     const payload: EdgeFunctionPayload = { messages };
 
     try {
-      const { data, error } = await supabase.functions.invoke<EdgeFunctionResponse>('ibime-chat', {
-        body: payload,
+      const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
+      const endpoint = `${backendUrl}/api/chat`;
+
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
       });
 
-      if (error !== null) {
-        console.error('[SupabaseAssistantAdapter] Edge function invocation error:', error.message);
+      if (!response.ok) {
+        console.error('[BackendAssistantAdapter] API error:', response.statusText);
         return { ok: false, error: 'El asistente no está disponible en este momento. Intenta de nuevo más tarde.' };
       }
 
-      if (data === null) {
+      const data = await response.json() as EdgeFunctionResponse;
+
+      if (!data) {
         return { ok: false, error: 'Respuesta vacía del servidor.' };
       }
 
       if (data.error !== undefined) {
-        console.error('[SupabaseAssistantAdapter] Backend execution error:', data.error);
+        console.error('[BackendAssistantAdapter] Backend execution error:', data.error);
         return { ok: false, error: 'Lo siento, hubo un problema procesando tu consulta.' };
       }
 

@@ -1,5 +1,0 @@
-{
-  "imports": {
-    "jsr:@supabase/functions-js/": "https://esm.sh/jsr/@supabase/functions-js/"
-  }
-}

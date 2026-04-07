@@ -1,0 +1,23 @@
+import dotenv from 'dotenv';
+import path from 'path';
+
+// Cargar el .env
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
+
+export const ENV = {
+  PORT: process.env.PORT || 3000,
+  SUPABASE_URL: process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL,
+  SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY, // Estrictamente el service_role, NUNCA la anon key
+  GEMINI_API_KEY: process.env.GEMINI_API_KEY,
+  GROQ_API_KEY: process.env.GROQ_API_KEY,
+};
+
+// Validación para que la app no arranque si faltan variables críticas
+const requiredEnvs = ['SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY', 'GEMINI_API_KEY', 'GROQ_API_KEY'];
+
+for (const key of requiredEnvs) {
+  if (!ENV[key as keyof typeof ENV]) {
+    console.error(`ERROR CRÍTICO: Falta la variable de entorno ${key}. Verifica tu archivo .env.`);
+    process.exit(1);
+  }
+}
