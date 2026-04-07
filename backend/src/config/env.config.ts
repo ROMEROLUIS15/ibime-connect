@@ -10,6 +10,7 @@ export const ENV = {
   SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY, // Estrictamente el service_role, NUNCA la anon key
   GEMINI_API_KEY: process.env.GEMINI_API_KEY,
   GROQ_API_KEY: process.env.GROQ_API_KEY,
+  FRONTEND_URL: process.env.FRONTEND_URL || 'http://localhost:5173',
 };
 
 // Validación para que la app no arranque si faltan variables críticas

@@ -4,12 +4,15 @@ import apiRoutes from './routes/chat.routes';
 import { errorHandler } from './middlewares/error.middleware';
 
 // Valida que estén todas las variables críticas cargadas
-import './config/env.config';
+import { ENV } from './config/env.config';
 
 const app = express();
 
 // Middlewares globales
-app.use(cors());
+app.use(cors({
+  origin: [ENV.FRONTEND_URL, 'http://localhost:5173'],
+  credentials: true
+}));
 app.use(express.json());
 
 // Registro de Rutas
