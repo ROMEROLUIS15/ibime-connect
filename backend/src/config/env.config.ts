@@ -1,7 +1,14 @@
 import dotenv from 'dotenv';
 import path from 'path';
+import { fileURLToPath } from 'url';
+
+// --- SOLUCIÓN PARA ESM ---
+// En ES Modules (__dirname) no existe, debemos construirlo así:
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Cargar el .env
+// path.resolve(__dirname, '../../.env') sube dos niveles desde src/config hasta la raíz del backend
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
 export const ENV = {
@@ -16,7 +23,12 @@ export const ENV = {
 };
 
 // Validación para que la app no arranque si faltan variables críticas
-const requiredEnvs = ['SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY', 'GEMINI_API_KEY', 'GROQ_API_KEY'];
+const requiredEnvs = [
+  'SUPABASE_URL',
+  'SUPABASE_SERVICE_ROLE_KEY',
+  'GEMINI_API_KEY',
+  'GROQ_API_KEY'
+];
 
 for (const key of requiredEnvs) {
   if (!ENV[key as keyof typeof ENV]) {
