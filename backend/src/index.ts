@@ -1,9 +1,13 @@
 import app from './app.js';
 import { ENV } from './config/env.config.js';
 
-const PORT = ENV.PORT;
+// Render nos da el puerto en ENV.PORT (que es 10000). 
+// Lo convertimos a número para evitar errores de tipo.
+const PORT = Number(ENV.PORT);
 
-app.listen(PORT, () => {
+// Agregamos '0.0.0.0' para que Render pueda ver el servidor desde afuera
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`[ibime-backend] Servidor corriendo en puerto ${PORT}`);
-  console.log(`[ibime-backend] RAG Chat endpoint disponible en: http://localhost:${PORT}/api/chat`);
+  // En producción (Render), la URL ya no será localhost, sino la de Render
+  console.log(`[ibime-backend] Servidor listo para recibir peticiones externas.`);
 });
