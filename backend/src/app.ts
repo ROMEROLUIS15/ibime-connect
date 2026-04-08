@@ -10,9 +10,21 @@ const app = express();
 
 // Middlewares globales
 app.use(cors({
-  origin: [ENV.FRONTEND_URL, 'http://localhost:5173'],
+  origin: [
+    ENV.FRONTEND_URL, 
+    'http://localhost:5173', 
+    'http://localhost:4000',
+    'http://127.0.0.1:4000'
+  ],
   credentials: true
 }));
+
+// Logger de peticiones básico
+app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+  next();
+});
+
 app.use(express.json());
 
 // Registro de Rutas

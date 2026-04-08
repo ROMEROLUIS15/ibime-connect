@@ -36,8 +36,15 @@ export class SupabaseAssistantAdapter implements IAssistantPort {
     const payload: EdgeFunctionPayload = { messages };
 
     try {
-      const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
-      const endpoint = `${backendUrl}/api/chat`;
+      // Usamos VITE_API_URL para consistencia con el .env
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+      
+      // Si la URL ya incluye '/api', no la duplicamos al añadir '/chat'
+      const endpoint = apiUrl.endsWith('/api') 
+        ? `${apiUrl}/chat` 
+        : `${apiUrl}/api/chat`;
+
+      console.log(`[SupabaseAssistantAdapter] Calling endpoint: ${endpoint}`);
 
       const response = await fetch(endpoint, {
         method: 'POST',
