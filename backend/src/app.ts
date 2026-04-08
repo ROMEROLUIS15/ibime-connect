@@ -16,6 +16,11 @@ app.use(cors({
 app.use(express.json());
 
 // Registro de Rutas
+// Ruta de salud para Render
+app.get('/', (req, res) => {
+  res.status(200).json({ status: 'OK', message: 'ibime-backend is running' });
+});
+
 app.use('/api', apiRoutes);
 
 // Manejo Global de Errores

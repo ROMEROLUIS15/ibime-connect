@@ -8,6 +8,6 @@ const PORT = Number(ENV.PORT);
 // Agregamos '0.0.0.0' para que Render pueda ver el servidor desde afuera
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`[ibime-backend] Servidor corriendo en puerto ${PORT}`);
-  // En producción (Render), la URL ya no será localhost, sino la de Render
+  console.log(`[ibime-backend] Health check disponible en: http://0.0.0.0:${PORT}/`);
   console.log(`[ibime-backend] Servidor listo para recibir peticiones externas.`);
 });

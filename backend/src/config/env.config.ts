@@ -7,9 +7,15 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Cargar el .env
-// path.resolve(__dirname, '../../.env') sube dos niveles desde src/config hasta la raíz del backend
-dotenv.config({ path: path.resolve(__dirname, '../../.env') });
+// Cargar el .env (solo para desarrollo local)
+const envPath = path.resolve(__dirname, '../../.env');
+const result = dotenv.config({ path: envPath });
+
+if (result.error) {
+  console.log('[ibime-backend] No se encontró un archivo .env físico, usando variables de entorno del sistema.');
+} else {
+  console.log(`[ibime-backend] Archivo .env cargado desde: ${envPath}`);
+}
 
 export const ENV = {
   PORT: process.env.PORT || 3000,
