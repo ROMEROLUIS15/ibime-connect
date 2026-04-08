@@ -1,10 +1,10 @@
 import express from 'express';
 import cors from 'cors';
-import apiRoutes from './routes/chat.routes';
-import { errorHandler } from './middlewares/error.middleware';
+import apiRoutes from './routes/chat.routes.js';
+import { errorHandler } from './middlewares/error.middleware.js';
 
 // Valida que estén todas las variables críticas cargadas
-import { ENV } from './config/env.config';
+import { ENV } from './config/env.config.js';
 
 const app = express();
 

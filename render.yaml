@@ -2,23 +2,34 @@ services:
   - type: web
     name: ibime-backend
     runtime: node
-    plan: free # Puedes cambiarlo a starter o superior si necesitas más recursos
-    region: oregon # O la región que prefieras (frankfurt, ohio, etc.)
+    plan: free
+    region: oregon
+    
+    rootDir: backend
+
     buildCommand: npm install && npm run build
     startCommand: npm start
-    rootContext: backend # Indica que este servicio vive dentro de la carpeta backend
+
     envVars:
-      - key: PORT
-        value: 10000
       - key: NODE_VERSION
         value: 18.20.0
+      - key: PORT
+        value: 10000
+      - key: FRONTEND_URL
+        value: https://ibime-connect.vercel.app
+      
+      # 1. Nombres LIMPIOS (sin VITE_) para que coincidan con tu env.config.ts
       - key: SUPABASE_URL
-        sync: false # Deberás poner el valor manualmente en el dashboard de Render
+        sync: false
       - key: SUPABASE_SERVICE_ROLE_KEY
         sync: false
       - key: GEMINI_API_KEY
         sync: false
       - key: GROQ_API_KEY
         sync: false
-      - key: FRONTEND_URL
-        value: https://ibime-connect.vercel.app/
+
+      # 2. Las que faltaban para ser un espejo de tu .env
+      - key: SUPABASE_PROJECT_ID
+        sync: false
+      - key: SUPABASE_PUBLISHABLE_KEY
+        sync: false

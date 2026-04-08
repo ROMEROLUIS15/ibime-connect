@@ -1,6 +1,6 @@
-import { supabaseClient } from '../config/supabase.config';
-import { ENV } from '../config/env.config';
-import { AIService } from './ai.service';
+import { supabaseClient } from '../config/supabase.config.js';
+import { ENV } from '../config/env.config.js';
+import { AIService } from './ai.service.js';
 
 const GROQ_CHAT_URL = "https://api.groq.com/openai/v1/chat/completions";
 
@@ -125,7 +125,7 @@ export class ChatService {
     }
 
     const data = await res.json();
-    return data?.choices?.[0]?.message?.content ?? 
+    return data?.choices?.[0]?.message?.content ??
       "Lo siento, no pude generar una respuesta con Groq. Por favor intenta de nuevo.";
   }
 }

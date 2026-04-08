@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { ChatService, ChatMessage } from '../services/chat.service';
+import { ChatService, ChatMessage } from '../services/chat.service.js';
 
 export class ChatController {
   /**
@@ -17,7 +17,7 @@ export class ChatController {
       const responseText = await ChatService.processChat(messages);
 
       return res.status(200).json({ text: responseText });
-      
+
     } catch (error) {
       // Pasamos el error al middleware global de errores
       next(error);
