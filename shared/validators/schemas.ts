@@ -48,7 +48,7 @@ export const createCourseRegistrationSchema = z.object({
   phone: z
     .string()
     .min(7, 'El número de teléfono es requerido')
-    .regex(/^[\d\s\-+().a-zA-Z,]{7,40}$/, 'Número de teléfono inválido'), // Regex más flexible para evitar falsos positivos
+    .regex(/^\+?[\d\s\-()]{7,15}$/, 'Número de teléfono inválido (ej: +58 412 1234567)'),
   courseName: z
     .string()
     .min(1, 'El nombre del curso es requerido')

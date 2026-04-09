@@ -59,7 +59,7 @@ export interface CourseRegistration {
   readonly id: string;
   readonly name: string;
   readonly email: string;
-  readonly phone: string | null;
+  readonly phone: string;
   readonly courseName: string;
   readonly createdAt: string;
 }
@@ -67,7 +67,7 @@ export interface CourseRegistration {
 export interface CreateCourseRegistrationInput {
   readonly name: string;
   readonly email: string;
-  readonly phone?: string;
+  readonly phone: string;
   readonly courseName: string;
 }
 

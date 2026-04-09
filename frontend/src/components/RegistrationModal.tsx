@@ -137,11 +137,11 @@ export function RegistrationModal({ event, onClose }: RegistrationModalProps): J
             <Input
               id="reg-phone"
               name="phone"
-              type="text"
+              type="tel"
               value={formData.phone}
               onChange={handleChange}
               required
-              placeholder="Ej: 04121234567"
+              placeholder="Ej: +58 412 1234567"
               className="h-11 border-border focus:ring-ibime-green"
               autoComplete="tel"
             />

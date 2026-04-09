@@ -33,4 +33,18 @@ export class RegistrationService {
 
     return { success: true };
   }
+
+  static async findByEmail(email: string) {
+    const { data, error } = await supabaseClient
+      .from('course_registrations')
+      .select('course_name, name, created_at')
+      .eq('email', email);
+
+    if (error) {
+      console.error('[RegistrationService] Error finding by email:', error);
+      throw new Error(`Database error: ${error.message}`);
+    }
+
+    return data || [];
+  }
 }
