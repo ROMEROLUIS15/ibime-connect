@@ -41,7 +41,7 @@ test.describe('Formularios IBIME', () => {
     // Llenar modal usando IDs específicos (localizados en el modal)
     await page.locator('#reg-name').fill('Inscripción E2E');
     await page.locator('#reg-email').fill('e2e_events@test.com');
-    await page.locator('#reg-phone').fill('0412-555.55.55');
+    await page.locator('#reg-phone').fill('+58 412 5555555');
 
     // Confirmar
     await page.getByRole('button', { name: /Confirmar Inscripción/i }).click();
