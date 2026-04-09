@@ -5,10 +5,8 @@ services:
     plan: free
     region: oregon
     
-    rootDir: backend
-
-    buildCommand: npm install && ln -sf "$(pwd)/node_modules" ../node_modules && npm run build
-    startCommand: npm start
+    buildCommand: npm install && cd backend && npm install && npm run build
+    startCommand: cd backend && npm start
 
     envVars:
       - key: NODE_VERSION
