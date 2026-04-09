@@ -45,10 +45,11 @@ jobs:
         # Nota: Para que los tests E2E funcionen en CI, se requieren las variables de entorno 
         # para que el backend pueda iniciar (o usar mocks).
         # Aquí se asume que el webServer en playwright.config.ts se encarga de todo.
-        SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-        SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-        GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-        GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+        SUPABASE_URL: ${{ secrets.SUPABASE_URL || 'https://mock.supabase.co' }}
+        SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY || 'mock-key' }}
+        GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY || 'mock-key' }}
+        GROQ_API_KEY: ${{ secrets.GROQ_API_KEY || 'mock-key' }}
+        REDIS_URL: ${{ secrets.REDIS_URL || 'redis://localhost:6379' }}
         FRONTEND_URL: http://localhost:4000
         PORT: 3000
 

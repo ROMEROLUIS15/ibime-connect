@@ -7,6 +7,16 @@ test.describe('Asistente Virtual IBIME', () => {
   });
 
   test('debe abrir la ventana de chat y responder a un saludo', async ({ page }) => {
+    // Aislar la IA simulando una respuesta 200 (evita fallos en CI sin base de datos)
+    await page.route('**/api/chat', async (route) => {
+      await route.fulfill({ 
+        status: 200, 
+        json: { 
+          response: "Hola, soy el asistente virtual del IBIME. Ofrecemos servicios de biblioteca, préstamos interbibliotecarios, eventos culturales y asesoría para investigaciones." 
+        } 
+      });
+    });
+
     // 1. Click en el botón del asistente
     const chatButton = page.getByRole('button', { name: /Abrir Asistente/i });
     await expect(chatButton).toBeVisible();
