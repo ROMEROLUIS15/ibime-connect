@@ -7,7 +7,7 @@ services:
     
     rootDir: backend
 
-    buildCommand: cd .. && npm install && cd backend && npm install && npm run build
+    buildCommand: npm install && ln -sf "$(pwd)/node_modules" ../node_modules && npm run build
     startCommand: npm start
 
     envVars:
