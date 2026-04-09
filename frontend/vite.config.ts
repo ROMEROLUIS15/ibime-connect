@@ -25,6 +25,9 @@ export default defineConfig(({ mode }) => ({
     alias: {
       "@": path.resolve(__dirname, "./src"),
       "@shared": path.resolve(__dirname, "../shared"),
+      // Fuerza a Vite/Rollup a resolver Zod desde el node_modules de frontend
+      // Esto soluciona el error en Vercel al compilar la carpeta externa `shared`
+      "zod": path.resolve(__dirname, "node_modules/zod"),
     },
   },
 }));
