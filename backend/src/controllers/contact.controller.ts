@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { ContactService } from '../services/contact.service.js';
-import { createContactMessageSchema } from '../../../shared/validators/schemas.js';
+import { createContactMessageSchema } from '../shared/validators/schemas.js';
 
 export class ContactController {
   constructor(private container?: any) {}

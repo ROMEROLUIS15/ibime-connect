@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { RegistrationService } from '../services/registration.service.js';
-import { createCourseRegistrationSchema } from '../../../shared/validators/schemas.js';
+import { createCourseRegistrationSchema } from '../shared/validators/schemas.js';
 
 export class RegistrationController {
   constructor(private container?: any) {}

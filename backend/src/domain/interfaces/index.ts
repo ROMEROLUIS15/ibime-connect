@@ -1,4 +1,4 @@
-import type { KnowledgeMatch as SharedKnowledgeMatch } from '@shared/types/domain.js';
+import type { KnowledgeMatch as SharedKnowledgeMatch } from '../../shared/types/domain.js';
 
 export type KnowledgeMatch = SharedKnowledgeMatch;
 

@@ -1,7 +1,7 @@
 import type { ILLMProvider } from '../domain/interfaces/index.js';
 import type { RAGService } from './rag.service.js';
 import { contextLogger } from '../infrastructure/logger/index.js';
-import type { ChatResponse } from '../../../shared/types/domain.js';
+import type { ChatResponse } from '../shared/types/domain.js';
 
 export class ChatService {
   private static readonly IBIME_SYSTEM_PROMPT = `Eres el Asistente Virtual oficial del IBIME (Instituto Autónomo de Servicios de Bibliotecas e Información del Estado Bolivariano de Mérida, Venezuela).

@@ -5,8 +5,10 @@ services:
     plan: free
     region: oregon
     
-    buildCommand: npm install && cd backend && npm install && npm run build
-    startCommand: cd backend && npm start
+    rootDir: backend
+
+    buildCommand: npm install && npm run build
+    startCommand: npm start
 
     envVars:
       - key: NODE_VERSION

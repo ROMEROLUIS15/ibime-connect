@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { ChatService } from '../services/chat.service.js';
-import { chatRequestSchema } from '../../../shared/validators/schemas.js';
+import { chatRequestSchema } from '../shared/validators/schemas.js';
 import container from '../infrastructure/di/container.js';
 
 export class ChatController {
