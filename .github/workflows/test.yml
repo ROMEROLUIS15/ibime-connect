@@ -29,6 +29,12 @@ jobs:
 
     - name: Run Backend Unit Tests
       run: cd backend && npm test
+      env:
+        SUPABASE_URL: "https://mock.supabase.co"
+        SUPABASE_SERVICE_ROLE_KEY: "mock-key"
+        GEMINI_API_KEY: "mock-key"
+        GROQ_API_KEY: "mock-key"
+        REDIS_URL: "redis://localhost:6379"
 
     - name: Install Playwright Browsers
       run: npx playwright install --with-deps chromium
