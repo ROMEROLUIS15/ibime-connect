@@ -32,3 +32,6 @@ dist-ssr
 supabase/.temp/
 supabase.tar.gz
 test-ingest.mjs
+
+# Private Documentation
+TECHNICAL_DOCUMENTATION.md
