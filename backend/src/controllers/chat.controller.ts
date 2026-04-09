@@ -1,26 +1,47 @@
 import { Request, Response, NextFunction } from 'express';
-import { ChatService, ChatMessage } from '../services/chat.service.js';
+import { ChatService } from '../services/chat.service.js';
+import { chatRequestSchema } from '../../../shared/validators/schemas.js';
+import container from '../infrastructure/di/container.js';
 
 export class ChatController {
-  /**
-   * Endpoint POST /api/chat
-   */
-  static async handleChatRequest(req: Request, res: Response, next: NextFunction) {
-    try {
-      const { messages } = req.body as { messages: ChatMessage[] };
+  private chatService: ChatService;
 
-      if (!messages || !Array.isArray(messages) || messages.length === 0) {
-        return res.status(400).json({ error: "Se requiere un arreglo de mensajes." });
+  constructor(chatService?: ChatService) {
+    this.chatService = chatService || container.resolve<ChatService>('ChatService');
+  }
+
+  handleChatRequest = async (req: Request, res: Response, next: NextFunction) => {
+    const requestId = (req as any).requestId;
+    console.log(`[ChatController] Nueva solicitud de chat recibida - RequestID: ${requestId}`);
+
+    try {
+      let chatInput = req.body;
+
+      if (req.body.messages && !req.body.userMessage) {
+        const messages = req.body.messages;
+        const lastMessage = messages[messages.length - 1];
+        chatInput = {
+          userMessage: lastMessage?.text || lastMessage?.content || '',
+          conversationHistory: messages.slice(0, -1).map((m: any) => ({
+            role: m.role,
+            text: m.text || m.content || '',
+          })),
+        };
       }
 
-      // El Service contiene toda la lógica pesada de comunicarse con Groq y Supabase RAG
-      const responseText = await ChatService.processChat(messages);
+      const validation = chatRequestSchema.safeParse(chatInput);
+      if (!validation.success) {
+        return res.status(400).json({
+          error: 'Datos de consulta inválidos.',
+          details: validation.error.format(),
+        });
+      }
 
-      return res.status(200).json({ text: responseText });
+      const chatResponse = await this.chatService.processChat(validation.data, requestId);
 
+      return res.status(200).json(chatResponse);
     } catch (error) {
-      // Pasamos el error al middleware global de errores
       next(error);
     }
-  }
+  };
 }

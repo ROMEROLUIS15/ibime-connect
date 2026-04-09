@@ -186,13 +186,15 @@ function RegistrationModal({ event, onClose }: RegistrationModalProps): JSX.Elem
 
           <div>
             <label htmlFor="reg-phone" className="block text-sm font-medium text-foreground mb-1">
-              Teléfono (opcional)
+              Teléfono *
             </label>
             <Input
               id="reg-phone"
               name="phone"
               value={formData.phone}
               onChange={handleChange}
+              required
+              placeholder="Ej: 04121234567"
               className="h-11"
             />
           </div>

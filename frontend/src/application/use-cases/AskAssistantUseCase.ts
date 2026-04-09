@@ -3,7 +3,7 @@
  *
  * Application Use Case for the virtual assistant.
  *
- * The RAG context retrieval is handled entirely by the backend (Edge Function).
+ * The RAG context retrieval and LLM processing are handled by the Node.js backend.
  * This use case simply formats the input and calls the assistant port.
  */
 
@@ -23,11 +23,11 @@ export class AskAssistantUseCase {
   constructor(private readonly assistantPort: IAssistantPort) {}
 
   async execute(input: AskAssistantInput): Promise<ApiResult<ChatResponse>> {
-    // RAG retrieval is done natively by the Edge Function in the backend.
+    // La recuperación de RAG y la consulta al LLM se realizan en el Backend.
     return this.assistantPort.generateAnswer({
       userMessage: input.userMessage,
       conversationHistory: input.conversationHistory,
-      context: [], // Ignored; backend injects it natively
+      context: [], // El backend inyecta el contexto automáticamente
     });
   }
 }

@@ -1,20 +1,10 @@
-import { supabaseClient } from '../config/supabase.config.js';
-import { ENV } from '../config/env.config.js';
-import { AIService } from './ai.service.js';
+import type { ILLMProvider } from '../domain/interfaces/index.js';
+import type { RAGService } from './rag.service.js';
+import { contextLogger } from '../infrastructure/logger/index.js';
+import type { ChatResponse } from '../../../shared/types/domain.js';
 
-const GROQ_CHAT_URL = "https://api.groq.com/openai/v1/chat/completions";
-
-export interface ChatMessage {
-  role: "user" | "assistant";
-  text: string;
-}
-
-export interface GroqMessage {
-  role: "system" | "user" | "assistant";
-  content: string;
-}
-
-const IBIME_SYSTEM_PROMPT = `Eres el Asistente Virtual oficial del IBIME (Instituto Autónomo de Servicios de Bibliotecas e Información del Estado Bolivariano de Mérida, Venezuela).
+export class ChatService {
+  private static readonly IBIME_SYSTEM_PROMPT = `Eres el Asistente Virtual oficial del IBIME (Instituto Autónomo de Servicios de Bibliotecas e Información del Estado Bolivariano de Mérida, Venezuela).
 
 Tu nombre es "Asistente IBIME". Respondes siempre en español, de manera amigable, institucional y concisa.
 
@@ -53,79 +43,57 @@ Si el usuario pregunta por un libro específico, indícale que lo busque en el c
 - NUNCA inventes datos de libros, existencias o disponibilidad.
 - Usa un tono cálido, profesional e institucional.`;
 
-export class ChatService {
-  /**
-   * Procesa la lista de mensajes y genera una respuesta usando RAG y Groq.
-   */
-  static async processChat(messages: ChatMessage[]): Promise<string> {
-    // 1. Get the latest user message
-    const userMessages = messages.filter((m) => m.role === "user");
-    const latestUserText = userMessages[userMessages.length - 1]?.text ?? "";
+  constructor(
+    private llmProvider: ILLMProvider,
+    private ragService: RAGService
+  ) {}
 
-    // 2. RAG: Obtener contexto desde Supabase usando el embedding de Gemini
-    let ragContext = "";
-    try {
-      const embedding = await AIService.getEmbedding(latestUserText);
-      if (embedding.length > 0) {
-        // Llamar a Supabase RPC match_knowledge
-        const { data: rows, error } = await supabaseClient.rpc('match_knowledge', {
-          query_embedding: `[${embedding.join(",")}]`,
-          match_count: 5,
-          match_threshold: 0.5
-        });
+  async processChat(
+    input: {
+      userMessage: string;
+      conversationHistory: Array<{ role: 'user' | 'assistant'; text: string }>;
+    },
+    requestId?: string
+  ): Promise<ChatResponse> {
+    const logger = contextLogger(requestId);
+    const { userMessage, conversationHistory } = input;
 
-        if (error) throw error;
-
-        if (rows && rows.length > 0) {
-          ragContext =
-            "\n\n== CONTEXTO RECUPERADO DE LA BASE DE CONOCIMIENTOS ==\n" +
-            rows
-              .map((r: any, i: number) => `[${i + 1}] ${r.title ? `**${r.title}**\n` : ""}${r.content}`)
-              .join("\n\n") +
-            "\n\nUtiliza este contexto para responder con precisión. Si la información no está en el contexto ni en tus instrucciones, indícalo amablemente.";
-        }
-      }
-    } catch (error) {
-      console.error("RAG retrieval failed (non-fatal):", error);
-    }
-
-    // 3. Preparar el payload de Groq (Llama 3)
-    const systemPrompt = IBIME_SYSTEM_PROMPT + ragContext;
-
-    const groqMessages: GroqMessage[] = [
-      { role: "system", content: systemPrompt },
-      ...messages.map((m): GroqMessage => ({
-        role: m.role === "assistant" ? "assistant" : "user",
-        content: m.text,
-      }))
-    ];
-
-    const groqPayload = {
-      model: "llama-3.1-8b-instant",
-      messages: groqMessages,
-      temperature: 0.5,
-      max_tokens: 512,
-      top_p: 0.9,
-    };
-
-    // 4. Llamar a Groq API
-    const res = await fetch(GROQ_CHAT_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${ENV.GROQ_API_KEY}`,
-      },
-      body: JSON.stringify(groqPayload),
+    logger.info('Processing chat request', {
+      userMessageLength: userMessage.length,
+      historyLength: conversationHistory.length,
     });
 
-    if (!res.ok) {
-      const errorBody = await res.text();
-      console.error(`Groq API Error (${res.status}):`, errorBody);
-      throw new Error(`Error de Groq API: ${res.status}`);
-    }
+    const startTime = Date.now();
 
-    const data = await res.json();
-    return data?.choices?.[0]?.message?.content ??
-      "Lo siento, no pude generar una respuesta con Groq. Por favor intenta de nuevo.";
+    try {
+      logger.debug('Retrieving context via RAGService');
+      const { context: ragContext, sources } = await this.ragService.retrieveContext(userMessage, undefined, requestId);
+
+      const systemPrompt = ChatService.IBIME_SYSTEM_PROMPT + ragContext;
+      const llmMessages = [
+        { role: 'system' as const, content: systemPrompt },
+        ...conversationHistory.map((m) => ({
+          role: m.role as 'user' | 'assistant',
+          content: m.text,
+        })),
+        { role: 'user' as const, content: userMessage },
+      ];
+
+      logger.debug('Generating answer via LLMProvider');
+      const { content: answer, tokensUsed } = await this.llmProvider.generateAnswer(llmMessages, undefined, requestId);
+
+      const duration = Date.now() - startTime;
+      logger.info('Chat processing completed', { duration, tokensUsed, sourcesFound: sources.length });
+
+      return {
+        answer,
+        sources,
+        tokensUsed,
+      };
+    } catch (error) {
+      const duration = Date.now() - startTime;
+      logger.error('Chat processing failed', { error, duration });
+      throw error;
+    }
   }
 }

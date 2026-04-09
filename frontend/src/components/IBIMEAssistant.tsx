@@ -26,7 +26,7 @@ import {
 } from 'react';
 import { useFloatingButtonsTheme } from '@/hooks/useFloatingButtonsTheme';
 import { AskAssistantUseCase, type AskAssistantInput } from '@/application/use-cases/AskAssistantUseCase';
-import { SupabaseAssistantAdapter } from '@/infrastructure/adapters/SupabaseAssistantAdapter';
+import { BackendAssistantAdapter } from '@/infrastructure/adapters/BackendAssistantAdapter';
 import type { ChatMessage, KnowledgeMatch } from '@shared/types/domain';
 
 // ─── Assets ───────────────────────────────────────────────────────────────────
@@ -232,7 +232,7 @@ export function IBIMEAssistant(): JSX.Element {
 
   // ── Dependency Injection via useMemo ─────────────────────────────────────
   const askAssistant = useMemo<AskAssistantUseCase>(() => {
-    const assistantAdapter = new SupabaseAssistantAdapter();
+    const assistantAdapter = new BackendAssistantAdapter();
     return new AskAssistantUseCase(assistantAdapter);
   }, []);
 
@@ -285,7 +285,7 @@ export function IBIMEAssistant(): JSX.Element {
         timestamp: new Date(),
         text: result.ok
           ? result.data.answer
-          : 'Lo siento, no pude procesar tu consulta en este momento. Por favor intenta de nuevo o contáctanos directamente al 0274-2623898.',
+          : result.error,
         sources: result.ok ? result.data.sources : [],
       };
 

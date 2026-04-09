@@ -13,22 +13,39 @@ export async function registerForEvent(
   input: CreateCourseRegistrationInput,
 ): Promise<ApiResult<void>> {
   try {
-    const { error } = await supabase.from('course_registrations').insert({
-      name: input.name,
-      email: input.email,
-      phone: input.phone ?? null,
-      course_name: input.courseName,
+    const defaultLocalUrl = 'http://localhost:3000/api';
+    const envUrl = import.meta.env.VITE_API_URL;
+    
+    let baseUrl = envUrl || defaultLocalUrl;
+    
+    // En desarrollo, priorizar localhost
+    if (import.meta.env.DEV) {
+      const isLocalhost = typeof window !== 'undefined' && 
+        (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+      if (isLocalhost && !envUrl?.includes('localhost')) {
+        baseUrl = defaultLocalUrl;
+      }
+    }
+
+    const endpoint = baseUrl.endsWith('/api') ? `${baseUrl}/registrations` : `${baseUrl}/api/registrations`;
+    console.log(`[EventsService] Enviando a: ${endpoint}`);
+
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(input),
     });
 
-    if (error !== null) {
-      console.error('[EventsService] Supabase error:', error.message);
-      return { ok: false, error: 'No se pudo completar la inscripción. Intenta de nuevo.' };
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error('[EventsService] API error:', errorData.error);
+      return { ok: false, error: errorData.error || 'No se pudo completar la inscripción.' };
     }
 
     return { ok: true, data: undefined };
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Error desconocido';
     console.error('[EventsService] Unexpected error:', message);
-    return { ok: false, error: 'Error inesperado. Por favor contacta al administrador.' };
+    return { ok: false, error: 'Error de conexión. Intenta de nuevo.' };
   }
 }

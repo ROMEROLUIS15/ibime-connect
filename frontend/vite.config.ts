@@ -13,6 +13,9 @@ export default defineConfig(({ mode }) => ({
       overlay: true,
       port: 4000,
     },
+    fs: {
+      allow: [".."],
+    },
   },
   plugins: [
     react(),
@@ -21,7 +24,7 @@ export default defineConfig(({ mode }) => ({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
-      "@shared": path.resolve(__dirname, "./shared"),
+      "@shared": path.resolve(__dirname, "../shared"),
     },
   },
 }));
