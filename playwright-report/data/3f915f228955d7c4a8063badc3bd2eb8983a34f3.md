@@ -6,8 +6,8 @@
 
 # Test info
 
-- Name: forms.spec.ts >> Formularios IBIME >> debe inscribirse a un evento exitosamente
-- Location: e2e\forms.spec.ts:29:7
+- Name: forms.spec.ts >> Formularios IBIME >> debe enviar el formulario de contacto exitosamente
+- Location: e2e\forms.spec.ts:8:7
 
 # Error details
 

@@ -8,7 +8,7 @@ test.describe('Asistente Virtual IBIME', () => {
 
   test('debe abrir la ventana de chat y responder a un saludo', async ({ page }) => {
     // Aislar la IA simulando una respuesta 200 (evita fallos en CI sin base de datos)
-    await page.route('**/api/chat', async (route) => {
+    await page.route('**/*chat*', async (route) => {
       await route.fulfill({ 
         status: 200, 
         json: { 

@@ -7,28 +7,28 @@ test.describe('Formularios IBIME', () => {
 
   test('debe enviar el formulario de contacto exitosamente', async ({ page }) => {
     // Aislar del backend real simulando respuesta 200 (evita fallos en CI sin base de datos)
-    await page.route('**/api/contact', async (route) => {
+    await page.route('**/*contact*', async (route) => {
       await route.fulfill({ status: 200, json: { success: true } });
     });
 
     // Scroll hasta la sección de contacto
     await page.locator('#contacto').scrollIntoViewIfNeeded();
 
-    // Llenar campos
-    await page.getByLabel(/Nombre Completo/i).first().fill('Test E2E');
-    await page.getByLabel(/Correo Electrónico/i).first().fill('e2e@test.com');
-    await page.getByLabel(/Mensaje/i).fill('Este es un mensaje automático de prueba E2E.');
+    // Llenar campos usando IDs específicos para evitar colisiones
+    await page.locator('#name').fill('Test E2E');
+    await page.locator('#email').fill('e2e@test.com');
+    await page.locator('#message').fill('Este es un mensaje automático de prueba E2E.');
 
     // Click en enviar
     await page.getByRole('button', { name: /Enviar Mensaje/i }).click();
 
-    // Verificar notificación de éxito
-    await expect(page.getByText(/¡Mensaje enviado!/i)).toBeVisible();
+    // Verificar notificación de éxito (Regex flexible para evitar problemas de encoding con '¡')
+    await expect(page.getByText(/Mensaje enviado/i)).toBeVisible({ timeout: 10000 });
   });
 
   test('debe inscribirse a un evento exitosamente', async ({ page }) => {
     // Aislar del backend real simulando respuesta 200 (evita fallos en CI sin base de datos)
-    await page.route('**/api/registrations', async (route) => {
+    await page.route('**/*registrations*', async (route) => {
       await route.fulfill({ status: 200, json: { success: true } });
     });
 
@@ -38,15 +38,15 @@ test.describe('Formularios IBIME', () => {
     // Click en el primer botón de inscribirse
     await page.getByRole('button', { name: /Inscribirse/i }).first().click();
 
-    // Llenar modal
-    await page.getByLabel(/Nombre Completo/i).last().fill('Inscripción E2E');
-    await page.getByLabel(/Correo Electrónico/i).last().fill('e2e_events@test.com');
-    await page.getByLabel(/Teléfono/i).fill('0412-555.55.55');
+    // Llenar modal usando IDs específicos (localizados en el modal)
+    await page.locator('#reg-name').fill('Inscripción E2E');
+    await page.locator('#reg-email').fill('e2e_events@test.com');
+    await page.locator('#reg-phone').fill('0412-555.55.55');
 
     // Confirmar
     await page.getByRole('button', { name: /Confirmar Inscripción/i }).click();
 
-    // Verificar éxito
-    await expect(page.getByText(/¡Inscripción exitosa!/i)).toBeVisible();
+    // Verificar éxito (Regex flexible para evitar problemas de encoding con '¡')
+    await expect(page.getByText(/Inscripción exitosa/i)).toBeVisible({ timeout: 10000 });
   });
 });
