@@ -23,7 +23,7 @@ test.describe('Formularios IBIME', () => {
     await page.getByRole('button', { name: /Enviar Mensaje/i }).click();
 
     // Verificar notificación de éxito (Regex flexible para evitar problemas de encoding con '¡')
-    await expect(page.getByText(/Mensaje enviado/i)).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText(/Mensaje enviado/i).first()).toBeVisible({ timeout: 10000 });
   });
 
   test('debe inscribirse a un evento exitosamente', async ({ page }) => {
@@ -46,7 +46,7 @@ test.describe('Formularios IBIME', () => {
     // Confirmar
     await page.getByRole('button', { name: /Confirmar Inscripción/i }).click();
 
-    // Verificar éxito (Regex flexible para evitar problemas de encoding con '¡')
-    await expect(page.getByText(/Inscripción exitosa/i)).toBeVisible({ timeout: 10000 });
+    // Verificar notificación de éxito (Regex flexible para evitar problemas de encoding con '¡')
+    await expect(page.getByText(/Inscripción exitosa/i).first()).toBeVisible({ timeout: 10000 });
   });
 });
