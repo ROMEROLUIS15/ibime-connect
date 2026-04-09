@@ -7,7 +7,7 @@ test.describe('Formularios IBIME', () => {
 
   test('debe enviar el formulario de contacto exitosamente', async ({ page }) => {
     // Aislar del backend real simulando respuesta 200 (evita fallos en CI sin base de datos)
-    await page.route('**/api/contact/messages', async (route) => {
+    await page.route('**/api/contact', async (route) => {
       await route.fulfill({ status: 200, json: { success: true } });
     });
 
@@ -28,7 +28,7 @@ test.describe('Formularios IBIME', () => {
 
   test('debe inscribirse a un evento exitosamente', async ({ page }) => {
     // Aislar del backend real simulando respuesta 200 (evita fallos en CI sin base de datos)
-    await page.route('**/api/courses/register', async (route) => {
+    await page.route('**/api/registrations', async (route) => {
       await route.fulfill({ status: 200, json: { success: true } });
     });
 
