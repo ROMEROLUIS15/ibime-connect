@@ -42,7 +42,11 @@ app.get('/', (req, res) => {
   res.status(200).json({ status: 'OK', message: 'ibime-backend is running' });
 });
 
+// Rate limiting específico para chat (aplica a ambas rutas: v1 y legacy)
+app.use('/api/v1/chat', chatLimiter);
 app.use('/api/chat', chatLimiter);
+
+// Rate limiting general para todas las rutas de API
 app.use('/api', apiLimiter, apiRoutes);
 
 app.use(errorHandler);

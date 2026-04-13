@@ -16,15 +16,15 @@ create index on public.knowledge_base
   using ivfflat (embedding vector_cosine_ops)
   with (lists = 10);
 
--- Only authenticated users (admins) can manage the knowledge base
+-- Only authenticated users (admins) can READ the knowledge base
+-- NOTE: service_role bypassa RLS, por lo que puede hacer todas las operaciones
 alter table public.knowledge_base enable row level security;
 
-create policy "Admins can manage knowledge_base"
+create policy "Authenticated users can read knowledge_base"
   on public.knowledge_base
-  for all
+  for select
   to authenticated
-  using (true)
-  with check (true);
+  using (true);
 
 -- The Edge Function (service role) can read it anonymously via RPC
 create policy "Service role can read knowledge_base"

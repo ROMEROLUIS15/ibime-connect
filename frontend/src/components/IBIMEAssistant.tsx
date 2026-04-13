@@ -25,6 +25,7 @@ import {
   type ChangeEvent,
 } from 'react';
 import { useFloatingButtonsTheme } from '@/hooks/useFloatingButtonsTheme';
+import { useFocusTrap, useEscapeKey } from '@/hooks/use-focus-trap';
 import { AskAssistantUseCase, type AskAssistantInput } from '@/application/use-cases/AskAssistantUseCase';
 import { BackendAssistantAdapter } from '@/infrastructure/adapters/BackendAssistantAdapter';
 import type { ChatMessage, KnowledgeMatch } from '@shared/types/domain';
@@ -33,11 +34,7 @@ import type { ChatMessage, KnowledgeMatch } from '@shared/types/domain';
 
 const OWL_AVATAR = '/buho-robot.jpeg';
 
-// ─── Environment ──────────────────────────────────────────────────────────────
-
-const OPENAI_API_KEY = import.meta.env['VITE_OPENAI_API_KEY'] as string | undefined;
-
-// ─── Constants ────────────────────────────────────────────────────────────────
+// ─── Constants ───────────────────────────────────────────────────────────────
 
 const WELCOME_MESSAGE: ChatMessage = {
   id: 0,
@@ -47,7 +44,7 @@ const WELCOME_MESSAGE: ChatMessage = {
   sources: [],
 } as const;
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function formatTime(date: Date): string {
   return date.toLocaleTimeString('es-VE', { hour: '2-digit', minute: '2-digit' });
@@ -228,7 +225,12 @@ export function IBIMEAssistant(): JSX.Element {
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
   const { isDark } = useFloatingButtonsTheme();
+
+  // Focus trap + Escape key handler
+  useFocusTrap(dialogRef, isOpen);
+  useEscapeKey(() => setIsOpen(false), isOpen);
 
   // ── Dependency Injection via useMemo ─────────────────────────────────────
   const askAssistant = useMemo<AskAssistantUseCase>(() => {
@@ -339,6 +341,7 @@ export function IBIMEAssistant(): JSX.Element {
         {/* ── Ventana de Chat ── */}
         {isOpen && (
           <div
+            ref={dialogRef}
             role="dialog"
             aria-modal="true"
             aria-label="Asistente Virtual IBIME"

@@ -23,6 +23,18 @@ CREATE POLICY "Authenticated users can view registrations"
   TO authenticated
   USING (true);
 
+-- Admins can update registrations (e.g. corrections)
+CREATE POLICY "Admins can update registrations"
+  ON public.course_registrations FOR UPDATE
+  TO authenticated
+  USING (true);
+
+-- Admins can delete registrations
+CREATE POLICY "Admins can delete registrations"
+  ON public.course_registrations FOR DELETE
+  TO authenticated
+  USING (true);
+
 -- Table for contact messages
 CREATE TABLE public.contact_messages (
   id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -43,5 +55,17 @@ CREATE POLICY "Anyone can submit contact message"
 -- Only authenticated users (admins) can view messages
 CREATE POLICY "Authenticated users can view messages"
   ON public.contact_messages FOR SELECT
+  TO authenticated
+  USING (true);
+
+-- Admins can update messages (e.g. mark as resolved)
+CREATE POLICY "Admins can update messages"
+  ON public.contact_messages FOR UPDATE
+  TO authenticated
+  USING (true);
+
+-- Admins can delete messages
+CREATE POLICY "Admins can delete messages"
+  ON public.contact_messages FOR DELETE
   TO authenticated
   USING (true);

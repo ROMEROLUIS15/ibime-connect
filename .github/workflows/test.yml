@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [ main, develop ]
 
+permissions:
+  contents: read
+  checks: write
+
 jobs:
   test:
     timeout-minutes: 60
@@ -27,6 +31,12 @@ jobs:
     - name: Install dependencies (Frontend)
       run: cd frontend && npm install
 
+    - name: Type-check backend
+      run: cd backend && npx tsc --noEmit
+
+    - name: Type-check frontend
+      run: cd frontend && npx tsc --noEmit
+
     - name: Run Backend Unit Tests
       run: cd backend && npm test
       env:
@@ -35,6 +45,7 @@ jobs:
         GEMINI_API_KEY: "mock-key"
         GROQ_API_KEY: "mock-key"
         REDIS_URL: "redis://localhost:6379"
+        ADMIN_SECRET: "mock-admin-secret"
 
     - name: Install Playwright Browsers
       run: npx playwright install --with-deps chromium
@@ -50,6 +61,7 @@ jobs:
         GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY || 'mock-key' }}
         GROQ_API_KEY: ${{ secrets.GROQ_API_KEY || 'mock-key' }}
         REDIS_URL: ${{ secrets.REDIS_URL || 'redis://localhost:6379' }}
+        ADMIN_SECRET: ${{ secrets.ADMIN_SECRET || 'mock-admin-secret' }}
         FRONTEND_URL: http://localhost:4000
         PORT: 3000
 

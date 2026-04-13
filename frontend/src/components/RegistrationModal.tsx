@@ -1,8 +1,9 @@
-import { useState, type JSX } from 'react';
+import { useState, type JSX, useRef } from 'react';
 import { Loader2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
+import { useFocusTrap, useEscapeKey } from '@/hooks/use-focus-trap';
 import { registerForEvent } from '@/services';
 import { createCourseRegistrationSchema } from '@shared/validators/schemas';
 import type { Event } from '@shared/types/domain';
@@ -26,6 +27,11 @@ export function RegistrationModal({ event, onClose }: RegistrationModalProps): J
     email: '',
     phone: '',
   });
+  const modalRef = useRef<HTMLDivElement>(null);
+
+  // Accessibility: focus trap + Escape to close
+  useFocusTrap(modalRef, true);
+  useEscapeKey(onClose);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
     const { name, value } = e.target;
@@ -70,6 +76,7 @@ export function RegistrationModal({ event, onClose }: RegistrationModalProps): J
 
   return (
     <div
+      ref={modalRef}
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-foreground/60 backdrop-blur-sm"
       onMouseDown={onClose}
       role="dialog"

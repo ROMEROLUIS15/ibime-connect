@@ -10,9 +10,12 @@ services:
     buildCommand: npm install && npm run build
     startCommand: npm start
 
+    healthCheckPath: /
+    autoDeploy: true
+
     envVars:
       - key: NODE_VERSION
-        value: 18.20.0
+        value: 20.11.0
       - key: PORT
         value: 10000
       - key: FRONTEND_URL
@@ -32,4 +35,8 @@ services:
       - key: SUPABASE_PROJECT_ID
         sync: false
       - key: SUPABASE_PUBLISHABLE_KEY
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: ADMIN_SECRET
         sync: false

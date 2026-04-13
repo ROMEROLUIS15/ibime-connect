@@ -1,4 +1,6 @@
 import { supabaseClient } from '../config/supabase.config.js';
+import { contextLogger, logger } from '../infrastructure/logger/index.js';
+import { handleSupabaseError } from '../domain/errors/app-error.js';
 
 export interface CourseRegistration {
   name: string;
@@ -8,7 +10,9 @@ export interface CourseRegistration {
 }
 
 export class RegistrationService {
-  static async register(data: CourseRegistration) {
+  static async register(data: CourseRegistration, requestId?: string) {
+    const log = requestId ? contextLogger(requestId) : logger;
+
     const { error } = await supabaseClient
       .from('course_registrations')
       .insert({
@@ -19,30 +23,22 @@ export class RegistrationService {
       });
 
     if (error) {
-      console.error('[RegistrationService] Error inserting into Supabase:', {
-        error,
-        data: {
-          name: data.name,
-          email: data.email,
-          phone: data.phone,
-          course_name: data.courseName
-        }
-      });
-      throw new Error(`Database error: ${error.message}`);
+      handleSupabaseError(log, error, data, 'registering for course');
     }
 
     return { success: true };
   }
 
-  static async findByEmail(email: string) {
+  static async findByEmail(email: string, requestId?: string) {
+    const log = requestId ? contextLogger(requestId) : logger;
+
     const { data, error } = await supabaseClient
       .from('course_registrations')
       .select('course_name, name, created_at')
       .eq('email', email);
 
     if (error) {
-      console.error('[RegistrationService] Error finding by email:', error);
-      throw new Error(`Database error: ${error.message}`);
+      handleSupabaseError(log, error, { email }, 'finding registrations by email');
     }
 
     return data || [];

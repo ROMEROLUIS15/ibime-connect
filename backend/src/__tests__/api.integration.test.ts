@@ -3,7 +3,7 @@ import request from 'supertest';
 import app from '../app.js';
 
 describe('API Integration Tests', () => {
-  
+
   describe('GET /', () => {
     it('should return 200 OK', async () => {
       const response = await request(app).get('/');
@@ -18,7 +18,7 @@ describe('API Integration Tests', () => {
         .post('/api/chat')
         .send({ conversationHistory: [] });
       expect(response.status).toBe(400);
-      expect(response.body.error).toContain('consulta inválidos');
+      expect(response.body.text).toContain('consulta inválidos');
     });
 
     // Nota: El test del flujo feliz requiere llaves de API reales o mocks profundos.

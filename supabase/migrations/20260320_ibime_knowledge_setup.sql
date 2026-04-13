@@ -26,16 +26,14 @@ ALTER TABLE public.ibime_knowledge
 ALTER TABLE public.ibime_knowledge
   ADD CONSTRAINT ibime_knowledge_title_unique UNIQUE (title);
 
--- Index for pgvector cosine similarity search
-CREATE INDEX IF NOT EXISTS ibime_knowledge_embedding_idx
-  ON public.ibime_knowledge
-  USING ivfflat (embedding vector_cosine_ops)
-  WITH (lists = 50);
-
 -- Index for category filter
 CREATE INDEX IF NOT EXISTS ibime_knowledge_category_idx
   ON public.ibime_knowledge (category)
   WHERE is_active = true;
+
+-- NOTE: Vector similarity index (HNSW/IVFFlat) is skipped because the installed
+-- pgvector version does not support it. The match function will use sequential
+-- scan which is fine for small knowledge bases (< 10k rows).
 
 -- Trigger to auto-update updated_at
 CREATE OR REPLACE FUNCTION public.set_updated_at()
@@ -61,15 +59,15 @@ CREATE POLICY "Public can read active knowledge"
   USING (is_active = true);
 
 DROP POLICY IF EXISTS "Authenticated can manage knowledge" ON public.ibime_knowledge;
-CREATE POLICY "Authenticated can manage knowledge"
-  ON public.ibime_knowledge FOR ALL
+-- Authenticated users solo pueden leer. service_role (backend) bypassa RLS completamente.
+CREATE POLICY "Authenticated can read knowledge"
+  ON public.ibime_knowledge FOR SELECT
   TO authenticated
-  USING (true)
-  WITH CHECK (true);
+  USING (is_active = true);
 
 -- match_ibime_knowledge function (recreate to ensure correct signature)
 CREATE OR REPLACE FUNCTION public.match_ibime_knowledge(
-  query_embedding   vector(1536),
+  query_embedding   extensions.vector,
   match_threshold   float    DEFAULT 0.5,
   match_count       int      DEFAULT 5,
   filter_category   text     DEFAULT NULL
@@ -82,6 +80,7 @@ RETURNS TABLE (
   similarity float
 )
 LANGUAGE plpgsql
+set search_path = public, extensions
 AS $$
 BEGIN
   RETURN QUERY

@@ -27,6 +27,7 @@ export const ENV = {
   GROQ_API_KEY: process.env.GROQ_API_KEY,
   FRONTEND_URL: process.env.FRONTEND_URL || 'http://localhost:5173',
   REDIS_URL: process.env.REDIS_URL || 'redis://localhost:6379',
+  ADMIN_SECRET: process.env.ADMIN_SECRET,
 };
 
 // Validación para que la app no arranque si faltan variables críticas

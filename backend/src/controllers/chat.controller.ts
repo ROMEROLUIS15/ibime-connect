@@ -1,7 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
 import { ChatService } from '../services/chat.service.js';
-import { chatRequestSchema } from '../shared/validators/schemas.js';
+import { chatRequestSchema } from '@shared/validators/schemas.js';
 import container from '../infrastructure/di/container.js';
+import { contextLogger } from '../infrastructure/logger/index.js';
+import { BadRequestError } from '../domain/errors/app-error.js';
 
 export class ChatController {
   private chatService: ChatService;
@@ -12,7 +14,8 @@ export class ChatController {
 
   handleChatRequest = async (req: Request, res: Response, next: NextFunction) => {
     const requestId = (req as any).requestId;
-    console.log(`[ChatController] Nueva solicitud de chat recibida - RequestID: ${requestId}`);
+    const logger = contextLogger(requestId);
+    logger.info('Nueva solicitud de chat recibida');
 
     try {
       let chatInput = req.body;
@@ -32,7 +35,7 @@ export class ChatController {
       const validation = chatRequestSchema.safeParse(chatInput);
       if (!validation.success) {
         return res.status(400).json({
-          error: 'Datos de consulta inválidos.',
+          text: 'Datos de consulta inválidos.',
           details: validation.error.format(),
         });
       }

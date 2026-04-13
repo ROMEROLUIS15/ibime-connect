@@ -1,4 +1,6 @@
 import { supabaseClient } from '../config/supabase.config.js';
+import { contextLogger, logger } from '../infrastructure/logger/index.js';
+import { handleSupabaseError } from '../domain/errors/app-error.js';
 
 export interface ContactMessage {
   name: string;
@@ -7,7 +9,9 @@ export interface ContactMessage {
 }
 
 export class ContactService {
-  static async createMessage(data: ContactMessage) {
+  static async createMessage(data: ContactMessage, requestId?: string) {
+    const log = requestId ? contextLogger(requestId) : logger;
+
     const { error } = await supabaseClient
       .from('contact_messages')
       .insert({
@@ -17,15 +21,7 @@ export class ContactService {
       });
 
     if (error) {
-      console.error('[ContactService] Error inserting into Supabase:', {
-        error,
-        data: {
-          name: data.name,
-          email: data.email,
-          message: data.message
-        }
-      });
-      throw new Error(`Database error: ${error.message}`);
+      handleSupabaseError(log, error, data, 'inserting contact message');
     }
 
     return { success: true };

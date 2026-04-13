@@ -7,11 +7,20 @@ const redisUrl = ENV.REDIS_URL || 'redis://localhost:6379';
 // Redis Cloud requiere TLS (rediss://). Lo detectamos automáticamente.
 const isTLS = redisUrl.startsWith('rediss://');
 
+// En producción, validar certificados TLS es obligatorio para prevenir MITM.
+// En desarrollo (localhost), se puede deshabilitar para conveniencia.
+const isDevelopment = process.env.NODE_ENV !== 'production';
+const isLocalhost = redisUrl.includes('localhost') || redisUrl.includes('127.0.0.1');
+
 export const redisClient = createClient({
   url: redisUrl,
   socket: {
     // tls debe ser literalmente `true` (no `boolean`) para satisfacer RedisTlsOptions
-    ...(isTLS && { tls: true as const, rejectUnauthorized: false }),
+    ...(isTLS && {
+      tls: true as const,
+      // Solo deshabilitar validación en desarrollo local. En producción SIEMPRE validar certificados.
+      rejectUnauthorized: isDevelopment && isLocalhost ? false : true,
+    }),
     reconnectStrategy: (retries) => {
       if (retries > 5) {
         logger.warn({ retries }, 'Redis: máximo de reintentos alcanzado, operando sin caché.');
