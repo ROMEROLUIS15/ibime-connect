@@ -31,11 +31,12 @@ export class RegistrationService {
 
   static async findByEmail(email: string, requestId?: string) {
     const log = requestId ? contextLogger(requestId) : logger;
+    const normalizedEmail = email.trim().toLowerCase();
 
     const { data, error } = await supabaseClient
       .from('course_registrations')
       .select('course_name, name, created_at')
-      .eq('email', email);
+      .eq('email', normalizedEmail);
 
     if (error) {
       handleSupabaseError(log as any, error, { email }, 'finding registrations by email');

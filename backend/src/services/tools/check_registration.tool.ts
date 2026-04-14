@@ -22,7 +22,8 @@ export class CheckRegistrationTool implements ITool {
     }
     
     try {
-      const records = await RegistrationService.findByEmail(args.email);
+      const normalizedEmail = args.email.trim().toLowerCase();
+      const records = await RegistrationService.findByEmail(normalizedEmail);
       if (records.length === 0) {
         return { status: 'no_registrado', mensaje: 'No se encontraron inscripciones para este correo.' };
       }
