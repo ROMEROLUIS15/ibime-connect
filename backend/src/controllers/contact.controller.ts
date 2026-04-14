@@ -3,8 +3,10 @@ import { ContactService } from '../services/contact.service.js';
 import { createContactMessageSchema } from '@shared/validators/schemas.js';
 
 export class ContactController {
+  constructor() { }
+
   handleSubmission = async (req: Request, res: Response, next: NextFunction) => {
-    const requestId = (req as Record<string, unknown>).requestId as string | undefined;
+    const requestId = req.requestId;
 
     try {
       const validation = createContactMessageSchema.safeParse(req.body);

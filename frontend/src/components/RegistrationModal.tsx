@@ -1,4 +1,5 @@
-import { useState, type JSX, useRef } from 'react';
+import { useState, type JSX, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Loader2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,15 +20,21 @@ interface RegistrationFormState {
   phone: string;
 }
 
-export function RegistrationModal({ event, onClose }: RegistrationModalProps): JSX.Element {
+export function RegistrationModal({ event, onClose }: RegistrationModalProps): JSX.Element | null {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [mounted, setMounted] = useState<boolean>(false);
   const [formData, setFormData] = useState<RegistrationFormState>({
     name: '',
     email: '',
     phone: '',
   });
   const modalRef = useRef<HTMLDivElement>(null);
+
+  // Ensure portal target exists before rendering
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Accessibility: focus trap + Escape to close
   useFocusTrap(modalRef, true);
@@ -74,11 +81,15 @@ export function RegistrationModal({ event, onClose }: RegistrationModalProps): J
     }
   };
 
-  return (
+  // Use portal to render modal outside parent DOM tree
+  // This prevents issues with overflow:hidden, stacking contexts, and event bubbling
+  if (!mounted) return null;
+
+  return createPortal(
     <div
       ref={modalRef}
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-foreground/60 backdrop-blur-sm"
-      onMouseDown={onClose}
+      onClick={onClose}
       role="dialog"
       aria-modal="true"
       aria-labelledby="registration-title"
@@ -166,6 +177,7 @@ export function RegistrationModal({ event, onClose }: RegistrationModalProps): J
           </Button>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

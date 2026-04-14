@@ -21,7 +21,7 @@ export class ContactService {
       });
 
     if (error) {
-      handleSupabaseError(log, error, data, 'inserting contact message');
+      handleSupabaseError(log as any, error, data, 'inserting contact message');
     }
 
     return { success: true };

@@ -23,7 +23,7 @@ export class RegistrationService {
       });
 
     if (error) {
-      handleSupabaseError(log, error, data, 'registering for course');
+      handleSupabaseError(log as any, error, data, 'registering for course');
     }
 
     return { success: true };
@@ -38,7 +38,7 @@ export class RegistrationService {
       .eq('email', email);
 
     if (error) {
-      handleSupabaseError(log, error, { email }, 'finding registrations by email');
+      handleSupabaseError(log as any, error, { email }, 'finding registrations by email');
     }
 
     return data || [];

@@ -74,6 +74,7 @@ describe('GroqProvider', () => {
         name: 'check_registration',
         description: 'Check user registrations',
         parameters: { type: 'object', properties: { email: { type: 'string' } } },
+        execute: async () => ({}),
       }];
 
       mockFetch.mockResolvedValueOnce({
@@ -183,7 +184,7 @@ describe('GroqProvider', () => {
         {
           role: 'assistant',
           content: '',
-          tool_calls: [{ id: 'tc1', function: { name: 'check', arguments: '{}' } }],
+          tool_calls: [{ id: 'tc1', type: 'function' as const, function: { name: 'check', arguments: '{}' } }],
         },
         { role: 'tool', content: 'No registrations found', name: 'check', tool_call_id: 'tc1' },
       ];

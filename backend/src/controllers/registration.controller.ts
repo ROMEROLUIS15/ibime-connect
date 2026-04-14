@@ -3,8 +3,10 @@ import { RegistrationService } from '../services/registration.service.js';
 import { createCourseRegistrationSchema } from '@shared/validators/schemas.js';
 
 export class RegistrationController {
+  constructor() { }
+
   handleRegistration = async (req: Request, res: Response, next: NextFunction) => {
-    const requestId = (req as Record<string, unknown>).requestId as string | undefined;
+    const requestId = req.requestId;
 
     try {
       const validation = createCourseRegistrationSchema.safeParse(req.body);

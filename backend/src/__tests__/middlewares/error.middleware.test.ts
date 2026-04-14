@@ -113,8 +113,7 @@ describe('errorHandler middleware', () => {
 
     it('should include requestId in response', () => {
       const { res, json } = mockRes();
-      const req = mockReq();
-      (req as Record<string, unknown>).requestId = 'req-123';
+      const req = { ...mockReq(), requestId: 'req-123' } as unknown as Request;
       const err = new Error('fail');
 
       errorHandler(err, req, res, next);

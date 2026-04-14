@@ -12,28 +12,28 @@ const router = Router();
 
 // V1 Routes
 router.post('/v1/chat', (req, res, next) =>
-  new ChatController(undefined).handleChatRequest(req, res, next)
+  new ChatController().handleChatRequest(req, res, next)
 );
 
 router.post('/v1/contact', (req, res, next) =>
-  new ContactController(undefined).handleSubmission(req, res, next)
+  new ContactController().handleSubmission(req, res, next)
 );
 
 router.post('/v1/registrations', (req, res, next) =>
-  new RegistrationController(undefined).handleRegistration(req, res, next)
+  new RegistrationController().handleRegistration(req, res, next)
 );
 
 // Backwards compatibility (Legacy routes)
 router.post('/chat', (req, res, next) =>
-  new ChatController(undefined).handleChatRequest(req, res, next)
+  new ChatController().handleChatRequest(req, res, next)
 );
 
 router.post('/contact', (req, res, next) =>
-  new ContactController(undefined).handleSubmission(req, res, next)
+  new ContactController().handleSubmission(req, res, next)
 );
 
 router.post('/registrations', (req, res, next) =>
-  new RegistrationController(undefined).handleRegistration(req, res, next)
+  new RegistrationController().handleRegistration(req, res, next)
 );
 
 // Rate limiter for admin endpoints (5 requests per minute)
