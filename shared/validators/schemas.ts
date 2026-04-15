@@ -74,6 +74,12 @@ export const chatRequestSchema = z.object({
     )
     .max(20, 'Historial demasiado largo')
     .default([]),
+  userEmail: z
+    .string()
+    .email('Correo electrónico inválido')
+    .max(255)
+    .toLowerCase()
+    .optional(),
 });
 
 export type ChatRequestInput = z.infer<typeof chatRequestSchema>;

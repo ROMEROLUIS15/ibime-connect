@@ -29,6 +29,13 @@ export class ChatController {
             role: m.role,
             text: m.text || m.content || '',
           })),
+          userEmail: req.body.userEmail,
+        };
+      } else {
+        // Preserve userEmail if present in original body
+        chatInput = {
+          ...chatInput,
+          userEmail: req.body.userEmail,
         };
       }
 
@@ -40,7 +47,14 @@ export class ChatController {
         });
       }
 
-      const chatResponse = await this.chatService.processChat(validation.data, requestId);
+      const chatResponse = await this.chatService.processChat(
+        {
+          userMessage: validation.data.userMessage,
+          conversationHistory: validation.data.conversationHistory,
+          userEmail: chatInput.userEmail,
+        },
+        requestId
+      );
 
       return res.status(200).json(chatResponse);
     } catch (error) {

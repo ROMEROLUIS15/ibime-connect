@@ -6,7 +6,7 @@ export class KnowledgeRepository implements IKnowledgeRepository {
   async matchKnowledge(
     queryEmbedding: number[],
     matchCount: number = 5,
-    matchThreshold: number = 0.4,
+    matchThreshold: number = 0.65, // Must match RAGService.MIN_VALID_THRESHOLD
     requestId?: string
   ): Promise<KnowledgeMatch[]> {
     const logger = contextLogger(requestId);

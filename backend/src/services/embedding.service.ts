@@ -6,6 +6,7 @@ export class EmbeddingService implements IEmbeddingService {
   static readonly MODEL = 'gemini-embedding-001';
   private static readonly GEMINI_API_URL =
     `https://generativelanguage.googleapis.com/v1beta/models/${EmbeddingService.MODEL}:embedContent`;
+  private static readonly DEFAULT_TIMEOUT_MS = 15000;
 
   async getEmbedding(text: string, requestId?: string): Promise<number[]> {
     const logger = contextLogger(requestId);
@@ -17,6 +18,9 @@ export class EmbeddingService implements IEmbeddingService {
 
     logger.debug('Getting embedding for text', { textLength: text.length });
     const startTime = Date.now();
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), EmbeddingService.DEFAULT_TIMEOUT_MS);
 
     try {
       const response = await fetch(EmbeddingService.GEMINI_API_URL, {
@@ -30,6 +34,7 @@ export class EmbeddingService implements IEmbeddingService {
           content: { parts: [{ text }] },
           outputDimensionality: 768,
         }),
+        signal: controller.signal,
       });
 
       const duration = Date.now() - startTime;
@@ -48,10 +53,16 @@ export class EmbeddingService implements IEmbeddingService {
       });
 
       return data.embedding.values;
-    } catch (error) {
+    } catch (error: any) {
       const duration = Date.now() - startTime;
+      if (error.name === 'AbortError') {
+        logger.error('Gemini request timeout', { duration });
+        throw new Error(`Gemini request timeout (${EmbeddingService.DEFAULT_TIMEOUT_MS / 1000}s)`);
+      }
       logger.error('Failed to get embedding', { error, duration });
       throw error;
+    } finally {
+      clearTimeout(timeoutId);
     }
   }
 }
