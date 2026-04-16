@@ -313,6 +313,91 @@ Si Redis no está disponible, `CacheService` entra en **graceful degradation** a
 
 ---
 
+## ⚖️ Gestión de Cuota y Rate Limiting (Free Tier)
+
+### Límites reales del Free Tier
+
+| Proveedor | Métrica | Límite real | Umbral operativo (80%) |
+|:---|:---|:---:|:---:|
+| **Groq** (`llama-3.1-8b-instant`) | Tokens / minuto | 6,000 | **4,800** |
+| **Groq** | Requests / minuto | 30 | **24** |
+| **Groq** | Requests / día | 14,400 | — |
+| **Gemini** (`gemini-embedding-001`) | Cobertura | Redis 24h | Cache-first |
+
+> **Filosofía**: operamos al **80% del límite real** para mantener un margen de seguridad ante picos de tráfico. El 20% restante absorbe variaciones sin que Groq emita un HTTP 429.
+
+---
+
+### Las 4 Capas de Protección
+
+```
+Request del usuario
+  ↓
+[Capa 4] chatLimiter (api.routes.ts)
+  → 6 mensajes / minuto / IP
+  → Bloquea clientes abusivos antes de consumir tokens
+  ↓
+[Capa 1] trimHistory (ChatOrchestrator)
+  → Historial acotado a últimos 3 turnos (6 mensajes)
+  → Previene prompt bloat por conversaciones largas
+  ↓
+[Capa 1] Token Budget por flow (maxTokens reducidos)
+  → Asegura que cada llamada LLM sea predecible y acotada
+  ↓
+[Capa 2] GroqRateLimiter.canProceed() (groq-rate-limiter.ts)
+  → Sliding window Redis: TPM ≤ 4,800 | RPM ≤ 24
+  → Si está saturado → respuesta friendly "intenta en N segundos"
+  ↓
+[GroqProvider] generateAnswer()
+  ├─ HTTP 200 → GroqRateLimiter.recordUsage(tokensUsed) [real]
+  └─ HTTP 429 → [Capa 3] espera Retry-After → 1 reintento automático
+                        └─ falla de nuevo → error friendly al usuario
+  ↓
+[ResponsePolicy] → output final
+```
+
+---
+
+### Token Budgets por Flow (v2.3.0)
+
+| Flow | Temperatura | Max Tokens | Cambio |
+|:---|:---:|:---:|:---:|
+| `registration` (con email, formateado) | `0.2` | **250** | ↓ de 400 |
+| `registration` (sin email) | — | `0` | Sin cambio |
+| `catalog` (RAG) | `0.3` | **350** | ↓ de 600 |
+| `general` (RAG hit) | `0.3` | **350** | ↓ de 600 |
+| `general` (RAG miss / fallback) | `0.3` | **300** | ↓ de 500 |
+| `general` (saludo) | — | `0` | Sin cambio |
+
+### Cálculo de capacidad con 10 usuarios simultáneos
+
+| Escenario | Tokens/request (prom.) | 10 usuarios | ¿Dentro del umbral? |
+|:---|:---:|:---:|:---:|
+| **Antes** (v2.2.0) | ~700 | ~7,000 TPM | ❌ Supera límite |
+| **Después** (v2.3.0) | ~370 | ~3,700 TPM | ✅ 61% del límite |
+
+### Comportamiento ante saturación
+
+| Situación | Respuesta al usuario |
+|:---|:---|
+| TPM/RPM al 80% (GroqRateLimiter) | HTTP 429 + `"El asistente está muy ocupado. Intenta en N segundos."` |
+| Groq devuelve 429 directamente | Espera `Retry-After` → reintento → si falla: mensaje friendly |
+| IP supera 6 msg/min (chatLimiter) | HTTP 429 + `"Demasiados mensajes. Por favor espera un momento."` |
+| Redis no disponible | Fail-open: el sistema opera sin rate limiter (graceful degradation) |
+
+### Módulos involucrados
+
+| Módulo | Responsabilidad |
+|:---|:---|
+| `groq-rate-limiter.ts` | Sliding window Redis (TPM + RPM) — nuevo en v2.3.0 |
+| `groq.provider.ts` | Pre-check + post-record + 429 retry handler |
+| `chat-orchestrator.ts` | `trimHistory()` + token budgets por flow |
+| `system-prompt.ts` | Regla `== LONGITUD DE RESPUESTA ==` |
+| `api.routes.ts` | `chatLimiter` 6 req/min/IP |
+| `error.middleware.ts` | Convierte `RATE_LIMIT_EXCEEDED` → HTTP 429 friendly |
+
+---
+
 ## 🔑 Aislamiento de Credenciales
 
 Todas las claves de API (`GROQ_API_KEY`, `GEMINI_API_KEY`, `SUPABASE_SERVICE_ROLE_KEY`) residen exclusivamente en el entorno del servidor. Nunca se exponen al navegador ni al frontend.
@@ -322,4 +407,4 @@ La validación de variables de entorno se realiza al arrancar el servidor via **
 ---
 
 *La Inteligencia Artificial al servicio de la transparencia y la eficiencia institucional.*
-*Sincronizado con el código fuente — IBIME Connect v2.2.0.*
+*Sincronizado con el código fuente — IBIME Connect v2.3.0.*
