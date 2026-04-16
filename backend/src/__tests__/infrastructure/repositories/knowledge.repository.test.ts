@@ -64,7 +64,7 @@ describe('KnowledgeRepository', () => {
       expect(mocks.mockRpc).toHaveBeenCalledWith('match_knowledge', {
         query_embedding: '[0.1,0.2,0.3]',
         match_count: 5,
-        match_threshold: 0.4,
+        match_threshold: 0.65,
       });
     });
 
@@ -99,7 +99,7 @@ describe('KnowledgeRepository', () => {
       expect(mocks.mockRpc).toHaveBeenCalledWith('match_knowledge', {
         query_embedding: '[]',
         match_count: 5,
-        match_threshold: 0.4,
+        match_threshold: 0.65,
       });
     });
 
@@ -111,7 +111,7 @@ describe('KnowledgeRepository', () => {
       expect(mocks.mockRpc).toHaveBeenCalledWith('match_knowledge', {
         query_embedding: '[0.5]',
         match_count: 5,
-        match_threshold: 0.4,
+        match_threshold: 0.65,
       });
     });
 

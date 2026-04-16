@@ -85,8 +85,8 @@ describe('ChatOrchestrator', () => {
       expect(systemMessage).toContain('Taller de Python');
       expect(systemMessage).toContain('Taller de Excel');
 
-      // Verify low temperature for formatting task
-      expect(callArgs[1]).toMatchObject({ temperature: 0.2, maxTokens: 400 });
+      // Verify low temperature for formatting task with new maxTokens
+      expect(callArgs[1]).toMatchObject({ temperature: 0.2, maxTokens: 250 });
     });
 
     it('should NOT use RAG for registration queries', async () => {
@@ -132,8 +132,8 @@ describe('ChatOrchestrator', () => {
       expect(systemMessage).toContain('CONTEXTO');
       expect(systemMessage).toContain('referencia para responder');
 
-      // Temperature should be low for factual responses
-      expect(callArgs[1]).toMatchObject({ temperature: 0.3, maxTokens: 600 });
+      // Temperature should be low for factual responses with new maxTokens
+      expect(callArgs[1]).toMatchObject({ temperature: 0.3, maxTokens: 350 });
     });
 
     it('should NOT query registration DB for catalog queries', async () => {
@@ -193,8 +193,60 @@ describe('ChatOrchestrator', () => {
         conversationHistory: [],
       });
 
-      // Should still call LLM but with fallback prompt
+      // Should still call LLM but with fallback prompt with new maxTokens
       expect(mockLLMProvider.generateAnswer).toHaveBeenCalledTimes(1);
+      const callArgs = vi.mocked(mockLLMProvider.generateAnswer).mock.calls[0];
+      expect(callArgs[1]).toMatchObject({ maxTokens: 300 }); // New fallback value
+    });
+  });
+
+  describe('history trimming', () => {
+    it('should trim history to last 3 turns (6 messages) when exceeding limit', () => {
+      // Create a long conversation history
+      const longHistory = [];
+      for (let i = 0; i < 10; i++) {
+        longHistory.push({ role: 'user' as const, text: `User message ${i}` });
+        longHistory.push({ role: 'assistant' as const, text: `Assistant message ${i}` });
+      }
+
+      // Verify original history length
+      expect(longHistory.length).toBe(20);
+
+      // Apply trimming (should keep last 6 messages: 3 turns)
+      const trimmedHistory = orchestrator['trimHistory'](longHistory, 3);
+      
+      expect(trimmedHistory.length).toBe(6); // 3 user + 3 assistant messages
+      
+      // Check that it's the last 6 messages
+      expect(trimmedHistory[0]).toEqual({ role: 'user', text: 'User message 7' });
+      expect(trimmedHistory[1]).toEqual({ role: 'assistant', text: 'Assistant message 7' });
+      expect(trimmedHistory[2]).toEqual({ role: 'user', text: 'User message 8' });
+      expect(trimmedHistory[3]).toEqual({ role: 'assistant', text: 'Assistant message 8' });
+      expect(trimmedHistory[4]).toEqual({ role: 'user', text: 'User message 9' });
+      expect(trimmedHistory[5]).toEqual({ role: 'assistant', text: 'Assistant message 9' });
+    });
+
+    it('should not trim history when under the limit', () => {
+      const shortHistory = [
+        { role: 'user' as const, text: 'User message 1' },
+        { role: 'assistant' as const, text: 'Assistant message 1' },
+        { role: 'user' as const, text: 'User message 2' },
+        { role: 'assistant' as const, text: 'Assistant message 2' },
+      ];
+
+      const trimmedHistory = orchestrator['trimHistory'](shortHistory, 3);
+      
+      // Should remain unchanged (4 messages < 6 max)
+      expect(trimmedHistory.length).toBe(4);
+      expect(trimmedHistory).toEqual(shortHistory);
+    });
+
+    it('should handle empty history', () => {
+      const emptyHistory: Array<{ role: 'user' | 'assistant'; text: string }> = [];
+      const trimmedHistory = orchestrator['trimHistory'](emptyHistory, 3);
+      
+      expect(trimmedHistory.length).toBe(0);
+      expect(trimmedHistory).toEqual([]);
     });
   });
 

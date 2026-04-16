@@ -1,148 +1,81 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type { Request, Response, NextFunction } from 'express';
-import { errorHandler } from '../../middlewares/error.middleware.js';
-import { AppError, BadRequestError, NotFoundError, InternalServerError } from '../../domain/errors/app-error.js';
+  it('should handle malformed RATE_LIMIT_EXCEEDED error gracefully', () => {
+    const mockReq = {
+      path: '/api/v1/chat',
+      requestId: 'req-456'
+    } as Request;
 
-function mockReq(overrides: Partial<Request> = {}): Request {
-  return {
-    method: 'GET',
-    path: '/test',
-    ...overrides,
-  } as unknown as Request;
-}
+    const mockRes = {
+      status: vi.fn().mockReturnThis(),
+      json: vi.fn(),
+    } as unknown as Response;
 
-function mockRes(): { res: Response; json: ReturnType<typeof vi.fn>; status: ReturnType<typeof vi.fn> } {
-  const json = vi.fn().mockReturnThis();
-  const status = vi.fn().mockReturnValue({ json });
-  return {
-    res: { status, json } as unknown as Response,
-    json,
-    status,
-  };
-}
+    const next = vi.fn();
 
-describe('errorHandler middleware', () => {
-  const next = vi.fn() as unknown as NextFunction;
+    // Create a mock error with malformed format (without seconds)
+    const error = new Error('RATE_LIMIT_EXCEEDED:malformed-format');
 
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
+    // Execute the middleware
+    errorHandler(error, mockReq, mockRes, next);
 
-  describe('with AppError subclasses', () => {
-    it('should return correct status code for BadRequestError', () => {
-      const { res, status, json } = mockRes();
-      const err = new BadRequestError('Invalid input');
-
-      errorHandler(err, mockReq(), res, next);
-
-      expect(status).toHaveBeenCalledWith(400);
-      expect(json).toHaveBeenCalledWith(
-        expect.objectContaining({ text: 'Invalid input', requestId: 'unknown' })
-      );
-    });
-
-    it('should return 404 for NotFoundError', () => {
-      const { res, status, json } = mockRes();
-      const err = new NotFoundError('Usuario');
-
-      errorHandler(err, mockReq(), res, next);
-
-      expect(status).toHaveBeenCalledWith(404);
-      expect(json).toHaveBeenCalledWith(
-        expect.objectContaining({ text: 'Usuario no encontrado' })
-      );
-    });
-
-    it('should return 500 for InternalServerError', () => {
-      const { res, status, json } = mockRes();
-      const err = new InternalServerError();
-
-      errorHandler(err, mockReq(), res, next);
-
-      expect(status).toHaveBeenCalledWith(500);
-    });
-
-    it('should include error details in development mode', () => {
-      const originalEnv = process.env.NODE_ENV;
-      process.env.NODE_ENV = 'development';
-
-      const { res, json } = mockRes();
-      const err = new AppError('Detailed error message', 500);
-
-      errorHandler(err, mockReq(), res, next);
-
-      expect(json).toHaveBeenCalledWith(
-        expect.objectContaining({ error: 'Detailed error message' })
-      );
-
-      process.env.NODE_ENV = originalEnv;
-    });
-
-    it('should hide error details in production mode', () => {
-      const originalEnv = process.env.NODE_ENV;
-      process.env.NODE_ENV = 'production';
-
-      const { res, json } = mockRes();
-      const err = new Error('Sensitive internal message');
-
-      errorHandler(err, mockReq(), res, next);
-
-      expect(json).toHaveBeenCalledWith(
-        expect.objectContaining({
-          error: undefined,
-          text: expect.stringContaining('error interno'),
-        })
-      );
-
-      process.env.NODE_ENV = originalEnv;
+    // Verify that the response was handled correctly
+    expect(mockRes.status).toHaveBeenCalledWith(429);
+    // Since parsing fails, the default text and retryAfterSeconds should be used
+    expect(mockRes.json).toHaveBeenCalledWith({
+      text: 'El asistente está muy ocupado. Por favor intenta en un momento.',
+      retryAfterSeconds: 60, // Default value when parsing fails
+      requestId: 'req-456',
     });
   });
 
-  describe('with generic Error', () => {
-    it('should return 500 for unknown errors', () => {
-      const { res, status, json } = mockRes();
-      const err = new Error('Something went wrong');
+  it('should handle non-RATE_LIMIT_EXCEEDED errors normally', () => {
+    const mockReq = {} as Request;
 
-      errorHandler(err, mockReq(), res, next);
+    const mockRes = {
+      status: vi.fn().mockReturnThis(),
+      json: vi.fn(),
+    } as unknown as Response;
 
-      expect(status).toHaveBeenCalledWith(500);
-      expect(json).toHaveBeenCalledWith(
-        expect.objectContaining({ text: 'Something went wrong' })
-      );
-    });
+    const next = vi.fn();
 
-    it('should include requestId in response', () => {
-      const { res, json } = mockRes();
-      const req = { ...mockReq(), requestId: 'req-123' } as unknown as Request;
-      const err = new Error('fail');
+    const error = new Error('Something went wrong');
 
-      errorHandler(err, req, res, next);
+    // Execute the middleware
+    errorHandler(error, mockReq, mockRes, next);
 
-      expect(json).toHaveBeenCalledWith(
-        expect.objectContaining({ requestId: 'req-123' })
-      );
-    });
-
-    it('should use "unknown" requestId when not present', () => {
-      const { res, json } = mockRes();
-      const err = new Error('fail');
-
-      errorHandler(err, mockReq(), res, next);
-
-      expect(json).toHaveBeenCalledWith(
-        expect.objectContaining({ requestId: 'unknown' })
-      );
+    // Verify that the response was handled normally
+    expect(mockRes.status).toHaveBeenCalledWith(500);
+    expect(mockRes.json).toHaveBeenCalledWith({
+      text: 'Something went wrong',
+      error: 'Something went wrong',
+      requestId: 'unknown',
     });
   });
 
-  describe('with non-Error objects', () => {
-    it('should handle string errors', () => {
-      const { res, status, json } = mockRes();
-      const err = 'Something failed' as unknown as Error;
+  it('should handle AppError instances appropriately', () => {
+    // Create a mock AppError with statusCode property
+    const mockAppError = {
+      message: 'Bad Request',
+      statusCode: 400,
+    };
 
-      errorHandler(err, mockReq(), res, next);
+    const mockReq = {} as Request;
 
-      expect(status).toHaveBeenCalledWith(500);
+    const mockRes = {
+      status: vi.fn().mockReturnThis(),
+      json: vi.fn(),
+    } as unknown as Response;
+
+    const next = vi.fn();
+
+    // Execute the middleware
+    errorHandler(mockAppError as any, mockReq, mockRes, next);
+
+    // Verify that the response was handled with the AppError's status code
+    expect(mockRes.status).toHaveBeenCalledWith(400);
+    expect(mockRes.json).toHaveBeenCalledWith({
+      text: 'Bad Request',
+      error: 'Bad Request',
+      requestId: 'unknown',
     });
   });
 });

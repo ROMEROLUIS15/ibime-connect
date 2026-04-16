@@ -8,6 +8,16 @@ vi.mock('../../../config/env.config.js', () => ({
   ENV: { GROQ_API_KEY: 'test-groq-key' },
 }));
 
+// Mock para el rate limiter para permitir todas las solicitudes
+vi.mock('../../../infrastructure/providers/groq-rate-limiter.js', () => {
+  return {
+    groqRateLimiter: {
+      canProceed: vi.fn().mockResolvedValue({ ok: true, waitMs: 0 }),
+      recordUsage: vi.fn(),
+    }
+  };
+});
+
 import { GroqProvider } from '../../../infrastructure/providers/groq.provider.js';
 
 const SAMPLE_MESSAGES: LLMMessage[] = [
@@ -115,7 +125,7 @@ describe('GroqProvider', () => {
       const callArgs = mockFetch.mock.calls[0][1];
       const payload = JSON.parse(callArgs.body);
       expect(payload.temperature).toBe(0.6);
-      expect(payload.max_tokens).toBe(800);
+      expect(payload.max_tokens).toBe(350); // Changed from default 800 to 350 after v2.3.0 token budget reduction
     });
 
     it('should use custom temperature and maxTokens when provided', async () => {
@@ -154,17 +164,17 @@ describe('GroqProvider', () => {
     it('should throw on API error response', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: false,
-        status: 429,
-        text: async () => 'Rate limit exceeded',
+        status: 400, // Changed to 400 instead of 429 to avoid the 429 special handling
+        text: async () => 'Bad Request',
       });
 
-      await expect(provider.generateAnswer(SAMPLE_MESSAGES)).rejects.toThrow('Groq API Error (429)');
+      await expect(provider.generateAnswer(SAMPLE_MESSAGES)).rejects.toThrow('Groq API Error (400)');
     });
 
     it('should throw timeout message on AbortError', async () => {
       mockFetch.mockRejectedValueOnce(new DOMException('The operation was aborted', 'AbortError'));
 
-      await expect(provider.generateAnswer(SAMPLE_MESSAGES)).rejects.toThrow('Groq request timeout');
+      await expect(provider.generateAnswer(SAMPLE_MESSAGES)).rejects.toThrow('Groq request timeout (25s)');
     });
 
     it('should handle network error gracefully', async () => {
@@ -233,6 +243,37 @@ describe('GroqProvider', () => {
 
       const result = await provider.generateAnswer(SAMPLE_MESSAGES);
       expect(result.tokensUsed).toBe(0);
+    });
+
+    // Tests for 429 handling
+    it('should return 429 error when receiving 429 from API after retry', async () => {
+      // Mock para simular dos respuestas 429 consecutivas (una para la primera llamada y otra para el reintento)
+      mockFetch
+        .mockResolvedValueOnce({
+          status: 429,
+          headers: { get: () => '1' }, // Indica tiempo de reintento
+          ok: false,
+          text: async () => 'Rate limit exceeded',
+        })
+        .mockResolvedValueOnce({
+          status: 429,
+          headers: { get: () => '1' },
+          ok: false,
+          text: async () => 'Rate limit exceeded',
+        });
+
+      // Mockear el setTimeout para que se ejecute inmediatamente
+      vi.useFakeTimers();
+      vi.spyOn(global, 'setTimeout').mockImplementation((fn) => {
+        fn();
+        return 0 as any;
+      });
+
+      await expect(provider.generateAnswer(SAMPLE_MESSAGES))
+        .rejects.toThrow('RATE_LIMIT_EXCEEDED:60:El asistente está muy ocupado. Por favor intenta en un momento.');
+
+      vi.restoreAllMocks();
+      vi.useRealTimers();
     });
   });
 });

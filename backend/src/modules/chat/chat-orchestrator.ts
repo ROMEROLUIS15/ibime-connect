@@ -89,6 +89,20 @@ export class ChatOrchestrator {
     return result;
   }
 
+  // ─── History Trimmer ─────────────────────────────────────────────────────
+  // Limits conversation history sent to the LLM to avoid prompt token bloat.
+  // Keeps the last `maxTurns` user+assistant pairs (default: 3 turns = 6 msgs).
+  // This is critical for free-tier token budget management.
+
+  private trimHistory(
+    history: Array<{ role: 'user' | 'assistant'; text: string }>,
+    maxTurns = 3
+  ): Array<{ role: 'user' | 'assistant'; text: string }> {
+    const maxMessages = maxTurns * 2; // each turn = 1 user + 1 assistant message
+    if (history.length <= maxMessages) return history;
+    return history.slice(history.length - maxMessages);
+  }
+
   // ─── REGISTRATION FLOW ──────────────────────────────────────────────────
   // User asks about their personal enrollments.
   // NEVER uses RAG. NEVER lets LLM decide. DB is queried directly.
@@ -121,6 +135,7 @@ export class ChatOrchestrator {
     const registrationContext = this.formatRegistrationContext(records, validEmail);
 
     // LLM only formats the response — no decision making
+    const trimmedHistory = this.trimHistory(conversationHistory);
     const messages: LLMMessage[] = [
       {
         role: 'system',
@@ -130,7 +145,7 @@ El siguiente texto contiene los resultados de una consulta de inscripciones desd
 
 ${registrationContext}`,
       },
-      ...conversationHistory.map((m) => ({
+      ...trimmedHistory.map((m) => ({
         role: m.role as 'user' | 'assistant',
         content: m.text,
       })),
@@ -139,7 +154,7 @@ ${registrationContext}`,
 
     const response = await this.llmProvider.generateAnswer(messages, {
       temperature: 0.2, // Very low — this is formatting, not creation
-      maxTokens: 400,
+      maxTokens: 250,   // Was 400 — reduced for free-tier token budget
     }, requestId);
 
     const answer = response.content || this.formatRegistrationContext(records, validEmail);
@@ -173,10 +188,11 @@ ${registrationContext}`,
 
     // Build system prompt with RAG context (if available)
     const systemPrompt = CHAT_SYSTEM_PROMPT + this.formatRagContextForPrompt(ragResult.context);
+    const trimmedHistory = this.trimHistory(conversationHistory);
 
     const messages: LLMMessage[] = [
       { role: 'system', content: systemPrompt },
-      ...conversationHistory.map((m) => ({
+      ...trimmedHistory.map((m) => ({
         role: m.role as 'user' | 'assistant',
         content: m.text,
       })),
@@ -185,7 +201,7 @@ ${registrationContext}`,
 
     const response = await this.llmProvider.generateAnswer(messages, {
       temperature: 0.3, // Low — factual responses
-      maxTokens: 600,
+      maxTokens: 350,   // Was 600 — reduced for free-tier token budget
     }, requestId);
 
     // applyPolicy handles fallback — empty string triggers intent-specific fallback in ResponsePolicy
@@ -231,10 +247,11 @@ ${registrationContext}`,
     }
 
     const systemPrompt = CHAT_SYSTEM_PROMPT + this.formatRagContextForPrompt(ragResult.context);
+    const trimmedHistory = this.trimHistory(conversationHistory);
 
     const messages: LLMMessage[] = [
       { role: 'system', content: systemPrompt },
-      ...conversationHistory.map((m) => ({
+      ...trimmedHistory.map((m) => ({
         role: m.role as 'user' | 'assistant',
         content: m.text,
       })),
@@ -243,7 +260,7 @@ ${registrationContext}`,
 
     const response = await this.llmProvider.generateAnswer(messages, {
       temperature: 0.3,
-      maxTokens: 600,
+      maxTokens: 350,   // Was 600 — reduced for free-tier token budget
     }, requestId);
 
     const answer = response.content || '';
@@ -261,10 +278,11 @@ ${registrationContext}`,
     logger.info('Using general fallback (no RAG context)');
 
     const systemPrompt = CHAT_SYSTEM_PROMPT + `\n\nNota: No se encontró información específica en la base de conocimientos para esta consulta. Responde con tu conocimiento institucional general o indica amablemente que no tienes esa información disponible.`;
+    const trimmedHistory = this.trimHistory(conversationHistory);
 
     const messages: LLMMessage[] = [
       { role: 'system', content: systemPrompt },
-      ...conversationHistory.map((m) => ({
+      ...trimmedHistory.map((m) => ({
         role: m.role as 'user' | 'assistant',
         content: m.text,
       })),
@@ -273,7 +291,7 @@ ${registrationContext}`,
 
     const response = await this.llmProvider.generateAnswer(messages, {
       temperature: 0.3,
-      maxTokens: 500,
+      maxTokens: 300,   // Was 500 — reduced for free-tier token budget
     }, requestId);
 
     const answer = response.content || '';
