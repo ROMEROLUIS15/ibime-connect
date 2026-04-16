@@ -46,7 +46,7 @@ El sistema está construido bajo principios de **Arquitectura Limpia**, con un m
 | **Validación** | Zod (esquemas compartidos frontend ↔ backend) |
 | **Observabilidad** | Pino (logs estructurados JSON + `requestId` por petición) |
 | **Testing** | Vitest (175 unit tests), Playwright (E2E) |
-| **Calidad de Código** | Husky v9 + lint-staged + ESLint (pre-commit & pre-push hooks) |
+| **Calidad de Código** | Husky v9 + lint-staged + ESLint (pre-commit & pre-push hooks) + Quality Gate completo |
 | **CI/CD** | GitHub Actions, Vercel CD, Render CD |
 
 ---
