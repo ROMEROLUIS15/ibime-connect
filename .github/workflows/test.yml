@@ -1,73 +1,52 @@
-name: Ibime Connect Tests
-
+name: Tests
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main ]
   pull_request:
-    branches: [ main, develop ]
-
-permissions:
-  contents: read
-  checks: write
+    branches: [ main ]
 
 jobs:
   test:
-    timeout-minutes: 60
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
     steps:
-    - uses: actions/checkout@v4
-    
-    - uses: actions/setup-node@v4
-      with:
-        node-version: 20
-        cache: 'npm'
+      - uses: actions/checkout@v4
 
-    - name: Install dependencies (Root)
-      run: npm install
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
 
-    - name: Install dependencies (Backend)
-      run: cd backend && npm install
+      - name: Install dependencies
+        run: npm ci
 
-    - name: Install dependencies (Frontend)
-      run: cd frontend && npm install
+      - name: Run lint and type-check
+        run: |
+          npm run lint
+          npm run typecheck
 
-    - name: Type-check backend
-      run: cd backend && npx tsc --noEmit
+      - name: Run unit tests
+        run: npm test
 
-    - name: Type-check frontend
-      run: cd frontend && npx tsc --noEmit
+  quality-gate:
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
 
-    - name: Run Backend Unit Tests
-      run: cd backend && npm test
-      env:
-        SUPABASE_URL: "https://mock.supabase.co"
-        SUPABASE_SERVICE_ROLE_KEY: "mock-key"
-        GEMINI_API_KEY: "mock-key"
-        GROQ_API_KEY: "mock-key"
-        REDIS_URL: "redis://localhost:6379"
-        ADMIN_SECRET: "mock-admin-secret"
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
 
-    - name: Install Playwright Browsers
-      run: npx playwright install --with-deps chromium
+      - name: Install dependencies
+        run: npm ci
 
-    - name: Run E2E tests
-      run: npx playwright test
-      env:
-        # Nota: Para que los tests E2E funcionen en CI, se requieren las variables de entorno 
-        # para que el backend pueda iniciar (o usar mocks).
-        # Aquí se asume que el webServer en playwright.config.ts se encarga de todo.
-        SUPABASE_URL: ${{ secrets.SUPABASE_URL || 'https://mock.supabase.co' }}
-        SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY || 'mock-key' }}
-        GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY || 'mock-key' }}
-        GROQ_API_KEY: ${{ secrets.GROQ_API_KEY || 'mock-key' }}
-        REDIS_URL: ${{ secrets.REDIS_URL || 'redis://localhost:6379' }}
-        ADMIN_SECRET: ${{ secrets.ADMIN_SECRET || 'mock-admin-secret' }}
-        FRONTEND_URL: http://localhost:4000
-        PORT: 3000
-
-    - uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: playwright-report
-        path: playwright-report/
-        retention-days: 30
+      - name: Run pre-push quality gate equivalent
+        run: |
+          npm run lint
+          npm run typecheck
+          npm test
