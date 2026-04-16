@@ -2,7 +2,25 @@
 
 Todos los cambios notables en este proyecto serán documentados en este archivo.
 
-## [2.1.0] - 2026-04-15
+## [2.2.0] - 2026-04-16
+### 🛡️ Pre-Commit Quality Gate — Husky v9 + lint-staged + ESLint
+
+Esta versión implementa el sistema completo de calidad de código automatizada en el nivel del monorepo raíz.
+
+#### ✨ Nuevo
+- **Hook `pre-commit`** (Husky v9): ejecuta `lint-staged` con ESLint `--fix` sobre archivos `*.{js,jsx,ts,tsx}` en staging. Solo se lint-ea lo que se va a commitear.
+- **Hook `pre-push` — Quality Gate**: 3 etapas secuenciales (ESLint → TypeScript → Vitest). Si cualquier etapa falla, el push es cancelado con diagnóstico detallado y sugerencias de corrección inteligentes por tipo de error.
+- **Scripts en `package.json` raíz**: `lint`, `typecheck`, `test` y `prepare` — delegan a los scripts del frontend para una experiencia de monorepo unificada.
+- **Script `typecheck` en `frontend/package.json`**: `tsc --noEmit` — requerido por el hook pre-push.
+- **`CODE_QUALITY.md`**: documentación técnica completa del sistema (hooks, ESLint config, flujo de desarrollador, notas de formato Husky v8 vs v9).
+
+#### 📝 Documentación
+- `README.md`: añadidos badges Husky/lint-staged, fila de Calidad de Código en la tabla de stack, tabla de scripts del monorepo, sección completa del Quality Gate, y `CODE_QUALITY.md` en la tabla de documentación adicional.
+- `CONTRIBUTING.md`: sección de Sistema de Calidad Automática con descripción de ambos hooks y comando `--no-verify` para casos excepcionales.
+
+---
+
+
 ### 🛡️ Arquitectura Determinista de Seguridad — Auditoría y Consolidación
 
 Esta versión consolida el sistema de control de output del LLM, cierra brechas de seguridad críticas identificadas en auditoría y actualiza toda la documentación técnica.

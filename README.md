@@ -19,6 +19,8 @@
 [![Playwright](https://img.shields.io/badge/Playwright-E2E-2EAD33?style=flat-square&logo=playwright&logoColor=white)](https://playwright.dev/)
 [![Deployed on Vercel](https://img.shields.io/badge/Frontend-Vercel-000000?style=flat-square&logo=vercel)](https://vercel.com/)
 [![Deployed on Render](https://img.shields.io/badge/Backend-Render-46E3B7?style=flat-square&logo=render&logoColor=black)](https://render.com/)
+[![Husky](https://img.shields.io/badge/Husky-v9-blueviolet?style=flat-square)](https://typicode.github.io/husky/)
+[![lint-staged](https://img.shields.io/badge/lint--staged-v16-ff69b4?style=flat-square)](https://github.com/lint-staged/lint-staged)
 
 </div>
 
@@ -44,6 +46,7 @@ El sistema está construido bajo principios de **Arquitectura Limpia**, con un m
 | **Validación** | Zod (esquemas compartidos frontend ↔ backend) |
 | **Observabilidad** | Pino (logs estructurados JSON + `requestId` por petición) |
 | **Testing** | Vitest (175 unit tests), Playwright (E2E) |
+| **Calidad de Código** | Husky v9 + lint-staged + ESLint (pre-commit & pre-push hooks) |
 | **CI/CD** | GitHub Actions, Vercel CD, Render CD |
 
 ---
@@ -351,6 +354,7 @@ git clone <repo-url>
 cd ibime-connect
 
 # 2. Instalar dependencias (monorepo + backend + frontend)
+#    npm install también inicializa Husky automáticamente vía el script "prepare"
 npm install
 npm install --prefix backend
 npm install --prefix frontend
@@ -366,6 +370,16 @@ npm run dev
 #   Backend:  http://localhost:3000
 ```
 
+### Scripts del monorepo (raíz)
+
+| Script | Descripción |
+|:---|:---|
+| `npm run dev` | Arranca frontend (Vite) y backend (Express) en paralelo |
+| `npm run lint` | ESLint sobre todo el frontend |
+| `npm run typecheck` | TypeScript `tsc --noEmit` sobre el frontend |
+| `npm run test` | Suite Vitest completa del frontend |
+| `npm run prepare` | Inicializa Husky (ejecutado automáticamente por `npm install`) |
+
 ### Variables de entorno requeridas (backend)
 
 | Variable | Descripción |
@@ -376,6 +390,42 @@ npm run dev
 | `SUPABASE_SERVICE_ROLE_KEY` | Service role key (acceso completo) |
 | `REDIS_URL` | URL Redis (redis:// o rediss://) |
 | `ADMIN_SECRET` | Secret para el endpoint `/admin/flush-cache` |
+
+---
+
+---
+
+## 🔒 Calidad de Código — Pre-Commit Quality Gate
+
+Cada operación de `git commit` y `git push` pasa por un sistema de validación automática implementado con **Husky v9** + **lint-staged** + **ESLint**.
+
+### `git commit` → Hook `pre-commit`
+
+Ejecuta `lint-staged`: corre **ESLint con auto-fix** exclusivamente sobre los archivos TypeScript/JavaScript que están en el staging area (`git add`). Solo se revisa lo que vas a commitear.
+
+```bash
+# Lo que ocurre al hacer git commit:
+npx lint-staged
+# → ESLint --fix sobre *.{js,jsx,ts,tsx} en staging
+```
+
+### `git push` → Hook `pre-push` (Quality Gate completo)
+
+Ejecuta las **3 etapas** en secuencia. Si alguna falla, el push es cancelado:
+
+```
+╔═══════════════════════════════════════════════════════════╗
+║  PRE-PUSH QUALITY GATE                                    ║
+╚═══════════════════════════════════════════════════════════╝
+
+[1/3] ESLint       → npm run lint
+[2/3] TypeScript   → npm run typecheck (tsc --noEmit)
+[3/3] Vitest       → npm test (vitest run)
+```
+
+En caso de fallo, el hook muestra el diagnóstico detallado, los errores específicos y una sugerencia de comando para resolverlo.
+
+> 📄 Documentación completa: [`CODE_QUALITY.md`](./CODE_QUALITY.md)
 
 ---
 
@@ -433,6 +483,7 @@ El sistema opera **100% en infraestructura gratuita** sin Cold Starts ni pérdid
 |:---|:---|
 | [`ARCHITECTURE.md`](./ARCHITECTURE.md) | Diagramas Mermaid del pipeline, capas de seguridad, módulos |
 | [`AI_STRATEGY.md`](./AI_STRATEGY.md) | Arquitectura RAG, parámetros de inferencia, 4 capas de defensa anti-alucinación |
+| [`CODE_QUALITY.md`](./CODE_QUALITY.md) | Sistema de pre-commit: Husky v9, lint-staged, ESLint, Quality Gate completo |
 | [`TECHNICAL_DOCUMENTATION.md`](./TECHNICAL_DOCUMENTATION.md) | Guía maestra técnica + cheat sheet para entrevistas |
 | [`CHANGELOG.md`](./CHANGELOG.md) | Historial de versiones con impacto detallado por release |
 | [`CONTRIBUTING.md`](./CONTRIBUTING.md) | Guía para nuevos contribuidores |

@@ -31,8 +31,32 @@ Para mantener la rama `main` siempre estable (producción), seguimos este flujo:
 **Proceso**:
 1. Crea una rama desde `develop`.
 2. Realiza tus cambios.
-3. Asegúrate de que los tests pasen (`npm test --prefix backend`).
+3. Asegúrate de que los tests pasen (`npm run test --prefix backend`).
 4. Abre un Pull Request (PR) hacia `develop`.
+
+## 🤖 Sistema de Calidad Automática (Husky + lint-staged)
+
+Al hacer `npm install`, se inicializan automáticamente los hooks de Git. No necesitas configurar nada extra.
+
+### Al hacer `git commit`
+Se ejecuta `lint-staged`, que aplica **ESLint con auto-fix** sobre los archivos TypeScript/JavaScript que tienes en staging. Si hay errores que ESLint no puede corregir solo, el commit es cancelado con el mensaje de error.
+
+### Al hacer `git push`
+Se activa el **Quality Gate completo** en 3 etapas:
+1. **ESLint** — `npm run lint`
+2. **TypeScript** — `npm run typecheck` (tsc --noEmit)
+3. **Vitest** — `npm test`
+
+Si alguna etapa falla, el push es cancelado y se muestra el diagnóstico con sugerencias de corrección.
+
+> Si necesitas saltar los hooks en un caso excepcional (ej. WIP):
+> ```bash
+> git commit --no-verify -m "wip: trabajo en progreso"
+> git push --no-verify
+> ```
+> ⚠️ Usar solo cuando esté justificado. Los hooks protegen la rama `main`.
+
+> 📄 Ver documentación completa del sistema: [`CODE_QUALITY.md`](./CODE_QUALITY.md)
 
 ## 💻 Estándares de Código
 
@@ -55,8 +79,17 @@ Para mantener la rama `main` siempre estable (producción), seguimos este flujo:
 No se aceptarán Pull Requests que rompan la suite de pruebas existente o que no incluyan pruebas para nueva lógica de negocio compleja.
 
 ```bash
-# Ejecutar tests del backend
+# Tests del backend (Vitest)
 npm test --prefix backend
+
+# Tests del frontend (Vitest)
+npm run test --prefix frontend
+
+# TypeCheck del frontend
+npm run typecheck  # desde la raíz
+
+# Lint
+npm run lint       # desde la raíz
 ```
 
 ## 📬 Reporte de Errores
