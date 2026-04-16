@@ -7,8 +7,8 @@ vi.mock('../../../infrastructure/cache/redis.js', () => ({
   redisClient: {
     isOpen: true,
     get: vi.fn(),
-    incr: vi.fn(),
-    incrBy: vi.fn(),
+    incr: vi.fn().mockResolvedValue(1), // Agregar valor por defecto para el incremento
+    incrBy: vi.fn().mockResolvedValue(1), // Agregar valor por defecto para el incremento
     expire: vi.fn(),
   },
 }));
@@ -105,9 +105,6 @@ describe('GroqRateLimiter', () => {
       const currentMinute = Math.floor(Date.now() / 60_000).toString();
       const tpmKey = `groq:rl:tpm:${currentMinute}`;
       const rpmKey = `groq:rl:rpm:${currentMinute}`;
-      
-      mockRedisClient.incrBy.mockResolvedValueOnce(Promise.resolve());
-      mockRedisClient.incr.mockResolvedValueOnce(Promise.resolve());
       
       await rateLimiter.recordUsage(tokensUsed);
       
