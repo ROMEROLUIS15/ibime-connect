@@ -5,15 +5,13 @@
   "main": "index.js",
   "scripts": {
     "dev": "concurrently \"npm run dev --prefix frontend\" \"npm run dev --prefix backend\"",
-    "lint": "npm run lint --prefix frontend",
-    "typecheck": "npm run typecheck --prefix frontend",
+    "lint": "npm run lint --prefix frontend && npm run lint --prefix backend",
+    "typecheck": "npm run typecheck --prefix frontend && npm run typecheck --prefix backend",
     "test": "npm run test --prefix frontend && npm run test --prefix backend",
-    "test:backend": "npm run test --prefix backend",
-    "test:frontend": "npm run test --prefix frontend",
     "prepare": "husky || true"
   },
   "lint-staged": {
-    "frontend/**/*.{js,jsx,ts,tsx}": [
+    "*.{js,jsx,ts,tsx}": [
       "eslint --fix"
     ]
   },

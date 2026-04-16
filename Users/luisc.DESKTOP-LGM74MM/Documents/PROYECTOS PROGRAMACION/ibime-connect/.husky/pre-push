@@ -6,12 +6,6 @@
 # Never commits or modifies code automatically
 # ──────────────────────────────────────────────────────────────────────────────
 
-# Skip in CI environments where git hooks are not needed
-if [ -n "$CI" ] || [ "$GITHUB_ACTIONS" = "true" ] || [ "$VERCEL_ENV" = "production" ] || [ "$RENDER" = "true" ]; then
-  echo "Skipping pre-push hook in CI environment"
-  exit 0
-fi
-
 # ── Colors (works in Git Bash, falls back gracefully in CMD) ─────────────────
 if [ -t 1 ]; then
   RED='\033[0;31m'
