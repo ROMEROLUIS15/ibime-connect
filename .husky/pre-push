@@ -7,10 +7,12 @@
 # ──────────────────────────────────────────────────────────────────────────────
 
 # Skip in CI environments where git hooks are not needed
-if [ -n "$CI" ] || [ "$GITHUB_ACTIONS" = "true" ] || [ "$VERCEL_ENV" = "production" ] || [ "$RENDER" = "true" ]; then
-  echo "Skipping pre-push hook in CI environment"
-  exit 0
-fi
+# REMOVED: The original approach of skipping CI was causing issues
+# We should ensure quality gates run consistently in all environments
+# if [ -n "$CI" ] || [ "$GITHUB_ACTIONS" = "true" ] || [ "$VERCEL_ENV" = "production" ] || [ "$RENDER" = "true" ]; then
+#   echo "Skipping pre-push hook in CI environment"
+#   exit 0
+# fi
 
 # ── Colors (works in Git Bash, falls back gracefully in CMD) ─────────────────
 if [ -t 1 ]; then

@@ -21,7 +21,7 @@ Cada vez que un desarrollador hace `git commit` o `git push`, el sistema ejecuta
 │          ├─► [1/3] ESLint (lint completo del proyecto)        │
 │          ├─► [2/3] TypeScript (tsc --noEmit)                  │
 │          └─► [3/3] Vitest (test suite completa)               │
-│                (omitido en entornos CI como Vercel, Render)   │
+│                (ahora obligatoria en todos los entornos)      │
 │                                                               │
 │  ✓ Todo pasa → operación permitida                            │
 │  ✗ Algún fallo → operación cancelada + diagnóstico detallado  │
@@ -55,7 +55,9 @@ npm install --save-dev husky@^9.1.7 lint-staged@^16.4.0 --legacy-peer-deps
     "dev":       "concurrently \"npm run dev --prefix frontend\" \"npm run dev --prefix backend\"",
     "lint":      "npm run lint --prefix frontend",
     "typecheck": "npm run typecheck --prefix frontend",
-    "test":      "npm run test --prefix frontend",
+    "test":      "npm run test --prefix frontend && npm run test --prefix backend",
+    "test:backend": "npm run test --prefix backend",
+    "test:frontend": "npm run test --prefix frontend",
     "prepare":   "husky || true"
   },
   "lint-staged": {
@@ -72,7 +74,7 @@ npm install --save-dev husky@^9.1.7 lint-staged@^16.4.0 --legacy-peer-deps
 |:---|:---|:---|
 | `npm run lint` | `eslint .` (desde `frontend/`) | ESLint sobre todo el frontend |
 | `npm run typecheck` | `tsc --noEmit` (desde `frontend/`) | Verificación de tipos sin emitir archivos |
-| `npm run test` | `vitest run` (desde `frontend/`) | Ejecución completa de la suite de tests |
+| `npm run test` | `vitest run` (desde `frontend/` y `backend/`) | Ejecución completa de la suite de tests en ambos módulos |
 | `npm run prepare` | `husky \|\| true` | Inicializa los hooks de Git (auto-ejecutado por `npm install`), ignora errores en entornos sin git |
 
 ### Configuración `lint-staged`
@@ -104,11 +106,11 @@ El hook pre-push implementa un **Quality Gate completo** en 3 etapas secuenciale
 ```bash
 #!/usr/bin/env sh
 
-# Skip in CI environments where git hooks are not needed
-if [ -n "$CI" ] || [ "$GITHUB_ACTIONS" = "true" ] || [ "$VERCEL_ENV" = "production" ] || [ "$RENDER" = "true" ]; then
-  echo "Skipping pre-push hook in CI environment"
-  exit 0
-fi
+# REMOVED: La lógica de salto en entornos CI era problemática
+# if [ -n "$CI" ] || [ "$GITHUB_ACTIONS" = "true" ] || [ "$VERCEL_ENV" = "production" ] || [ "$RENDER" = "true" ]; then
+#   echo "Skipping pre-push hook in CI environment"
+#   exit 0
+# fi
 
 # ... resto del script ...
 ```
@@ -116,11 +118,11 @@ fi
 **Comportamiento**: Antes de hacer `git push`, el hook corre una verificación completa del proyecto:
 1. Ejecuta `npm run lint` (verificación de estilo de código)
 2. Ejecuta `npm run typecheck` (verificación de tipado TypeScript)
-3. Ejecuta `npm run test` (suite completa de tests)
+3. Ejecuta `npm run test` (suite completa de tests frontend y backend)
 
 Si alguna etapa falla, el push se cancela y se muestra un reporte detallado del error con sugerencias para resolverlo.
 
-> ⚠️ **Importante**: Este hook se salta en entornos CI/CD como Vercel o Render para evitar errores de despliegue.
+> ⚠️ **Importante**: Este hook ahora se ejecuta en todos los entornos para garantizar calidad consistente.
 
 ---
 

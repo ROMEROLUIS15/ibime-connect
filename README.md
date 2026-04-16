@@ -420,7 +420,7 @@ Ejecuta las **3 etapas** en secuencia. Si alguna falla, el push es cancelado:
 
 [1/3] ESLint       → npm run lint
 [2/3] TypeScript   → npm run typecheck (tsc --noEmit)
-[3/3] Vitest       → npm test (vitest run)
+[3/3] Vitest       → npm test (completo: frontend + backend)
 ```
 
 En caso de fallo, el hook muestra el diagnóstico detallado, los errores específicos y una sugerencia de comando para resolverlo.
