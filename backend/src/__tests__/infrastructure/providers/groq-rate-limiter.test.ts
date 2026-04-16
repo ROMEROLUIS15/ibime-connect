@@ -16,13 +16,13 @@ describe('GroqRateLimiter', () => {
 });
 
 // Mock para redisClient
-const mockRedisClient = {
+const mockRedisClient = vi.hoisted(() => ({
   isOpen: true,
   get: vi.fn(),
   incr: vi.fn(),
   incrBy: vi.fn(),
   expire: vi.fn(),
-};
+}));
 
 // Importamos y reemplazamos el módulo después de haber definido el mock
 vi.mock('../../../infrastructure/cache/redis.js', async () => {
@@ -40,6 +40,7 @@ describe('GroqRateLimiter', () => {
     vi.clearAllMocks();
     vi.useFakeTimers();
     vi.setSystemTime(new Date(2026, 3, 16, 12, 0, 0)); // Abril 16, 2026 a las 12:00:00
+    mockRedisClient.isOpen = true; // Reboot mock state
     
     rateLimiter = new GroqRateLimiter();
   });
