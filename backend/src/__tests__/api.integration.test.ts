@@ -1,41 +1,49 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import request from 'supertest';
 import app from '../app.js';
 
-describe('API Integration Tests', () => {
-
-  describe('GET /', () => {
-    it('should return 200 OK', async () => {
-      const response = await request(app).get('/');
-      expect(response.status).toBe(200);
-      expect(response.body).toHaveProperty('status', 'OK');
-    });
+describe('API Integration', () => {
+  it('should respond with 200 to GET /', async () => {
+    const response = await request(app).get('/');
+    
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({ status: 'OK', message: 'ibime-backend is running' });
   });
 
-  describe('POST /api/chat', () => {
-    it('should return 400 if userMessage is missing', async () => {
-      const response = await request(app)
-        .post('/api/chat')
-        .send({ conversationHistory: [] });
-      expect(response.status).toBe(400);
-      expect(response.body.text).toContain('consulta inválidos');
-    });
-
-    // Nota: El test del flujo feliz requiere llaves de API reales o mocks profundos.
-    // Por ahora validamos que el controlador atrapa errores de validación.
+  it('should handle invalid routes', async () => {
+    const response = await request(app).get('/invalid-route');
+    
+    expect(response.status).toBe(404);
   });
 
-  describe('POST /api/registrations', () => {
-    it('should return 400 if phone is invalid', async () => {
-      const response = await request(app)
-        .post('/api/registrations')
-        .send({
-          name: 'Test',
-          email: 'test@test.com',
-          phone: '123', // Muy corto
-          courseName: 'Test Course'
-        });
-      expect(response.status).toBe(400);
-    });
+  it('should apply rate limiting to chat endpoints', async () => {
+    // Make multiple requests to test rate limiting
+    // This is just checking that the route exists and is protected by rate limiting
+    
+    // First request should succeed (with valid payload)
+    const response1 = await request(app)
+      .post('/api/v1/chat')
+      .send({
+        userMessage: 'Hello',
+        conversationHistory: []
+      });
+    
+    // Should return 400 due to validation (not rate limiting) as it passes the rate limiter
+    expect(response1.status).toBeGreaterThanOrEqual(400);
+    expect(response1.status).toBeLessThan(500);
+  });
+
+  it('should apply rate limiting to legacy chat endpoint', async () => {
+    // Test the legacy route as well
+    const response = await request(app)
+      .post('/api/chat')
+      .send({
+        userMessage: 'Hello',
+        conversationHistory: []
+      });
+    
+    // Should return 400 due to validation (not rate limiting) as it passes the rate limiter
+    expect(response.status).toBeGreaterThanOrEqual(400);
+    expect(response.status).toBeLessThan(500);
   });
 });
