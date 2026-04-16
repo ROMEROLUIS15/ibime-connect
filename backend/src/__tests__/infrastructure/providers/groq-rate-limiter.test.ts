@@ -60,7 +60,7 @@ describe('GroqRateLimiter - with mocked redis', () => {
       // Mock para simular que el contador actual es menor que el límite
       mockRedisClient.get.mockResolvedValue('5');
 
-      const result = await rateLimiter.canProceed('test-api-key');
+      const result = await rateLimiter.canProceed(); // Eliminamos el parámetro string
 
       expect(result.ok).toBe(true);
       expect(result.waitMs).toBe(0);
