@@ -24,10 +24,16 @@ El sistema actúa en tres fases de defensa. Garantiza que el código defectuoso 
 │          └─► [3/3] Vitest (Test suites completas)                       │
 │                                                                         │
 │ 3️⃣ GitHub Pull Request / Push (Defensa Nube Nivel 3)                    │
-│    └─► .github/workflows/ci.yml                                         │
-│          ├─► Configuración Node + Dependencias (--legacy-peer-deps)     │
-│          ├─► Simulación de Entorno (Dummy Env Vars)                     │
-│          └─► Ejecución de Quality Gate Remoto                           │
+│    ├─► .github/workflows/ci.yml (Rápido: ~40s)                          │
+│    │     ├─► Instalación con --legacy-peer-deps                         │
+│    │     ├─► Simulación de Entorno (Dummy Env Vars)                     │
+│    │     └─► Quality Gate Remoto (175 Vitests)                          │
+│    │                                                                    │
+│    └─► .github/workflows/e2e.yml (Pesado: ~3m)                          │
+│          ├─► Configuración Node + Dependencias                          │
+│          ├─► Instalación de navegadores Chromium                        │
+│          ├─► Arranque de Frontend y Backend (`npm run dev`)             │
+│          └─► Playwright Tests (Con Mocking de Peticiones IA)            │
 │                                                                         │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
@@ -88,13 +94,11 @@ El frontend y backend poseen instalaciones independientes con requerimientos cru
 En todo flujo automatizado, se utiliza el parámetro `>=v20`:
 `npm ci --legacy-peer-deps`
 
-### Dummy Variables de Entorno (Evitando Crashes de Vitest)
-La app backend contiene barreras en `src/config/env.config.ts` que interrumpen la ejecución (`process.exit(1)`) si escanean que faltan credenciales como `SUPABASE_URL` o `GROQ_API_KEY`.
-Puesto que en GitHub Actions (en el entorno Node puro) no existe un `.env` ni nos interesa subir nuestros keys de producción al CI, incrustamos **variables ficticias** explícitamente en el workflow:
+### Dummy Variables de Entorno (Evitando Crashes del Backend)
+La app backend contiene barreras pre-inicio en `src/config/env.config.ts` que interrumpen la ejecución (`process.exit(1)`) si detectan que faltan credenciales como `SUPABASE_URL` o `GROQ_API_KEY`.
+Puesto que en GitHub Actions no exponemos un `.env` completo ni deseamos que los tests consuman quotas reales de producción, incrustamos **variables ficticias (Dummy)** tanto en el pipeline de CI como en el E2E:
 
 ```yaml
-      - name: Run Tests
-        run: npm run test
         env:
           SUPABASE_URL: "http://dummy-supabase.url"
           SUPABASE_SERVICE_ROLE_KEY: "dummy-key"
@@ -103,7 +107,8 @@ Puesto que en GitHub Actions (en el entorno Node puro) no existe un `.env` ni no
           REDIS_URL: "redis://localhost:6379"
 ```
 
-Esto salta los candados de inicialización y permite a Vitest aislar satisfactoriamente todos los *mocks* sin afectar infraestructuras de terceros ni lanzar logs rojos.
+### El Flujo E2E (Playwright) Independiente
+Contrario a los tests unitarios (`ci.yml`), el archivo `.github/workflows/e2e.yml` levanta simulaciones de red *con navegadores verdaderos*. Para no impactar en cuotas y salvaguardar la pureza de las pruebas sin requerir las claves maestras, los archivos Playwright usan **Mocking a nivel de red** (`page.route()`). Esto significa que el Frontend se comunica con el Backend normal, pero el *LLM* siempre está simulado, brindando robustez End-to-End sin costos asociados y sin la lentitud del servidor remoto de Groq.
 
 ---
 

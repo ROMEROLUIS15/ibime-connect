@@ -129,8 +129,9 @@ ibime-connect/                          ← Monorepo raíz
 │
 ├── 📁 .github/
 │   └── workflows/
-│       ├── heartbeat.yml               ← Cron: ping Supabase cada 24h (anti-pausa)
-│       └── test.yml                    ← CI: lint + unit tests en cada PR
+│       ├── ci.yml                      ← CI: Quality Gate (Lint + Vitest unit tests)
+│       ├── e2e.yml                     ← E2E: Playwright test suite (Chromium automations)
+│       └── heartbeat.yml               ← Cron: ping Supabase cada 24h (anti-pausa)
 │
 ├── 📁 backend/                         ← API Node.js/Express/TypeScript
 │   ├── src/
@@ -307,11 +308,11 @@ ibime-connect/                          ← Monorepo raíz
 
 ```
           ╔══════════════════════╗
-          ║   E2E (Playwright)   ║  ← 2 specs: chat + forms con mock API
+          ║   E2E (Playwright)   ║  ← 2 specs: chat + forms con mock API (GitHub Action: e2e.yml)
           ╠══════════════════════╣
           ║  Integration Tests   ║  ← Smoke tests HTTP (supertest)
           ╠══════════════════════╣
-          ║    Unit Tests (175)  ║  ← Vitest — lógica, servicios, policy layer
+          ║    Unit Tests (175)  ║  ← Vitest — lógica, servicios, policy layer (GitHub Action: ci.yml)
           ╚══════════════════════╝
 ```
 
@@ -427,7 +428,12 @@ Ejecuta las **3 etapas** en secuencia. Si alguna falla, el push es cancelado:
 
 En caso de fallo, el hook muestra el diagnóstico detallado, los errores específicos y una sugerencia de comando para resolverlo.
 
-> 📄 Documentación completa: [`CODE_QUALITY.md`](./CODE_QUALITY.md)
+### `Pull Request / Push` → GitHub Actions CI/CD
+Una vez que el código pasa el Quality Gate local y llega a GitHub, se disparan dos rutinas independientes:
+1. **Quality Gate CI (`ci.yml`)**: Validación rápida de linting y los 175 tests unitarios. (Aprox. ~40 segundos).
+2. **Playwright E2E (`e2e.yml`)**: Tubería de robustez extrema enfocada en UI. Despliega Chromium y ejecuta clicks contra un servidor local efímero usando simulaciones (*mocks*) de red para no gastar quotas de la IA. (Aprox. ~3-4 minutos).
+
+> 📄 Documentación completa: [`CODE_QUALITY.md`](./docs/CODE_QUALITY.md)
 
 ---
 
