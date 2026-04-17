@@ -11,8 +11,11 @@
     "prepare": "husky || true"
   },
   "lint-staged": {
-    "*.{js,jsx,ts,tsx}": [
-      "eslint --fix"
+    "frontend/**/*.{js,jsx,ts,tsx}": [
+      "npm run lint --prefix frontend --"
+    ],
+    "backend/**/*.{js,jsx,ts,tsx}": [
+      "npm run lint --prefix backend --"
     ]
   },
   "keywords": [],

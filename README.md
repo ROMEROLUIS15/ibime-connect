@@ -288,11 +288,13 @@ ibime-connect/                          ← Monorepo raíz
 │   ├── chat.spec.ts                    ← Flujo completo del asistente (con mock API)
 │   └── forms.spec.ts                   ← Registro + contacto (con mock API)
 │
-├── 📄 AI_STRATEGY.md                   ← Arquitectura detallada del motor de IA
-├── 📄 ARCHITECTURE.md                  ← Patrones arquitectónicos y diagramas
-├── 📄 CHANGELOG.md                     ← Historial de versiones
-├── 📄 CONTRIBUTING.md                  ← Guía para contribuidores
-├── 📄 TECHNICAL_DOCUMENTATION.md       ← Documentación técnica maestra
+├── 📁 docs/                            ← Documentación técnica y estratégica del proyecto
+│   ├── AI_STRATEGY.md                  ← Arquitectura detallada del motor de IA
+│   ├── ARCHITECTURE.md                 ← Patrones arquitectónicos y diagramas
+│   ├── CHANGELOG.md                    ← Historial de versiones
+│   ├── CODE_QUALITY.md                 ← Guía de pre-commit, ESLint y CI Pipeline
+│   └── CONTRIBUTING.md                 ← Guía para contribuidores
+│
 ├── 📄 render.yaml                      ← IaC: configuración de Render (backend)
 ├── 📄 playwright.config.ts             ← Config E2E: base URL, retries, reporters
 ├── 📄 tsconfig.backend.json            ← TSConfig raíz para el backend
@@ -420,7 +422,7 @@ Ejecuta las **3 etapas** en secuencia. Si alguna falla, el push es cancelado:
 
 [1/3] ESLint       → npm run lint
 [2/3] TypeScript   → npm run typecheck (tsc --noEmit)
-[3/3] Vitest       → npm test (completo: frontend + backend)
+[3/3] Vitest       → npm test (vitest run)
 ```
 
 En caso de fallo, el hook muestra el diagnóstico detallado, los errores específicos y una sugerencia de comando para resolverlo.
@@ -481,12 +483,11 @@ El sistema opera **100% en infraestructura gratuita** sin Cold Starts ni pérdid
 
 | Documento | Contenido |
 |:---|:---|
-| [`ARCHITECTURE.md`](./ARCHITECTURE.md) | Diagramas Mermaid del pipeline, capas de seguridad, módulos |
-| [`AI_STRATEGY.md`](./AI_STRATEGY.md) | Arquitectura RAG, parámetros de inferencia, 4 capas de defensa anti-alucinación |
-| [`CODE_QUALITY.md`](./CODE_QUALITY.md) | Sistema de pre-commit: Husky v9, lint-staged, ESLint, Quality Gate completo |
-| [`TECHNICAL_DOCUMENTATION.md`](./TECHNICAL_DOCUMENTATION.md) | Guía maestra técnica + cheat sheet para entrevistas |
-| [`CHANGELOG.md`](./CHANGELOG.md) | Historial de versiones con impacto detallado por release |
-| [`CONTRIBUTING.md`](./CONTRIBUTING.md) | Guía para nuevos contribuidores |
+| [`ARCHITECTURE.md`](./docs/ARCHITECTURE.md) | Diagramas Mermaid del pipeline, capas de seguridad, módulos |
+| [`AI_STRATEGY.md`](./docs/AI_STRATEGY.md) | Arquitectura RAG, parámetros de inferencia, 4 capas de defensa anti-alucinación |
+| [`CODE_QUALITY.md`](./docs/CODE_QUALITY.md) | Sistema de pre-commit: Husky v9, lint-staged, ESLint, Quality Gate completo |
+| [`CHANGELOG.md`](./docs/CHANGELOG.md) | Historial de versiones con impacto detallado por release |
+| [`CONTRIBUTING.md`](./docs/CONTRIBUTING.md) | Guía para nuevos contribuidores |
 
 ---
 

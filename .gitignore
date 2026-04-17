@@ -35,7 +35,3 @@ test-ingest.mjs
 
 # Private Documentation
 TECHNICAL_DOCUMENTATION.md
-
-# Reports and Coverage
-coverage/
-playwright-report/
