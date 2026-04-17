@@ -5,13 +5,13 @@
   "main": "index.js",
   "scripts": {
     "dev": "concurrently \"npm run dev --prefix frontend\" \"npm run dev --prefix backend\"",
-    "lint": "npm run lint --prefix frontend",
-    "typecheck": "npm run typecheck --prefix frontend",
-    "test": "npm run test --prefix frontend",
-    "prepare": "husky || true"
+    "lint": "npm run lint --prefix frontend && npm run lint --prefix backend",
+    "typecheck": "npm run typecheck --prefix frontend && npm run typecheck --prefix backend",
+    "test": "npm run test --prefix frontend && npm run test --prefix backend",
+    "prepare": "husky"
   },
   "lint-staged": {
-    "frontend/**/*.{js,jsx,ts,tsx}": [
+    "*.{js,jsx,ts,tsx}": [
       "eslint --fix"
     ]
   },
@@ -24,7 +24,8 @@
     "concurrently": "^9.2.1",
     "husky": "^9.1.7",
     "lint-staged": "^16.4.0",
-    "tsx": "^4.21.0"
+    "tsx": "^4.21.0",
+    "typescript": "^6.0.2"
   },
   "dependencies": {
     "@openrouter/sdk": "^0.12.4",
