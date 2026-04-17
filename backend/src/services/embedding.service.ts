@@ -57,7 +57,7 @@ export class EmbeddingService implements IEmbeddingService {
       const duration = Date.now() - startTime;
       if (error.name === 'AbortError') {
         logger.error('Gemini request timeout', { duration });
-        throw new Error(`Gemini request timeout (${EmbeddingService.DEFAULT_TIMEOUT_MS / 1000}s)`);
+        throw new Error(`Gemini request timeout (${EmbeddingService.DEFAULT_TIMEOUT_MS / 1000}s)`, { cause: error });
       }
       logger.error('Failed to get embedding', { error, duration });
       throw error;

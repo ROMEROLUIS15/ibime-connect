@@ -46,7 +46,7 @@ El sistema está construido bajo principios de **Arquitectura Limpia**, con un m
 | **Validación** | Zod (esquemas compartidos frontend ↔ backend) |
 | **Observabilidad** | Pino (logs estructurados JSON + `requestId` por petición) |
 | **Testing** | Vitest (175 unit tests), Playwright (E2E) |
-| **Calidad de Código** | Husky v9 + lint-staged + ESLint (pre-commit & pre-push hooks) |
+| **Calidad de Código** | Husky v9 + lint-staged + ESLint (pre-commit & pre-push hooks) + Quality Gate completo |
 | **CI/CD** | GitHub Actions, Vercel CD, Render CD |
 
 ---
@@ -129,8 +129,9 @@ ibime-connect/                          ← Monorepo raíz
 │
 ├── 📁 .github/
 │   └── workflows/
-│       ├── heartbeat.yml               ← Cron: ping Supabase cada 24h (anti-pausa)
-│       └── test.yml                    ← CI: lint + unit tests en cada PR
+│       ├── ci.yml                      ← CI: Quality Gate (Lint + Vitest unit tests)
+│       ├── e2e.yml                     ← E2E: Playwright test suite (Chromium automations)
+│       └── heartbeat.yml               ← Cron: ping Supabase cada 24h (anti-pausa)
 │
 ├── 📁 backend/                         ← API Node.js/Express/TypeScript
 │   ├── src/
@@ -288,11 +289,13 @@ ibime-connect/                          ← Monorepo raíz
 │   ├── chat.spec.ts                    ← Flujo completo del asistente (con mock API)
 │   └── forms.spec.ts                   ← Registro + contacto (con mock API)
 │
-├── 📄 AI_STRATEGY.md                   ← Arquitectura detallada del motor de IA
-├── 📄 ARCHITECTURE.md                  ← Patrones arquitectónicos y diagramas
-├── 📄 CHANGELOG.md                     ← Historial de versiones
-├── 📄 CONTRIBUTING.md                  ← Guía para contribuidores
-├── 📄 TECHNICAL_DOCUMENTATION.md       ← Documentación técnica maestra
+├── 📁 docs/                            ← Documentación técnica y estratégica del proyecto
+│   ├── AI_STRATEGY.md                  ← Arquitectura detallada del motor de IA
+│   ├── ARCHITECTURE.md                 ← Patrones arquitectónicos y diagramas
+│   ├── CHANGELOG.md                    ← Historial de versiones
+│   ├── CODE_QUALITY.md                 ← Guía de pre-commit, ESLint y CI Pipeline
+│   └── CONTRIBUTING.md                 ← Guía para contribuidores
+│
 ├── 📄 render.yaml                      ← IaC: configuración de Render (backend)
 ├── 📄 playwright.config.ts             ← Config E2E: base URL, retries, reporters
 ├── 📄 tsconfig.backend.json            ← TSConfig raíz para el backend
@@ -305,11 +308,11 @@ ibime-connect/                          ← Monorepo raíz
 
 ```
           ╔══════════════════════╗
-          ║   E2E (Playwright)   ║  ← 2 specs: chat + forms con mock API
+          ║   E2E (Playwright)   ║  ← 2 specs: chat + forms con mock API (GitHub Action: e2e.yml)
           ╠══════════════════════╣
           ║  Integration Tests   ║  ← Smoke tests HTTP (supertest)
           ╠══════════════════════╣
-          ║    Unit Tests (175)  ║  ← Vitest — lógica, servicios, policy layer
+          ║    Unit Tests (175)  ║  ← Vitest — lógica, servicios, policy layer (GitHub Action: ci.yml)
           ╚══════════════════════╝
 ```
 
@@ -425,7 +428,12 @@ Ejecuta las **3 etapas** en secuencia. Si alguna falla, el push es cancelado:
 
 En caso de fallo, el hook muestra el diagnóstico detallado, los errores específicos y una sugerencia de comando para resolverlo.
 
-> 📄 Documentación completa: [`CODE_QUALITY.md`](./CODE_QUALITY.md)
+### `Pull Request / Push` → GitHub Actions CI/CD
+Una vez que el código pasa el Quality Gate local y llega a GitHub, se disparan dos rutinas independientes:
+1. **Quality Gate CI (`ci.yml`)**: Validación rápida de linting y los 175 tests unitarios. (Aprox. ~40 segundos).
+2. **Playwright E2E (`e2e.yml`)**: Tubería de robustez extrema enfocada en UI. Despliega Chromium y ejecuta clicks contra un servidor local efímero usando simulaciones (*mocks*) de red para no gastar quotas de la IA. (Aprox. ~3-4 minutos).
+
+> 📄 Documentación completa: [`CODE_QUALITY.md`](./docs/CODE_QUALITY.md)
 
 ---
 
@@ -481,12 +489,11 @@ El sistema opera **100% en infraestructura gratuita** sin Cold Starts ni pérdid
 
 | Documento | Contenido |
 |:---|:---|
-| [`ARCHITECTURE.md`](./ARCHITECTURE.md) | Diagramas Mermaid del pipeline, capas de seguridad, módulos |
-| [`AI_STRATEGY.md`](./AI_STRATEGY.md) | Arquitectura RAG, parámetros de inferencia, 4 capas de defensa anti-alucinación |
-| [`CODE_QUALITY.md`](./CODE_QUALITY.md) | Sistema de pre-commit: Husky v9, lint-staged, ESLint, Quality Gate completo |
-| [`TECHNICAL_DOCUMENTATION.md`](./TECHNICAL_DOCUMENTATION.md) | Guía maestra técnica + cheat sheet para entrevistas |
-| [`CHANGELOG.md`](./CHANGELOG.md) | Historial de versiones con impacto detallado por release |
-| [`CONTRIBUTING.md`](./CONTRIBUTING.md) | Guía para nuevos contribuidores |
+| [`ARCHITECTURE.md`](./docs/ARCHITECTURE.md) | Diagramas Mermaid del pipeline, capas de seguridad, módulos |
+| [`AI_STRATEGY.md`](./docs/AI_STRATEGY.md) | Arquitectura RAG, parámetros de inferencia, 4 capas de defensa anti-alucinación |
+| [`CODE_QUALITY.md`](./docs/CODE_QUALITY.md) | Sistema de pre-commit: Husky v9, lint-staged, ESLint, Quality Gate completo |
+| [`CHANGELOG.md`](./docs/CHANGELOG.md) | Historial de versiones con impacto detallado por release |
+| [`CONTRIBUTING.md`](./docs/CONTRIBUTING.md) | Guía para nuevos contribuidores |
 
 ---
 

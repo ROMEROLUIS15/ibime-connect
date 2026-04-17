@@ -124,7 +124,7 @@ export class GroqProvider implements ILLMProvider {
       const duration = Date.now() - startTime;
       if (error.name === 'AbortError') {
         logger.error('Groq request timeout', { duration });
-        throw new Error('Groq request timeout (25s)');
+        throw new Error('Groq request timeout (25s)', { cause: error });
       }
       throw error;
     } finally {
