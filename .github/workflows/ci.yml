@@ -38,3 +38,9 @@ jobs:
         
       - name: Run Tests
         run: npm run test
+        env:
+          SUPABASE_URL: "http://dummy-supabase.url"
+          SUPABASE_SERVICE_ROLE_KEY: "dummy-key"
+          GEMINI_API_KEY: "dummy-key"
+          GROQ_API_KEY: "dummy-key"
+          REDIS_URL: "redis://localhost:6379"
