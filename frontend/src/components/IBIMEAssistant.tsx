@@ -68,7 +68,7 @@ function SourceBadges({ sources }: SourceBadgesProps): JSX.Element | null {
             padding: '1px 6px',
             borderRadius: 8,
             background: 'rgba(21,128,61,0.12)',
-            color: '#15803d',
+            color: '#0B1930',
             fontWeight: 600,
             textTransform: 'uppercase',
             letterSpacing: '0.03em',
@@ -114,7 +114,7 @@ function MessageBubble({ message }: MessageBubbleProps): JSX.Element {
             height: 28,
             borderRadius: '8px',
             flexShrink: 0,
-            background: 'linear-gradient(135deg, #15803d, #166534)',
+            background: 'linear-gradient(135deg, #0B1930, #142a4f)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -132,7 +132,7 @@ function MessageBubble({ message }: MessageBubbleProps): JSX.Element {
           maxWidth: '78%',
           padding: '8px 12px',
           borderRadius: isUser ? '14px 14px 3px 14px' : '14px 14px 14px 3px',
-          background: isUser ? 'linear-gradient(135deg, #15803d, #166534)' : '#ffffff',
+          background: isUser ? 'linear-gradient(135deg, #0B1930, #142a4f)' : '#ffffff',
           color: isUser ? 'white' : '#1e293b',
           fontSize: 12.5,
           lineHeight: 1.5,
@@ -171,7 +171,7 @@ function TypingIndicator(): JSX.Element {
           height: 28,
           borderRadius: '8px',
           flexShrink: 0,
-          background: 'linear-gradient(135deg, #15803d, #166534)',
+          background: 'linear-gradient(135deg, #0B1930, #142a4f)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -204,7 +204,7 @@ function TypingIndicator(): JSX.Element {
               width: 6,
               height: 6,
               borderRadius: '50%',
-              background: '#15803d',
+              background: '#0B1930',
               display: 'inline-block',
               animation: `ibime-dot 1.2s ease-in-out ${i * 0.2}s infinite`,
             }}
@@ -363,7 +363,7 @@ export function IBIMEAssistant(): JSX.Element {
             {/* ── Header con gradiente ── */}
             <div
               style={{
-                background: 'linear-gradient(135deg, #15803d 0%, #166534 60%, #14532d 100%)',
+                background: 'linear-gradient(135deg, #0B1930 0%, #142a4f 60%, #051231 100%)',
                 padding: '14px 14px 10px',
                 flexShrink: 0,
                 position: 'relative',
@@ -436,7 +436,7 @@ export function IBIMEAssistant(): JSX.Element {
                         style={{
                           fontSize: 8.5,
                           fontWeight: 700,
-                          color: '#15803d',
+                          color: '#0B1930',
                           background: 'rgba(255,255,255,0.92)',
                           padding: '1.5px 6px',
                           borderRadius: 8,
@@ -455,7 +455,7 @@ export function IBIMEAssistant(): JSX.Element {
                           background: '#4ade80',
                           boxShadow: '0 0 6px #4ade80',
                           display: 'inline-block',
-                          animation: 'ibime-pulse-green 2s ease-in-out infinite',
+                          animation: 'ibime-pulse 2s ease-in-out infinite',
                         }}
                         aria-hidden="true"
                       />
@@ -500,7 +500,7 @@ export function IBIMEAssistant(): JSX.Element {
                 gap: '8px',
                 background: '#f8fafc',
                 scrollbarWidth: 'thin',
-                scrollbarColor: '#15803d22 transparent',
+                scrollbarColor: '#0B193022 transparent',
               }}
             >
               {messages.map((msg) => (
@@ -543,7 +543,7 @@ export function IBIMEAssistant(): JSX.Element {
                     transition: 'border-color 0.15s',
                   }}
                   onFocus={(e) => {
-                    e.currentTarget.style.borderColor = '#15803d';
+                    e.currentTarget.style.borderColor = '#0B1930';
                   }}
                   onBlur={(e) => {
                     e.currentTarget.style.borderColor = '#e2e8f0';
@@ -561,7 +561,7 @@ export function IBIMEAssistant(): JSX.Element {
                     flexShrink: 0,
                     cursor: canSend ? 'pointer' : 'not-allowed',
                     background: canSend
-                      ? 'linear-gradient(135deg, #15803d, #166534)'
+                      ? 'linear-gradient(135deg, #0B1930, #142a4f)'
                       : '#dcfce7',
                     display: 'flex',
                     alignItems: 'center',
@@ -602,9 +602,9 @@ export function IBIMEAssistant(): JSX.Element {
             <div
               className="ibime-floating-label"
               style={{
-                background: isDark ? '#ffffff' : '#15803d',
+                background: isDark ? '#ffffff' : '#0B1930',
                 color: isDark ? '#1e293b' : '#ffffff',
-                border: isDark ? '2px solid #e2e8f0' : '2px solid #14532d',
+                border: isDark ? '2px solid #e2e8f0' : '2px solid #051231',
               }}
             >
               Asistente IA
@@ -625,7 +625,7 @@ export function IBIMEAssistant(): JSX.Element {
               justifyContent: 'center',
               transition: 'all 500ms ease, transform 200ms ease',
               background: 'white',
-              border: '3px solid #15803d',
+              border: '3px solid #0B1930',
               boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
               position: 'relative',
               zIndex: 1,
@@ -639,7 +639,7 @@ export function IBIMEAssistant(): JSX.Element {
             }}
           >
             {isOpen ? (
-              <span style={{ color: '#15803d', fontSize: 20, fontWeight: 700, lineHeight: 1 }}>✕</span>
+              <span style={{ color: '#0B1930', fontSize: 20, fontWeight: 700, lineHeight: 1 }}>✕</span>
             ) : (
               <img
                 src={OWL_AVATAR}
@@ -698,7 +698,7 @@ export function IBIMEAssistant(): JSX.Element {
           70% { transform: scale(1.4); opacity: 0; }
           100% { transform: scale(1.4); opacity: 0; }
         }
-        @keyframes ibime-pulse-green {
+        @keyframes ibime-pulse {
           0%, 100% { opacity: 1; box-shadow: 0 0 6px #4ade80; }
           50% { opacity: 0.6; box-shadow: 0 0 12px #4ade80; }
         }

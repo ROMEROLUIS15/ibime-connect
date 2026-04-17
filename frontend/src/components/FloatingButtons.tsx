@@ -28,14 +28,14 @@ export const FloatingButtons = () => {
         boxShadow: '0 8px 28px rgba(0,0,0,0.28), 0 2px 8px rgba(0,0,0,0.14)',
       }
     : {
-        background: 'linear-gradient(135deg, #15803d, #166534)',
+        background: 'linear-gradient(135deg, #0B1930, #142a4f)',
         backdropFilter: 'none',
         WebkitBackdropFilter: 'none',
         border: '1.5px solid rgba(255,255,255,0.18)',
         boxShadow: '0 4px 16px rgba(21,128,61,0.45), 0 1px 4px rgba(21,128,61,0.2)',
       };
 
-  const iconColor = isDark ? '#15803d' : 'white';
+  const iconColor = isDark ? '#0B1930' : 'white';
 
   // Base compartida entre ambos botones
   const base: React.CSSProperties = {

@@ -9,103 +9,110 @@
 
 @layer base {
   :root {
-    /* Paleta institucional para gobierno (IBIME) */
+    /* Paleta institucional para gobierno (IBIME) - Basada en Logo Oficial */
     --background: 210 40% 98%;
-    --foreground: 222 47% 14%;
+    --foreground: 217 63% 12%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 14%;
+    --card-foreground: 217 63% 12%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 14%;
+    --popover-foreground: 217 63% 12%;
 
-    --primary: 215 56% 23%;
+    --primary: 217 63% 12%; /* Navy Blue #0B1930 */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 153 48% 32%;
+    --secondary: 200 53% 58%; /* Light Blue #5AA5CC */
     --secondary-foreground: 0 0% 100%;
 
     --muted: 210 30% 96%;
-    --muted-foreground: 218 15% 35%;
+    --muted-foreground: 215 20% 40%;
 
-    --accent: 153 50% 33%;
+    --accent: 200 53% 58%; /* Light Blue #5AA5CC */
     --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 70% 45%;
+    --destructive: 358 98% 52%;
     --destructive-foreground: 0 0% 100%;
 
     --border: 210 20% 88%;
     --input: 210 25% 92%;
-    --ring: 215 56% 23%;
+    --ring: 200 53% 58%; /* Usar el Light Blue para anillos de focus */
 
     --radius: 0.75rem;
 
-    --ebime-yellow: 40 90% 55%;
-    --ebime-red: 0 70% 50%;
-    --ebime-purple: 215 56% 23%;
-    --ebime-blue: 215 56% 23%;
-    --ebime-green: 153 50% 33%;
-    --ebime-light-green: 153 40% 90%;
+    /* Colores exactos extraídos del logo */
+    --ebime-navy: 217 63% 12%;       /* #0B1930 */
+    --ebime-red: 200 53% 58%;        /* Mapeado al Celeste para eliminar el rojo */
+    --ebime-lightblue: 200 53% 58%;  /* #5AA5CC */
+    --ebime-darkred: 217 63% 12%;    /* Mapeado al Navy para eliminar el rojo oscuro */
+    --ebime-midnight: 222 81% 11%;   /* #051231 */
 
-    --gradient-primary: linear-gradient(135deg, hsl(215, 56%, 28%) 0%, hsl(215, 56%, 23%) 35%, hsl(153, 50%, 28%) 100%);
-    --gradient-accent: linear-gradient(135deg, hsl(153, 50%, 36%) 0%, hsl(153, 50%, 30%) 100%);
-    --gradient-hero: linear-gradient(135deg, hsl(215, 56%, 26%) 0%, hsl(215, 56%, 20%) 35%, hsl(153, 50%, 26%) 70%, hsl(215, 56%, 22%) 100%);
+    /* Retrocompatibilidad mapeada a la nueva paleta */
+    --ebime-yellow: 200 53% 58%;
+    --ebime-purple: 217 63% 12%;
+    --ebime-blue: 200 53% 58%;
+    --ebime-green: 200 53% 58%;
+    --ebime-light-green: 200 53% 90%;
+
+    --gradient-primary: linear-gradient(135deg, hsl(217, 63%, 16%) 0%, hsl(217, 63%, 12%) 35%, hsl(222, 81%, 11%) 100%);
+    --gradient-accent: linear-gradient(135deg, hsl(200, 53%, 62%) 0%, hsl(200, 53%, 58%) 100%);
+    --gradient-hero: linear-gradient(135deg, hsl(217, 63%, 18%) 0%, hsl(217, 63%, 12%) 35%, hsl(222, 81%, 11%) 70%, hsl(217, 63%, 14%) 100%);
     --gradient-card: linear-gradient(180deg, hsl(0, 0%, 100%) 0%, hsl(210, 40%, 98%) 100%);
     
-    --shadow-sm: 0 1px 2px 0 hsl(215 56% 23% / 0.05);
-    --shadow-md: 0 4px 6px -1px hsl(215 56% 23% / 0.08), 0 2px 4px -2px hsl(215 56% 23% / 0.06);
-    --shadow-lg: 0 10px 15px -3px hsl(215 56% 23% / 0.08), 0 4px 6px -4px hsl(215 56% 23% / 0.06);
-    --shadow-xl: 0 20px 25px -5px hsl(215 56% 23% / 0.1), 0 8px 10px -6px hsl(215 56% 23% / 0.08);
-    --shadow-card: 0 10px 30px -10px hsl(215 56% 10% / 0.25), 0 4px 12px -6px hsl(215 56% 10% / 0.15);
-    --shadow-hover: 0 18px 45px -18px hsl(215 56% 10% / 0.35);
+    --shadow-sm: 0 1px 2px 0 hsl(217 63% 12% / 0.05);
+    --shadow-md: 0 4px 6px -1px hsl(217 63% 12% / 0.08), 0 2px 4px -2px hsl(217 63% 12% / 0.06);
+    --shadow-lg: 0 10px 15px -3px hsl(217 63% 12% / 0.08), 0 4px 6px -4px hsl(217 63% 12% / 0.06);
+    --shadow-xl: 0 20px 25px -5px hsl(217 63% 12% / 0.1), 0 8px 10px -6px hsl(217 63% 12% / 0.08);
+    --shadow-card: 0 10px 30px -10px hsl(217 63% 12% / 0.15), 0 4px 12px -6px hsl(217 63% 12% / 0.1);
+    --shadow-hover: 0 18px 45px -18px hsl(217 63% 12% / 0.25);
 
     --sidebar-background: 210 40% 98%;
-    --sidebar-foreground: 222 47% 18%;
-    --sidebar-primary: 215 56% 23%;
+    --sidebar-foreground: 217 63% 12%;
+    --sidebar-primary: 217 63% 12%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 153 40% 94%;
-    --sidebar-accent-foreground: 153 40% 28%;
+    --sidebar-accent: 200 53% 90%; /* Light blue muted */
+    --sidebar-accent-foreground: 217 63% 12%;
     --sidebar-border: 210 20% 88%;
-    --sidebar-ring: 215 56% 23%;
+    --sidebar-ring: 200 53% 58%;
   }
 
   .dark {
-    --background: 215 40% 8%;
+    --background: 217 40% 6%;
     --foreground: 210 40% 96%;
 
-    --card: 215 35% 12%;
+    --card: 217 35% 10%;
     --card-foreground: 210 40% 96%;
 
-    --popover: 215 35% 12%;
+    --popover: 217 35% 10%;
     --popover-foreground: 210 40% 96%;
 
-    --primary: 215 56% 65%;
-    --primary-foreground: 215 40% 10%;
+    --primary: 217 63% 65%; /* Navy Blue lighten for dark mode */
+    --primary-foreground: 217 40% 10%;
 
-    --secondary: 153 45% 55%;
-    --secondary-foreground: 215 40% 10%;
+    --secondary: 200 53% 58%; /* Light blue looks good on dark */
+    --secondary-foreground: 217 40% 10%;
 
-    --muted: 215 30% 16%;
-    --muted-foreground: 210 20% 78%;
+    --muted: 217 30% 14%;
+    --muted-foreground: 210 20% 70%;
 
-    --accent: 153 45% 55%;
-    --accent-foreground: 215 40% 10%;
+    --accent: 200 53% 58%; /* Light blue for dark mode accent */
+    --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 70% 50%;
-    --destructive-foreground: 210 40% 96%;
+    --destructive: 358 98% 52%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 215 30% 20%;
-    --input: 215 30% 20%;
-    --ring: 215 56% 65%;
+    --border: 217 30% 18%;
+    --input: 217 30% 18%;
+    --ring: 200 53% 58%;
 
-    --sidebar-background: 215 40% 8%;
+    --sidebar-background: 217 40% 6%;
     --sidebar-foreground: 210 40% 96%;
-    --sidebar-primary: 215 56% 65%;
-    --sidebar-primary-foreground: 215 40% 10%;
-    --sidebar-accent: 153 35% 24%;
-    --sidebar-accent-foreground: 153 45% 75%;
-    --sidebar-border: 215 30% 20%;
-    --sidebar-ring: 215 56% 65%;
+    --sidebar-primary: 217 63% 65%;
+    --sidebar-primary-foreground: 217 40% 10%;
+    --sidebar-accent: 200 45% 24%;
+    --sidebar-accent-foreground: 200 53% 75%;
+    --sidebar-border: 217 30% 18%;
+    --sidebar-ring: 200 53% 58%;
   }
 }
 
@@ -131,15 +138,15 @@
 @layer components {
   .btn-hero {
     @apply px-8 py-4 rounded-lg font-bold text-lg transition-all duration-300;
-    background: hsl(var(--secondary));
+    background: hsl(var(--accent));
     color: #FFFFFF;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 10px 25px rgba(90, 165, 204, 0.3); /* Light blue glow */
   }
   
   .btn-hero:hover {
     transform: translateY(-2px) scale(1.05);
-    background: hsl(153 50% 28%);
-    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
+    background: hsl(200 53% 50%); /* Darker light blue on hover */
+    box-shadow: 0 16px 40px rgba(90, 165, 204, 0.4);
   }
 
   .card-institutional {
@@ -168,15 +175,15 @@
 
   .section-pattern {
     background-image: 
-      radial-gradient(circle at 20% 50%, hsl(var(--ebime-purple) / 0.05) 0%, transparent 50%),
-      radial-gradient(circle at 80% 20%, hsl(var(--ebime-blue) / 0.05) 0%, transparent 50%),
-      radial-gradient(circle at 40% 80%, hsl(var(--ebime-green) / 0.03) 0%, transparent 50%);
+      radial-gradient(circle at 20% 50%, hsl(var(--ebime-navy) / 0.05) 0%, transparent 50%),
+      radial-gradient(circle at 80% 20%, hsl(var(--ebime-lightblue) / 0.08) 0%, transparent 50%),
+      radial-gradient(circle at 40% 80%, hsl(var(--ebime-lightblue) / 0.03) 0%, transparent 50%);
   }
 
   .badge-institutional {
     @apply inline-flex items-center px-3 py-1 rounded-full text-sm font-medium;
     background: hsla(0, 0%, 100%, 0.09);
-    color: hsl(var(--ebime-green));
+    color: hsl(var(--ebime-lightblue));
     border: 1px solid hsla(0, 0%, 100%, 0.22);
     backdrop-filter: blur(8px);
   }
@@ -222,7 +229,7 @@
   }
 
   .bg-footer-navy {
-    background-color: #1A365D;
+    background-color: #0B1930;
   }
 
   .shadow-institutional {
