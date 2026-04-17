@@ -51,7 +51,7 @@ const CONTACT_INFO: readonly ContactInfoItem[] = [
   {
     icon: Mail,
     title: 'Correo Electrónico',
-    content: 'ibimeinformatica@gmail.com',
+    content: 'contactoibime@gmail.com',
   },
 ] as const;
 
