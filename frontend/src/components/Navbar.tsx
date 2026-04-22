@@ -74,11 +74,11 @@ const NAV_STYLES = {
   // Estado normal
   default:  { color: '#374151', bg: 'transparent' },
   // Hover — mint muy claro, texto verde oscuro (como imagen 2)
-  hover:    { color: '#15803d', bg: 'rgba(21,128,61,0.08)' },
+  hover:    { color: '#0B1930', bg: 'rgba(11,25,48,0.08)' },
   // Activo — mismo mint pero con borde sutil
-  active:   { color: '#15803d', bg: 'rgba(21,128,61,0.10)', fontWeight: 600 },
+  active:   { color: '#0B1930', bg: 'rgba(11,25,48,0.10)', fontWeight: 600 },
   // Dropdown children hover
-  childHover: { color: '#15803d', bg: 'rgba(21,128,61,0.06)' },
+  childHover: { color: '#0B1930', bg: 'rgba(11,25,48,0.06)' },
 };
 
 const DropdownMenu = ({ item, depth = 0 }: { item: MenuItem; depth?: number }) => {
@@ -201,7 +201,7 @@ const MobileMenu = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void 
               fontSize:       14,
               fontWeight:     active ? 600 : 400,
               // Activo → solo texto verde, sin fondo
-              color:          active ? '#15803d' : '#374151',
+              color:          active ? '#0B1930' : '#374151',
               background:     'transparent',
               textDecoration: 'none',
               padding:        '2px 0',
@@ -217,7 +217,7 @@ const MobileMenu = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void 
                 background: 'none',
                 border:     'none',
                 cursor:     'pointer',
-                color:      isExp ? '#15803d' : '#9ca3af',
+                color:      isExp ? '#0B1930' : '#9ca3af',
                 flexShrink: 0,
               }}
             >
@@ -256,7 +256,7 @@ const MobileMenu = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void 
           padding:        '14px 16px',
           borderBottom:   '1px solid rgba(0,0,0,0.08)',
         }}>
-          <span style={{ fontSize: 16, fontWeight: 700, color: '#15803d' }}>
+          <span style={{ fontSize: 16, fontWeight: 700, color: '#0B1930' }}>
             Menú IBIME
           </span>
           <button

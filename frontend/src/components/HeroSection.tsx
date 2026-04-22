@@ -5,8 +5,8 @@ import heroBanner from '@/assets/hero-banner.jpg';
 import libraryActivity from '@/assets/library-activity.jpg';
 import communityEvent from '@/assets/community-event.jpg';
 
-// Unified institutional "forest" green from Cifras Institucionales
-const IBIME_GREEN = '#15803d';
+// Unified institutional accent from new color palette (Light Blue)
+const IBIME_ACCENT = '#5AA5CC';
 
 interface Slide {
   image: string;
@@ -53,7 +53,7 @@ export const HeroSection = () => {
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % slides.length);
-    }, 6000);
+    }, 10000); // Aumentado de 6s a 10s
     return () => clearInterval(timer);
   }, []);
 
@@ -136,8 +136,8 @@ export const HeroSection = () => {
                     type="button"
                     className="flex items-center justify-center h-14 min-w-[140px] px-8 rounded-lg font-bold text-lg text-white transition-all duration-200 opacity-100"
                     style={{
-                      background: IBIME_GREEN,
-                      boxShadow: '0 8px 24px #15803d33, 0 1.5px 8px #2224',
+                      background: IBIME_ACCENT,
+                      boxShadow: '0 8px 24px #5aa5cc44, 0 1.5px 8px #2224',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -198,9 +198,9 @@ export const HeroSection = () => {
             style={{
               border: 'none',
               outline: 'none',
-              background: index === currentSlide ? IBIME_GREEN : 'rgba(255,255,255,0.4)',
+              background: index === currentSlide ? IBIME_ACCENT : 'rgba(255,255,255,0.4)',
               boxShadow: index === currentSlide
-                ? `${IBIME_GREEN}66 0 1px 5px` // Soft shadow with brand green
+                ? `${IBIME_ACCENT}66 0 1px 5px` // Soft shadow with brand accent
                 : undefined,
             }}
           />

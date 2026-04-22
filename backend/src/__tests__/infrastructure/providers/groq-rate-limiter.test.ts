@@ -1,13 +1,13 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-// Definir el mock en el mismo archivo antes del vi.mock
-const mockRedisClient = {
+// Mock para redisClient
+const mockRedisClient = vi.hoisted(() => ({
   isOpen: true,
   get: vi.fn(),
   incr: vi.fn(),
   incrBy: vi.fn(),
   expire: vi.fn(),
-};
+}));
 
 vi.mock('../../../infrastructure/cache/redis.js', () => ({
   get redisClient() {
