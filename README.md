@@ -125,7 +125,7 @@ El corazón del sistema es un motor de decisión **lineal y determinista**. El m
 ## 📂 Estructura Completa del Proyecto
 
 ```
-ibime-connect/                          ← Monorepo raíz
+ibime-connect/                          ← Raíz del proyecto
 │
 ├── 📁 .github/
 │   └── workflows/
@@ -299,7 +299,7 @@ ibime-connect/                          ← Monorepo raíz
 ├── 📄 render.yaml                      ← IaC: configuración de Render (backend)
 ├── 📄 playwright.config.ts             ← Config E2E: base URL, retries, reporters
 ├── 📄 tsconfig.backend.json            ← TSConfig raíz para el backend
-└── 📄 package.json                     ← Orquestador monorepo (scripts paralelos)
+└── 📄 package.json                     ← Orquestador del proyecto (scripts paralelos)
 ```
 
 ---
@@ -356,7 +356,7 @@ npx playwright test
 git clone <repo-url>
 cd ibime-connect
 
-# 2. Instalar dependencias (monorepo + backend + frontend)
+# 2. Instalar dependencias (raíz + backend + frontend)
 #    npm install también inicializa Husky automáticamente vía el script "prepare"
 npm install
 npm install --prefix backend
@@ -373,7 +373,7 @@ npm run dev
 #   Backend:  http://localhost:3000
 ```
 
-### Scripts del monorepo (raíz)
+### Scripts del proyecto (raíz)
 
 | Script | Descripción |
 |:---|:---|

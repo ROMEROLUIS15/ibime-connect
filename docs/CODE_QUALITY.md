@@ -42,7 +42,7 @@ El sistema actúa en tres fases de defensa. Garantiza que el código defectuoso 
 
 ## 📦 Configuración en `package.json` (Raíz)
 
-Para gestionar ambos monorepos sin `workspaces` estrictos, se aplican delegadores paralelos en el archivo `package.json` principal:
+Para gestionar ambos proyectos sin `workspaces` estrictos, se aplican delegadores paralelos en el archivo `package.json` principal:
 
 ```json
 {
