@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
-import heroBanner from '@/assets/hero-banner.jpg';
+import heroBanner from '@/assets/hero-banner.jpeg';
 import libraryActivity from '@/assets/library-activity.jpg';
 import communityEvent from '@/assets/community-event.jpg';
 
@@ -22,7 +22,7 @@ const slides: Slide[] = [
     title: 'Bienvenidos a IBIME',
     subtitle: 'Instituto de Bibliotecas e Información',
     description: 'Educación, cultura y comunidad al servicio de todos los merideños',
-    objectPosition: 'center 20%', // Shift focus up to prevent the roof from getting cut off on wide screens
+    objectPosition: 'center 75%', // Foco en la parte inferior para mostrar el edificio y su base (muro de piedra)
   },
   {
     image: libraryActivity,
@@ -62,7 +62,7 @@ export const HeroSection = () => {
   const nextSlide = () => setCurrentSlide((prev) => (prev + 1) % slides.length);
 
   return (
-    <section id="inicio" className="relative h-screen min-h-[600px] overflow-hidden pt-16">
+    <section id="inicio" className="relative h-[85vh] min-h-[600px] overflow-hidden pt-16">
       {/* Slides */}
       {slides.map((slide, index) => {
         // Removemos la asimetría para que los botones nunca salten al cambiar de slide
