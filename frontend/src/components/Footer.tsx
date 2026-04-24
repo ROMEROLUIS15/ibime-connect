@@ -1,4 +1,4 @@
-import { Twitter, Facebook, Instagram, MapPin, Phone, Mail } from 'lucide-react';
+import { Facebook, Instagram, MapPin, Phone, Mail } from 'lucide-react';
 import logoIBIME from '@/assets/logo-ibime.png';
 
 const quickLinks = [
@@ -7,6 +7,13 @@ const quickLinks = [
   { label: 'Servicios', href: '#servicios' },
   { label: 'Cartelera', href: '#cartelera' },
 ];
+
+// X (Twitter) SVG custom
+const XIcon = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+    <path d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932ZM17.61 20.644h2.039L6.486 3.24H4.298Z" />
+  </svg>
+);
 
 // YouTube SVG custom (no disponible en lucide-react)
 const YoutubeIcon = () => (
@@ -18,7 +25,7 @@ const YoutubeIcon = () => (
 );
 
 const socialLinks = [
-  { icon: Twitter, href: 'https://x.com/IBIMEGOB', label: 'Twitter / X' },
+  { icon: XIcon, href: 'https://x.com/IBIMEGOB', label: 'X (Twitter)' },
   { icon: Facebook, href: 'https://www.facebook.com/ibimegob', label: 'Facebook' },
   { icon: Instagram, href: 'https://www.instagram.com/ibimegob?igsh=bTBoN3JrNHRsaDBk', label: 'Instagram' },
   { icon: YoutubeIcon, href: 'https://www.youtube.com/@ibime1800', label: 'YouTube' },
@@ -127,7 +134,7 @@ export const Footer = () => {
               href="https://www.google.com/maps/search/?api=1&query=Sector+Glorias+Patrias,+Calle+1+Los+Eucaliptos,+entre+Av+Gonzalo+Picon+y+Tulio+Febres,+Merida+Venezuela"
               target="_blank"
               rel="noopener noreferrer"
-              className="block w-[85%] h-[140px] rounded-xl overflow-hidden border border-white/10 shadow-lg transition-transform duration-300 hover:scale-[1.02] active:scale-95 cursor-pointer relative group"
+              className="block w-full md:w-[85%] h-[180px] md:h-[140px] rounded-xl overflow-hidden border border-white/10 shadow-lg transition-transform duration-300 hover:scale-[1.02] active:scale-95 cursor-pointer relative group"
               title="Ver en Google Maps"
             >
               {/* Overlay para capturar el click de forma limpia */}

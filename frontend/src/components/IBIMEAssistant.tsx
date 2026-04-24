@@ -23,6 +23,7 @@ import {
   type JSX,
   type KeyboardEvent,
   type ChangeEvent,
+  type TouchEvent,
 } from 'react';
 import { useFloatingButtonsTheme } from '@/hooks/useFloatingButtonsTheme';
 import { useFocusTrap, useEscapeKey } from '@/hooks/use-focus-trap';
@@ -223,6 +224,12 @@ export function IBIMEAssistant(): JSX.Element {
   const [inputValue, setInputValue] = useState<string>('');
   const [isTyping, setIsTyping] = useState<boolean>(false);
 
+  // Drag logic for mobile
+  const [dragOffset, setDragOffset] = useState<number>(0);
+  const dragStartY = useRef<number | null>(null);
+  const initialOffset = useRef<number>(0);
+  const isDragging = useRef<boolean>(false);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -231,6 +238,57 @@ export function IBIMEAssistant(): JSX.Element {
   // Focus trap + Escape key handler
   useFocusTrap(dialogRef, isOpen);
   useEscapeKey(() => setIsOpen(false), isOpen);
+
+  // Resetear posición de arrastre al volver a la versión de escritorio
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth > 768) {
+        setDragOffset(0);
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const handleTouchStart = (e: TouchEvent<HTMLButtonElement>) => {
+    if (window.innerWidth > 768) return;
+    if (isOpen) return; // No mover si está abierto
+    dragStartY.current = e.touches[0].clientY;
+    initialOffset.current = dragOffset;
+    isDragging.current = false;
+  };
+
+  const handleTouchMove = (e: TouchEvent<HTMLButtonElement>) => {
+    if (dragStartY.current === null || window.innerWidth > 768) return;
+    
+    const currentY = e.touches[0].clientY;
+    const deltaY = dragStartY.current - currentY; // positivo hacia arriba
+
+    if (Math.abs(deltaY) > 5) {
+      isDragging.current = true;
+    }
+
+    let newOffset = initialOffset.current + deltaY;
+    
+    // Límites de movimiento
+    const maxOffset = window.innerHeight - 150; 
+    if (newOffset < -10) newOffset = -10;
+    if (newOffset > maxOffset) newOffset = maxOffset;
+
+    setDragOffset(newOffset);
+  };
+
+  const handleTouchEnd = () => {
+    dragStartY.current = null;
+  };
+
+  const toggleOpen = () => {
+    if (isDragging.current) {
+      isDragging.current = false;
+      return;
+    }
+    setIsOpen((prev) => !prev);
+  };
 
   // ── Dependency Injection via useMemo ─────────────────────────────────────
   const askAssistant = useMemo<AskAssistantUseCase>(() => {
@@ -329,13 +387,14 @@ export function IBIMEAssistant(): JSX.Element {
       <div
         style={{
           position: 'fixed',
-          bottom: '24px',
+          bottom: `calc(24px + ${dragOffset}px)`,
           right: '24px',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'flex-end',
           gap: '12px',
           zIndex: 9999,
+          transition: dragStartY.current === null ? 'bottom 0.3s ease' : 'none',
         }}
       >
         {/* ── Ventana de Chat ── */}
@@ -549,30 +608,30 @@ export function IBIMEAssistant(): JSX.Element {
                     e.currentTarget.style.borderColor = '#e2e8f0';
                   }}
                 />
-                <button
-                  onClick={() => void handleSendMessage()}
-                  disabled={!canSend}
-                  aria-label="Enviar mensaje"
-                  style={{
-                    width: 38,
-                    height: 38,
-                    borderRadius: 12,
-                    border: 'none',
-                    flexShrink: 0,
-                    cursor: canSend ? 'pointer' : 'not-allowed',
-                    background: canSend
-                      ? 'linear-gradient(135deg, #0B1930, #142a4f)'
-                      : '#dcfce7',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    boxShadow: canSend ? '0 2px 8px rgba(21,128,61,0.4)' : 'none',
-                    transition: 'all 0.15s',
-                  }}
-                >
-                  <SendIcon color={canSend ? 'white' : '#86efac'} />
-                </button>
-              </div>
+                  <button
+                    onClick={() => void handleSendMessage()}
+                    disabled={!canSend}
+                    aria-label="Enviar mensaje"
+                    style={{
+                      width: 38,
+                      height: 38,
+                      borderRadius: 12,
+                      border: 'none',
+                      flexShrink: 0,
+                      cursor: canSend ? 'pointer' : 'not-allowed',
+                      background: canSend
+                        ? 'linear-gradient(135deg, #0B1930, #142a4f)'
+                        : '#dbeafe',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      boxShadow: canSend ? '0 2px 8px rgba(11,25,48,0.4)' : 'none',
+                      transition: 'all 0.15s',
+                    }}
+                  >
+                    <SendIcon color={canSend ? 'white' : '#93c5fd'} />
+                  </button>
+                </div>
               <p style={{ fontSize: 9.5, color: '#94a3b8', margin: '6px 0 0', textAlign: 'center' }}>
                 Asistente IA del IBIME · Powered by Gemini
               </p>
@@ -612,7 +671,10 @@ export function IBIMEAssistant(): JSX.Element {
           )}
 
           <button
-            onClick={() => setIsOpen((prev) => !prev)}
+            onClick={toggleOpen}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
             aria-label={isOpen ? 'Cerrar asistente virtual IBIME' : 'Abrir Asistente IA del IBIME'}
             aria-expanded={isOpen}
             style={{
@@ -630,6 +692,7 @@ export function IBIMEAssistant(): JSX.Element {
               position: 'relative',
               zIndex: 1,
               overflow: isOpen ? 'hidden' : 'visible',
+              touchAction: 'none', // Evitar scroll al arrastrar
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.transform = 'translateY(-4px) scale(1.04)';

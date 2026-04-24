@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
-import heroBanner from '@/assets/hero-banner.jpeg';
+import fachadaIbime from '@/assets/fachada-ibime.jpeg';
 import libraryActivity from '@/assets/library-activity.jpg';
 import communityEvent from '@/assets/community-event.jpg';
 
@@ -13,16 +13,16 @@ interface Slide {
   title: string;
   subtitle: string;
   description: string;
-  objectPosition?: string;
+  objectPositionClass?: string;
 }
 
 const slides: Slide[] = [
   {
-    image: heroBanner,
+    image: fachadaIbime,
     title: 'Bienvenidos a IBIME',
     subtitle: 'Instituto de Bibliotecas e Información',
     description: 'Educación, cultura y comunidad al servicio de todos los merideños',
-    objectPosition: 'center 75%', // Foco en la parte inferior para mostrar el edificio y su base (muro de piedra)
+    objectPositionClass: 'object-[25%_bottom] md:object-bottom', // Último intento: anclado al piso para no perder la acera, y desplazado al 25% izquierdo para encuadrar el letrero.
   },
   {
     image: libraryActivity,
@@ -62,7 +62,7 @@ export const HeroSection = () => {
   const nextSlide = () => setCurrentSlide((prev) => (prev + 1) % slides.length);
 
   return (
-    <section id="inicio" className="relative h-[85vh] min-h-[600px] overflow-hidden pt-16">
+    <section id="inicio" className="relative h-screen min-h-[600px] overflow-hidden pt-16">
       {/* Slides */}
       {slides.map((slide, index) => {
         // Removemos la asimetría para que los botones nunca salten al cambiar de slide
@@ -79,10 +79,7 @@ export const HeroSection = () => {
               <img
                 src={slide.image}
                 alt={slide.title}
-                className="w-full h-full object-cover"
-                style={{
-                  objectPosition: slide.objectPosition || 'center center',
-                }}
+                className={`w-full h-full object-cover ${slide.objectPositionClass || 'object-center'}`}
               />
               {/* Added a consistent dark overlay so text is legible against the bright white building */}
               <div className="absolute inset-0 pointer-events-none bg-black/40 mix-blend-multiply" />
