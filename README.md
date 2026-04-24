@@ -41,6 +41,7 @@ El sistema está construido bajo principios de **Arquitectura Limpia**, con un m
 | **Frontend** | React 18, Vite, TypeScript, Tailwind CSS, shadcn/ui |
 | **Backend** | Node.js 18 LTS, Express 5, TypeScript, tsyringe (DI) |
 | **Base de Datos** | Supabase (PostgreSQL + pgvector), Redis Cloud |
+| **Media & CDN** | Cloudinary (Streaming de video y fotogramas automáticos) |
 | **IA — Embeddings** | Google Gemini (`gemini-embedding-001`, 768 dimensiones) |
 | **IA — Inferencia** | Groq Cloud (`llama-3.1-8b-instant`) |
 | **Validación** | Zod (esquemas compartidos frontend ↔ backend) |
@@ -235,6 +236,7 @@ ibime-connect/                          ← Raíz del proyecto
 │   │   ├── 📁 components/              ← UI components (secciones del landing)
 │   │   │   ├── IBIMEAssistant.tsx      ← Chat widget del asistente IA
 │   │   │   ├── HeroSection.tsx
+│   │   │   ├── CulturalVideosSection.tsx ← Videoteca con integración Cloudinary
 │   │   │   ├── ServicesSection.tsx
 │   │   │   ├── AboutIBIMESection.tsx
 │   │   │   ├── EventsSection.tsx
@@ -261,6 +263,7 @@ ibime-connect/                          ← Raíz del proyecto
 │   │   ├── 📁 hooks/                   ← Custom React hooks
 │   │   ├── 📁 services/                ← Clientes HTTP (contact, events)
 │   │   ├── 📁 lib/                     ← Utilidades (api-url, scroll, animations)
+│   │   │   └── cloudinary.ts           ← Utilidades de CDN para video y portadas
 │   │   └── 📁 test/                    ← Tests unitarios frontend (Vitest)
 │   │
 │   ├── public/

@@ -2,6 +2,22 @@
 
 Todos los cambios notables en este proyecto serán documentados en este archivo.
 
+## [2.3.0] - 2026-04-24
+### 🎬 Integración de Videoteca Cultural con Cloudinary
+
+Esta versión introduce una nueva sección en la plataforma web dedicada a preservar y difundir el patrimonio histórico-cultural del Estado Mérida mediante contenido audiovisual optimizado.
+
+#### ✨ Nuevo
+- **Sección de Cápsulas Culturales (`CulturalVideosSection.tsx`)**: Nueva área en la landing page principal para la reproducción de videos institucionales (Escritores Merideños, Heroínas de Venezuela).
+- **Integración con Cloudinary**: Se incorporó Cloudinary como CDN para el streaming de videos (en lugar de almacenamiento en base de datos) utilizando transformaciones `q_auto` y `f_auto` para un rendimiento máximo.
+- **Capa de Utilidades SoC (`lib/cloudinary.ts`)**: Extracción de las funciones generadoras de URLs (para streaming de video y extracción automática de fotogramas clave/portadas vía `so_auto`) garantizando el principio *Separation of Concerns*.
+- **Diseño**: La nueva sección hereda el lenguaje visual institucional y los videos usan la API HTML5 nativa, manteniendo la interfaz limpia de logos de terceros (como YouTube/Vimeo).
+
+#### 🔧 Mejoras de Interfaz (UI)
+- **Footer (`Footer.tsx`)**: Se reajustaron las proporciones del iframe de Google Maps integrado, mejorando el balance visual con las otras columnas institucionales.
+
+---
+
 ## [2.2.0] - 2026-04-16
 ### 🛡️ Pre-Commit Quality Gate — Husky v9 + lint-staged + ESLint
 

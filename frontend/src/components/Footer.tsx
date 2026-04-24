@@ -127,7 +127,7 @@ export const Footer = () => {
               href="https://www.google.com/maps/search/?api=1&query=Sector+Glorias+Patrias,+Calle+1+Los+Eucaliptos,+entre+Av+Gonzalo+Picon+y+Tulio+Febres,+Merida+Venezuela"
               target="_blank"
               rel="noopener noreferrer"
-              className="block w-full h-[220px] rounded-xl overflow-hidden border border-white/10 shadow-lg transition-transform duration-300 hover:scale-[1.02] active:scale-95 cursor-pointer relative group"
+              className="block w-[85%] h-[140px] rounded-xl overflow-hidden border border-white/10 shadow-lg transition-transform duration-300 hover:scale-[1.02] active:scale-95 cursor-pointer relative group"
               title="Ver en Google Maps"
             >
               {/* Overlay para capturar el click de forma limpia */}
