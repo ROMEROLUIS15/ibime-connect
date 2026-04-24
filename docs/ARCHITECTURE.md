@@ -64,6 +64,27 @@ flowchart TD
 
 ---
 
+## 📚 Pipeline de Ingesta de Conocimiento (RAG)
+
+El conocimiento institucional no se introduce manualmente en archivos JSON ni se duplica en el system prompt. Se utiliza un pipeline dinámico optimizado para entornos efímeros (como Render):
+
+### Flujo de Ingesta:
+1. **Punto de Entrada HTTP**: El backend recibe archivos PDF (`POST /api/v1/knowledge/upload-pdf`) o Webhooks de n8n (`POST /api/v1/knowledge/webhook/koha`).
+2. **Procesamiento en Memoria (Multer)**: Los archivos NUNCA tocan el disco duro del servidor para evitar pérdida de datos en reinicios de contenedores efímeros. Se mantienen 100% en memoria RAM.
+3. **Extracción y Chunking Inteligente (`DocumentProcessorService`)**: 
+   - Se utiliza `pdf-parse` para extraer texto crudo.
+   - Se aplica un algoritmo de *Chunking Semántico*: fragmentos de ~1000 caracteres con 200 de solapamiento (overlap) respetando los límites de oración (puntos y espacios) para no romper el contexto lógico.
+4. **Vectorización y Almacenamiento (`KnowledgeIngestionService`)**: 
+   - Se obtienen vectores (768 dimensiones) desde Gemini para cada chunk.
+   - Se insertan directamente en la tabla `knowledge_base` en Supabase.
+   - Las categorías se infieren y almacenan en la columna `metadata` (JSONB) respetando el esquema de base de datos estricto sin forzar migraciones.
+
+### Dualidad de la Verdad (Separation of Concerns):
+- **Memoria RAM (System Prompt)**: Identidad estática y crítica (Nombre de Directora, Horarios fijos, Misión). Garantiza 0 alucinaciones.
+- **Base de Datos (RAG Vectorial)**: Conocimiento denso y extenso (Historia detallada, Manuales de Procedimiento, Catálogo dinámico Koha de más de 40 bibliotecas).
+
+---
+
 ## 🔐 Capas de Seguridad del Motor de Chat
 
 El sistema implementa defensas en **tres niveles independientes** para prevenir alucinaciones:

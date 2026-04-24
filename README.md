@@ -43,6 +43,7 @@ El sistema está construido bajo principios de **Arquitectura Limpia**, con un m
 | **Base de Datos** | Supabase (PostgreSQL + pgvector), Redis Cloud |
 | **Media & CDN** | Cloudinary (Streaming de video y fotogramas automáticos) |
 | **IA — Embeddings** | Google Gemini (`gemini-embedding-001`, 768 dimensiones) |
+| **IA — Ingestion** | `pdf-parse`, `multer` (Procesamiento en memoria y chunking semántico) |
 | **IA — Inferencia** | Groq Cloud (`llama-3.1-8b-instant`) |
 | **Validación** | Zod (esquemas compartidos frontend ↔ backend) |
 | **Observabilidad** | Pino (logs estructurados JSON + `requestId` por petición) |
@@ -146,6 +147,7 @@ ibime-connect/                          ← Raíz del proyecto
 │   │   ├── 📁 controllers/             ← HTTP handlers (validan, delegan, responden)
 │   │   │   ├── chat.controller.ts
 │   │   │   ├── contact.controller.ts
+│   │   │   ├── knowledge.controller.ts ← Manejo de Endpoints de Ingesta (PDF/Webhook)
 │   │   │   └── registration.controller.ts
 │   │   │
 │   │   ├── 📁 domain/                  ← Núcleo: contratos sin dependencias externas
@@ -180,12 +182,15 @@ ibime-connect/                          ← Raíz del proyecto
 │   │   │
 │   │   ├── 📁 routes/
 │   │   │   ├── api.routes.ts           ← Rutas v1 + legacy + admin flush-cache (timing-safe)
-│   │   │   └── chat.routes.ts          ← Sub-router de chat
+│   │   │   ├── chat.routes.ts          ← Sub-router de chat
+│   │   │   └── knowledge.routes.ts     ← Sub-router de Ingesta RAG (multer memory storage)
 │   │   │
 │   │   ├── 📁 services/                ← Orquestación de lógica de negocio
 │   │   │   ├── chat.service.ts         ← Thin wrapper legacy → ChatOrchestrator
 │   │   │   ├── contact.service.ts      ← Inserción de mensajes de contacto en DB
+│   │   │   ├── document-processor.service.ts ← Extracción de texto y Chunking Inteligente
 │   │   │   ├── embedding.service.ts    ← Google Gemini embeddings (768 dims)
+│   │   │   ├── knowledge-ingestion.service.ts ← Vectorización y carga en Supabase
 │   │   │   ├── rag.service.ts          ← RAGService: embedding + similarity search + cache
 │   │   │   ├── registration.service.ts ← Consulta e inscripción de cursos (Supabase)
 │   │   │   ├── tools.service.ts        ← Dispatcher de herramientas LLM (legacy)

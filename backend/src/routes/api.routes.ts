@@ -7,6 +7,7 @@ import { RegistrationController } from '../controllers/registration.controller.j
 import { CacheService } from '../infrastructure/cache/cache.service.js';
 import { ENV } from '../config/env.config.js';
 import { logger } from '../infrastructure/logger/index.js';
+import knowledgeRoutes from './knowledge.routes.js';
 
 const router = Router();
 
@@ -35,6 +36,8 @@ router.post('/v1/registrations', (req, res, next) =>
   new RegistrationController().handleRegistration(req, res, next)
 );
 
+router.use('/v1/knowledge', knowledgeRoutes);
+
 // Backwards compatibility (Legacy routes)
 router.post('/chat', chatLimiter, (req, res, next) =>
   new ChatController().handleChatRequest(req, res, next)
@@ -47,6 +50,8 @@ router.post('/contact', (req, res, next) =>
 router.post('/registrations', (req, res, next) =>
   new RegistrationController().handleRegistration(req, res, next)
 );
+
+router.use('/knowledge', knowledgeRoutes);
 
 // Rate limiter for admin endpoints (5 requests per minute)
 const adminLimiter = rateLimit({

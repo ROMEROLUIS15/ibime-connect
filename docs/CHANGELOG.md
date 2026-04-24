@@ -3,6 +3,20 @@
 Todos los cambios notables en este proyecto serán documentados en este archivo.
 
 ## [2.3.0] - 2026-04-24
+### 🧠 Pipeline Empresarial de Ingesta RAG (Conocimiento Institucional)
+
+Esta actualización dota a la plataforma de una arquitectura profesional para la ingesta, procesamiento y vectorización de conocimiento institucional (PDFs) y catálogos dinámicos (Koha), permitiendo que la Inteligencia Artificial responda sin alucinaciones basándose en una base de datos vectorial real.
+
+#### ✨ Nuevo
+- **Endpoints de Ingesta (`/api/v1/knowledge`)**: 
+  - `POST /upload-pdf`: Procesamiento de archivos PDF en memoria (sin tocar el disco duro, optimizado para plataformas efímeras como Render).
+  - `POST /webhook/koha`: Webhook diseñado para recibir JSON arrays generados por automatizaciones en n8n (ej. exportaciones diarias del catálogo Koha).
+- **Procesamiento de Documentos (`DocumentProcessorService.ts`)**: Implementación de algoritmos de *Chunking Inteligente* utilizando `pdf-parse`, dividiendo textos largos en fragmentos de 1000 caracteres con 200 caracteres de solapamiento semántico (overlap) para no perder el contexto entre párrafos.
+- **Servicio de Vectorización (`KnowledgeIngestionService.ts`)**: Conexión directa con la API de embeddings de Gemini (768 dimensiones) e inserción automatizada en la base de datos `knowledge_base` en Supabase, utilizando el campo JSON `metadata` para clasificar categorías dinámicamente.
+- **Single Source of Truth (`system-prompt.ts`)**: Separación estricta de responsabilidades. La identidad núcleo y estática (Directora actual, horarios) vive en RAM mediante el prompt, mientras que el conocimiento extenso (Historia, Reglamentos, Catálogo) vive en la base de datos vectorial.
+
+---
+
 ### 🎬 Integración de Videoteca Cultural con Cloudinary
 
 Esta versión introduce una nueva sección en la plataforma web dedicada a preservar y difundir el patrimonio histórico-cultural del Estado Mérida mediante contenido audiovisual optimizado.

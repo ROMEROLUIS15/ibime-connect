@@ -133,7 +133,26 @@ Output final (controlado 100% por Policy — nunca por LLM)
 
 ## 🏗️ RAG: Retrieval-Augmented Generation
 
-### Pipeline completo (código fuente: `rag.service.ts`)
+### 1. Ingesta de Conocimiento (El proceso de Alimentación)
+
+El sistema de RAG de IBIME utiliza un pipeline automatizado en memoria RAM para su alimentación, separado completamente del código estático del prompt.
+
+**Procesamiento de Documentos (PDFs):**
+```
+1. Endpoint recibe PDF en memoria (`/api/v1/knowledge/upload-pdf`)
+2. pdf-parse extrae el texto puro
+3. Chunking Semántico: 
+   - Tamaño del fragmento: ~1000 caracteres
+   - Solapamiento (Overlap): 200 caracteres (evita perder el contexto entre párrafos)
+   - Límite de corte: busca el último punto o espacio para no cortar palabras a la mitad.
+4. Generación de Vectores (Gemini 768 dims)
+5. Inserción directa en `knowledge_base` en Supabase con su metadata (categoría).
+```
+
+**Webhooks (Catálogos Dinámicos):**
+Un flujo similar existe vía `/api/v1/knowledge/webhook/koha` para recibir datos estructurados desde flujos de n8n, lo cual vectoriza el catálogo de la biblioteca automáticamente.
+
+### 2. Recuperación (Retrieval Pipeline Completo)
 
 ```
 1. Check Redis cache (clave: "rag:{userMessage}")
