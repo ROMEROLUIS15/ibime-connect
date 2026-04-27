@@ -15,12 +15,6 @@
     "paths": {
       "@shared/*": [
         "../shared/*"
-      ],
-      "zod": [
-        "./node_modules/zod"
-      ],
-      "zod/*": [
-        "./node_modules/zod/*"
       ]
     }
   },
