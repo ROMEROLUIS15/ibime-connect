@@ -10,9 +10,8 @@
     "skipLibCheck": true,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
-    "ignoreDeprecations": "5.0",
+    "ignoreDeprecations": "6.0",
     "allowSyntheticDefaultImports": true,
-    "baseUrl": ".",
     "paths": {
       "@shared/*": [
         "../shared/*"
