@@ -12,9 +12,16 @@
     "emitDecoratorMetadata": true,
     "ignoreDeprecations": "5.0",
     "allowSyntheticDefaultImports": true,
+    "baseUrl": ".",
     "paths": {
       "@shared/*": [
         "../shared/*"
+      ],
+      "zod": [
+        "./node_modules/zod"
+      ],
+      "zod/*": [
+        "./node_modules/zod/*"
       ]
     }
   },
