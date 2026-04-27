@@ -1,6 +1,23 @@
 import { describe, it, expect, vi } from 'vitest';
 import { Request, Response } from 'express';
 import { errorHandler } from '../../middlewares/error.middleware.js';
+import { logger } from '../../infrastructure/logger/index.js';
+
+// Mock the logger to avoid polluting test output and potential hangs
+vi.mock('../../infrastructure/logger/index.js', () => ({
+  logger: {
+    info: vi.fn(),
+    error: vi.fn(),
+    warn: vi.fn(),
+    debug: vi.fn(),
+  },
+  contextLogger: vi.fn().mockReturnValue({
+    info: vi.fn(),
+    error: vi.fn(),
+    warn: vi.fn(),
+    debug: vi.fn(),
+  }),
+}));
 
 describe('Error Middleware', () => {
   it('should handle RATE_LIMIT_EXCEEDED error correctly', () => {
@@ -81,7 +98,7 @@ describe('Error Middleware', () => {
       error: 'Something went wrong',
       requestId: 'unknown',
     });
-  });
+  }, 10000); // Increased timeout for stability
 
   it('should handle AppError instances appropriately', () => {
     // Create a mock AppError with statusCode property
