@@ -11,6 +11,6 @@ jobs:
     steps:
       - name: Ping Backend and Database
         run: |
-          curl -X GET "https://ibime-backend.onrender.com/health" \
+          curl -X GET "https://ibime-connect.onrender.com/health" \
           -H "Accept: application/json"
 
