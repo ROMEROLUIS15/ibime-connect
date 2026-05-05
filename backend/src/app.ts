@@ -3,6 +3,7 @@ import express from 'express';
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
 import apiRoutes from './routes/api.routes.js';
+import { supabaseClient } from './config/supabase.config.js';
 import { errorHandler } from './middlewares/error.middleware.js';
 import { ENV } from './config/env.config.js';
 import { requestLoggerMiddleware } from './infrastructure/logger/index.js';
@@ -37,9 +38,27 @@ app.get('/', (req, res) => {
   res.status(200).json({ status: 'OK', message: 'ibime-backend is running' });
 });
 
-// Health check endpoint
-app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'OK', timestamp: new Date().toISOString() });
+// Health check endpoint with DB ping
+app.get('/health', async (req, res) => {
+  try {
+    // Ping Supabase to keep it awake (using a simple RPC or query)
+    const { error } = await supabaseClient.from('knowledge').select('id').limit(1);
+    
+    if (error) throw error;
+
+    res.status(200).json({ 
+      status: 'OK', 
+      database: 'connected',
+      timestamp: new Date().toISOString() 
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      status: 'ERROR', 
+      database: 'disconnected',
+      error: error instanceof Error ? error.message : 'Unknown error',
+      timestamp: new Date().toISOString() 
+    });
+  }
 });
 
 // Rate limiting específico para chat (aplica a ambas rutas: v1 y legacy)
