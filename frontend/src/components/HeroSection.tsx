@@ -81,9 +81,9 @@ export const HeroSection = () => {
                 alt={slide.title}
                 className={`w-full h-full object-cover ${slide.objectPositionClass || 'object-center'}`}
               />
-              {/* Added a consistent dark overlay so text is legible against the bright white building */}
-              <div className="absolute inset-0 pointer-events-none bg-black/40 mix-blend-multiply" />
-              <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-black/80 via-transparent to-black/30" />
+              {/* Capa oscura uniforme para mantener legibilidad sin crear sombras fuertes en la parte inferior */}
+              <div className="absolute inset-0 pointer-events-none bg-black/20 mix-blend-multiply" />
+              <div className="absolute inset-0 pointer-events-none bg-black/20" />
             </div>
 
             {/* Standardized content vertical alignment */}
