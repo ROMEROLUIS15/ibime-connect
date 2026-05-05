@@ -4,6 +4,12 @@
  * Adapter that implements IAssistantPort by calling our custom Node.js backend.
  */
 
+/**
+ * src/infrastructure/adapters/BackendAssistantAdapter.ts
+ *
+ * Adapter that implements IAssistantPort by calling our custom Node.js backend.
+ */
+
 import type { ChatResponse, ApiResult } from '@shared/types/domain';
 import type { IAssistantPort, GenerateAnswerInput } from '@/domain/ports/AssistantPort';
 import { buildApiUrl } from '@/lib/api-url';
