@@ -93,7 +93,8 @@ const Carousel = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivEl
         return;
       }
 
-      onSelect(api);
+      setCanScrollPrev(api.canScrollPrev());
+      setCanScrollNext(api.canScrollNext());
       api.on("reInit", onSelect);
       api.on("select", onSelect);
 

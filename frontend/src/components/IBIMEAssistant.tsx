@@ -226,6 +226,7 @@ export function IBIMEAssistant(): JSX.Element {
 
   // Drag logic for mobile
   const [dragOffset, setDragOffset] = useState<number>(0);
+  const [isDraggingActive, setIsDraggingActive] = useState<boolean>(false);
   const dragStartY = useRef<number | null>(null);
   const initialOffset = useRef<number>(0);
   const isDragging = useRef<boolean>(false);
@@ -256,6 +257,7 @@ export function IBIMEAssistant(): JSX.Element {
     dragStartY.current = e.touches[0].clientY;
     initialOffset.current = dragOffset;
     isDragging.current = false;
+    setIsDraggingActive(true);
   };
 
   const handleTouchMove = (e: TouchEvent<HTMLButtonElement>) => {
@@ -280,6 +282,7 @@ export function IBIMEAssistant(): JSX.Element {
 
   const handleTouchEnd = () => {
     dragStartY.current = null;
+    setIsDraggingActive(false);
   };
 
   const toggleOpen = () => {
@@ -394,7 +397,7 @@ export function IBIMEAssistant(): JSX.Element {
           alignItems: 'flex-end',
           gap: '12px',
           zIndex: 9999,
-          transition: dragStartY.current === null ? 'bottom 0.3s ease' : 'none',
+          transition: isDraggingActive ? 'none' : 'bottom 0.3s ease',
         }}
       >
         {/* ── Ventana de Chat ── */}

@@ -49,14 +49,14 @@
     "@types/pino": "^7.0.4",
     "@types/redis": "^4.0.10",
     "@types/supertest": "^7.2.0",
-    "@vitest/coverage-v8": "^2.1.9",
-    "eslint": "^9.39.4",
+    "@vitest/coverage-v8": "^4.1.5",
+    "eslint": "^10.0.1",
     "nodemon": "^3.1.14",
     "supertest": "^7.2.2",
     "ts-node": "^10.9.2",
     "tsc-alias": "^1.8.16",
     "typescript": "^6.0.2",
     "typescript-eslint": "^8.58.2",
-    "vitest": "^2.1.9"
+    "vitest": "^4.1.5"
   }
 }
