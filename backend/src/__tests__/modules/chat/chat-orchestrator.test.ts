@@ -1,8 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ChatOrchestrator } from '../../../modules/chat/chat-orchestrator.js';
-import type { ILLMProvider } from '../../../domain/interfaces/index.js';
+import type { ILLMProvider, LLMResponse } from '../../../domain/interfaces/index.js';
 import type { RAGService } from '../../../services/rag.service.js';
-import * as RegistrationServiceModule from '../../../services/registration.service.js';
 
 describe('ChatOrchestrator', () => {
   let orchestrator: ChatOrchestrator;
@@ -33,73 +32,81 @@ describe('ChatOrchestrator', () => {
     vi.clearAllMocks();
   });
 
-  describe('registration flow', () => {
-    it('should return deterministic response when no email is provided', async () => {
+  describe('registration flow (tool calling)', () => {
+    it('should use RAG for registration queries', async () => {
+      await orchestrator.process({
+        userMessage: '¿En qué cursos estoy inscrito?',
+        conversationHistory: [],
+      });
+
+      expect(mockRAGService.retrieveContext).toHaveBeenCalled();
+    });
+
+    it('should pass conversation history to LLM for context', async () => {
+      const history = [
+        { role: 'user' as const, text: 'Mi correo es juan@test.com' },
+        { role: 'assistant' as const, text: 'Perfecto Juan, buscaré tus cursos.' },
+      ];
+
+      await orchestrator.process({
+        userMessage: '¿Qué cursos tengo?',
+        conversationHistory: history,
+      });
+
+      expect(mockLLMProvider.generateAnswer).toHaveBeenCalled();
+      const callArgs = vi.mocked(mockLLMProvider.generateAnswer).mock.calls[0];
+      const messages = callArgs[0] as any[];
+      
+      // History should be included in the conversation
+      expect(messages.length).toBeGreaterThan(3); // system + history + user
+    });
+
+    it('should pass tools to LLM for registration queries', async () => {
+      await orchestrator.process({
+        userMessage: '¿En qué cursos estoy?',
+        conversationHistory: [],
+      });
+
+      expect(mockLLMProvider.generateAnswer).toHaveBeenCalled();
+      const callArgs = vi.mocked(mockLLMProvider.generateAnswer).mock.calls[0];
+      const options = callArgs[1] as any;
+      
+      expect(options.tools).toBeDefined();
+      expect(options.tools.length).toBeGreaterThan(0);
+    });
+
+    it('should handle tool calls and return formatted response', async () => {
+      const mockToolCallResponse: LLMResponse = {
+        content: 'Según los datos del sistema...',
+        tokensUsed: 100,
+        model: 'llama-3.1-8b-instant',
+        toolCalls: [{
+          id: 'call_123',
+          type: 'function',
+          function: {
+            name: 'consultar_inscripciones',
+            arguments: '{"email":"juan@test.com"}',
+          },
+        }],
+      };
+
+      vi.mocked(mockLLMProvider.generateAnswer)
+        .mockResolvedValueOnce(mockToolCallResponse)
+        .mockResolvedValueOnce({
+          content: 'Encontré tus inscripciones: Taller de Python.',
+          tokensUsed: 80,
+          model: 'llama-3.1-8b-instant',
+        });
+
       const result = await orchestrator.process({
         userMessage: '¿En qué cursos estoy inscrito?',
-        conversationHistory: [],
+        conversationHistory: [
+          { role: 'user', text: 'Mi correo es juan@test.com' }
+        ],
       });
 
-      expect(result.answer).toContain('correo electrónico');
-      expect(result.sources).toHaveLength(0);
-      expect(result.tokensUsed).toBe(0);
-      expect(mockLLMProvider.generateAnswer).not.toHaveBeenCalled();
-      expect(mockRAGService.retrieveContext).not.toHaveBeenCalled();
-    });
-
-    it('should query DB directly when email is provided', async () => {
-      vi.spyOn(RegistrationServiceModule.RegistrationService, 'findByEmail')
-        .mockResolvedValue([
-          { course_name: 'Taller de Python', name: 'Juan', created_at: '2024-01-01' },
-        ]);
-
-      await orchestrator.process({
-        userMessage: '¿En qué cursos estoy inscrito?',
-        conversationHistory: [],
-        userEmail: 'juan@test.com',
-      });
-
-      expect(RegistrationServiceModule.RegistrationService.findByEmail).toHaveBeenCalledWith('juan@test.com', undefined);
-      expect(mockRAGService.retrieveContext).not.toHaveBeenCalled();
-    });
-
-    it('should pass DB results to LLM for formatting only', async () => {
-      vi.spyOn(RegistrationServiceModule.RegistrationService, 'findByEmail')
-        .mockResolvedValue([
-          { course_name: 'Taller de Python', name: 'Juan', created_at: '2024-01-01' },
-          { course_name: 'Taller de Excel', name: 'Juan', created_at: '2024-02-01' },
-        ]);
-
-      await orchestrator.process({
-        userMessage: '¿Cuáles son mis cursos?',
-        conversationHistory: [],
-        userEmail: 'juan@test.com',
-      });
-
-      expect(mockLLMProvider.generateAnswer).toHaveBeenCalledTimes(1);
-      const callArgs = vi.mocked(mockLLMProvider.generateAnswer).mock.calls[0];
-      const messages = callArgs[0];
-      const systemMessage = messages[0].content;
-
-      // Verify DB results are injected into system prompt
-      expect(systemMessage).toContain('Taller de Python');
-      expect(systemMessage).toContain('Taller de Excel');
-
-      // Verify low temperature for formatting task with new maxTokens
-      expect(callArgs[1]).toMatchObject({ temperature: 0.2, maxTokens: 250 });
-    });
-
-    it('should NOT use RAG for registration queries', async () => {
-      vi.spyOn(RegistrationServiceModule.RegistrationService, 'findByEmail')
-        .mockResolvedValue([]);
-
-      await orchestrator.process({
-        userMessage: '¿Estoy inscrito en algún curso?',
-        conversationHistory: [],
-        userEmail: 'test@test.com',
-      });
-
-      expect(mockRAGService.retrieveContext).not.toHaveBeenCalled();
+      expect(result.answer).toContain('Taller de Python');
+      expect(mockLLMProvider.generateAnswer).toHaveBeenCalledTimes(2);
     });
   });
 
@@ -125,26 +132,12 @@ describe('ChatOrchestrator', () => {
 
       expect(mockLLMProvider.generateAnswer).toHaveBeenCalledTimes(1);
       const callArgs = vi.mocked(mockLLMProvider.generateAnswer).mock.calls[0];
-      const messages = callArgs[0];
+      const messages = callArgs[0] as any[];
       const systemMessage = messages[0].content;
 
-      // System prompt should contain RAG context marker
       expect(systemMessage).toContain('CONTEXTO');
       expect(systemMessage).toContain('referencia para responder');
-
-      // Temperature should be low for factual responses with new maxTokens
       expect(callArgs[1]).toMatchObject({ temperature: 0.3, maxTokens: 350 });
-    });
-
-    it('should NOT query registration DB for catalog queries', async () => {
-      const findByEmailSpy = vi.spyOn(RegistrationServiceModule.RegistrationService, 'findByEmail');
-
-      await orchestrator.process({
-        userMessage: '¿Qué cursos ofrecen?',
-        conversationHistory: [],
-      });
-
-      expect(findByEmailSpy).not.toHaveBeenCalled();
     });
   });
 
@@ -193,31 +186,26 @@ describe('ChatOrchestrator', () => {
         conversationHistory: [],
       });
 
-      // Should still call LLM but with fallback prompt with new maxTokens
       expect(mockLLMProvider.generateAnswer).toHaveBeenCalledTimes(1);
       const callArgs = vi.mocked(mockLLMProvider.generateAnswer).mock.calls[0];
-      expect(callArgs[1]).toMatchObject({ maxTokens: 300 }); // New fallback value
+      expect(callArgs[1]).toMatchObject({ maxTokens: 300 });
     });
   });
 
   describe('history trimming', () => {
     it('should trim history to last 3 turns (6 messages) when exceeding limit', () => {
-      // Create a long conversation history
       const longHistory = [];
       for (let i = 0; i < 10; i++) {
         longHistory.push({ role: 'user' as const, text: `User message ${i}` });
         longHistory.push({ role: 'assistant' as const, text: `Assistant message ${i}` });
       }
 
-      // Verify original history length
       expect(longHistory.length).toBe(20);
 
-      // Apply trimming (should keep last 6 messages: 3 turns)
       const trimmedHistory = orchestrator['trimHistory'](longHistory, 3);
       
-      expect(trimmedHistory.length).toBe(6); // 3 user + 3 assistant messages
+      expect(trimmedHistory.length).toBe(6);
       
-      // Check that it's the last 6 messages
       expect(trimmedHistory[0]).toEqual({ role: 'user', text: 'User message 7' });
       expect(trimmedHistory[1]).toEqual({ role: 'assistant', text: 'Assistant message 7' });
       expect(trimmedHistory[2]).toEqual({ role: 'user', text: 'User message 8' });
@@ -236,7 +224,6 @@ describe('ChatOrchestrator', () => {
 
       const trimmedHistory = orchestrator['trimHistory'](shortHistory, 3);
       
-      // Should remain unchanged (4 messages < 6 max)
       expect(trimmedHistory.length).toBe(4);
       expect(trimmedHistory).toEqual(shortHistory);
     });
@@ -251,32 +238,35 @@ describe('ChatOrchestrator', () => {
   });
 
   describe('intent classification integration', () => {
-    it('should route "qué cursos tienen" to catalog (NOT registration)', async () => {
-      const findByEmailSpy = vi.spyOn(RegistrationServiceModule.RegistrationService, 'findByEmail');
-
+    it('should route "qué cursos tienen" to catalog', async () => {
       await orchestrator.process({
         userMessage: '¿Qué cursos tienen?',
         conversationHistory: [],
       });
 
-      // Catalog → RAG, NOT registration DB
+      // Catalog → RAG
       expect(mockRAGService.retrieveContext).toHaveBeenCalled();
-      expect(findByEmailSpy).not.toHaveBeenCalled();
     });
 
-    it('should route "mis cursos" to registration (NOT RAG)', async () => {
-      vi.spyOn(RegistrationServiceModule.RegistrationService, 'findByEmail')
-        .mockResolvedValue([]);
-
+    it('should route "mis cursos" to registration (with tool calling)', async () => {
       await orchestrator.process({
         userMessage: '¿Cuáles son mis cursos?',
         conversationHistory: [],
-        userEmail: 'test@test.com',
       });
 
-      // Registration → DB, NOT RAG
-      expect(RegistrationServiceModule.RegistrationService.findByEmail).toHaveBeenCalled();
-      expect(mockRAGService.retrieveContext).not.toHaveBeenCalled();
+      // Registration → RAG + LLM + Tools
+      expect(mockRAGService.retrieveContext).toHaveBeenCalled();
+      expect(mockLLMProvider.generateAnswer).toHaveBeenCalled();
+    });
+
+    it('should classify "cómo me inscribo" as catalog', async () => {
+      await orchestrator.process({
+        userMessage: '¿Cómo me inscribo en un taller?',
+        conversationHistory: [],
+      });
+
+      // Should go to catalog, not registration
+      expect(mockRAGService.retrieveContext).toHaveBeenCalled();
     });
   });
 });

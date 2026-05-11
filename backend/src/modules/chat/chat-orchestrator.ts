@@ -1,44 +1,46 @@
 /**
- * ChatOrchestrator — Deterministic routing based on classified intent.
+ * ChatOrchestrator — Intelligent routing with LLM-powered tool calling.
  *
  * Responsibilities:
- *   1. Validate email (if provided)
- *   2. Classify the user's intent (via IntentClassifier)
- *   3. Route to the correct flow:
- *      - "registration" → DB query (no LLM decision), format with LLM
+ *   1. Classify the user's intent (via IntentClassifier)
+ *   2. Route to the correct flow:
+ *      - "registration" → RAG + Tool calling (LLM extracts email from conversation)
  *      - "catalog"      → RAG retrieval + LLM generation
  *      - "general"      → LLM generation with institutional knowledge only
- *   4. Run response guardrail after every LLM generation
- *   5. Emit structured observability logs
- *   6. Return a unified ChatResponse
- *
- * This replaces the previous ChatService which mixed ALL responsibilities.
+ *   3. Run response guardrail after every LLM generation
+ *   4. Emit structured observability logs
+ *   5. Return a unified ChatResponse
  */
 
 import type { ChatResponse } from '@shared/types/domain.js';
-import type { ILLMProvider, LLMMessage } from '../../domain/interfaces/index.js';
-import { RegistrationService } from '../../services/registration.service.js';
+import type { ILLMProvider, LLMMessage, ITool } from '../../domain/interfaces/index.js';
 import { classifyIntent, type ChatIntent } from './intent-classifier.js';
-import { validateEmail } from './email-validator.js';
 import { applyResponsePolicy, type ChatIntent as PolicyIntent } from './response-policy.js';
 import { contextLogger } from '../../infrastructure/logger/index.js';
 import { CHAT_SYSTEM_PROMPT } from './system-prompt.js';
+import { ToolRegistry } from '../../services/tools.service.js';
+import { CheckRegistrationTool } from '../../services/tools/check_registration.tool.js';
 
 export interface ChatOrchestratorInput {
   userMessage: string;
   conversationHistory: Array<{ role: 'user' | 'assistant'; text: string }>;
-  userEmail?: string; // Optional: provided by authenticated session or explicit input
 }
 
 export class ChatOrchestrator {
+  private toolRegistry: ToolRegistry;
+  private static readonly MAX_TOOL_ITERATIONS = 3;
+
   constructor(
     private llmProvider: ILLMProvider,
     private ragService: typeof import('../../services/rag.service.js').RAGService extends new (...args: any[]) => infer T ? T : never
-  ) { }
+  ) {
+    this.toolRegistry = new ToolRegistry();
+    this.toolRegistry.registerTool(new CheckRegistrationTool());
+  }
 
   async process(input: ChatOrchestratorInput, requestId?: string): Promise<ChatResponse> {
     const logger = contextLogger(requestId);
-    const { userMessage, conversationHistory, userEmail } = input;
+    const { userMessage, conversationHistory } = input;
 
     const startTime = Date.now();
 
@@ -46,26 +48,17 @@ export class ChatOrchestrator {
     logger.info('ChatOrchestrator processing request', {
       userMessageLength: userMessage.length,
       historyLength: conversationHistory.length,
-      hasUserEmail: !!userEmail,
     });
 
-    // Step 1: Validate email (if provided)
-    const emailValidation = validateEmail(userEmail);
-    const validEmail = emailValidation.valid ? emailValidation.email : null;
-
-    if (userEmail && !emailValidation.valid) {
-      logger.warn('Invalid email provided', { reason: emailValidation.reason, providedEmail: userEmail });
-    }
-
-    // Step 2: Classify intent (deterministic, no LLM)
+    // Classify intent (deterministic, no LLM)
     const { intent, confidence } = classifyIntent(userMessage);
     logger.info('Intent classified', { intent, confidence });
 
-    // Step 3: Route based on intent
+    // Route based on intent
     let result: ChatResponse;
     switch (intent) {
       case 'registration':
-        result = await this.handleRegistration(userMessage, conversationHistory, validEmail, requestId);
+        result = await this.handleRegistration(userMessage, conversationHistory, requestId);
         break;
       case 'catalog':
         result = await this.handleCatalog(userMessage, conversationHistory, requestId);
@@ -103,48 +96,31 @@ export class ChatOrchestrator {
     return history.slice(history.length - maxMessages);
   }
 
-  // ─── REGISTRATION FLOW ──────────────────────────────────────────────────
-  // User asks about their personal enrollments.
-  // NEVER uses RAG. NEVER lets LLM decide. DB is queried directly.
-  // Guardrail runs but registration flow is DB-backed (allowed).
+// ─── REGISTRATION FLOW ──────────────────────────────────────────────────
+// User asks about their personal enrollments.
+// Uses RAG for institutional context + Tool calling for DB access.
+// The LLM decides when to call the tool based on conversation context.
 
-  private async handleRegistration(
+private async handleRegistration(
     userMessage: string,
     conversationHistory: Array<{ role: 'user' | 'assistant'; text: string }>,
-    validEmail: string | null,
     requestId?: string
   ): Promise<ChatResponse> {
     const logger = contextLogger(requestId);
 
-    // If no valid email → deterministic response (no LLM)
-    if (!validEmail) {
-      logger.info('Registration query without valid email — returning deterministic response');
-      const answer = '¡Claro que sí! Con mucho gusto te ayudo a verificar tus inscripciones. Por favor, indícame tu correo electrónico registrado para buscarlo en nuestro sistema.';
-      return this.applyPolicy(answer, 'registration', [], 0, true, logger);
-    }
+    // Get RAG context for institutional knowledge (including tool usage rules)
+    const ragResult = await this.ragService.retrieveContext(
+      userMessage,
+      { matchCount: 5 },
+      requestId
+    );
 
-    // Query DB directly (no LLM tool calling)
-    const records = await RegistrationService.findByEmail(validEmail, requestId);
-
-    logger.info('Registration query result', {
-      email: validEmail,
-      recordCount: records.length,
-    });
-
-    // Build context from DB results — inject into LLM for friendly formatting
-    const registrationContext = this.formatRegistrationContext(records, validEmail);
-
-    // LLM only formats the response — no decision making
+    // Build system prompt with RAG context
+    const systemPrompt = CHAT_SYSTEM_PROMPT + this.formatRagContextForPrompt(ragResult.context);
     const trimmedHistory = this.trimHistory(conversationHistory);
+
     const messages: LLMMessage[] = [
-      {
-        role: 'system',
-        content: `Eres el Asistente Virtual oficial del IBIME. Responde siempre en español, de manera amigable y concisa.
-
-El siguiente texto contiene los resultados de una consulta de inscripciones desde la base de datos. Tu ÚNICA tarea es formatear esta información de manera clara y amable para el usuario. NO inventes cursos, NO asumas información adicional. Usa EXCLUSIVAMENTE los datos proporcionados.
-
-${registrationContext}`,
-      },
+      { role: 'system', content: systemPrompt },
       ...trimmedHistory.map((m) => ({
         role: m.role as 'user' | 'assistant',
         content: m.text,
@@ -152,14 +128,57 @@ ${registrationContext}`,
       { role: 'user', content: userMessage },
     ];
 
-    const response = await this.llmProvider.generateAnswer(messages, {
-      temperature: 0.2, // Very low — this is formatting, not creation
-      maxTokens: 250,   // Was 400 — reduced for free-tier token budget
-    }, requestId);
+    const availableTools = this.toolRegistry.getTools();
 
-    const answer = response.content || this.formatRegistrationContext(records, validEmail);
-    // DB-backed: isDbBacked=true → guardrail skipped (data from DB, not hallucinated)
-    return this.applyPolicy(answer, 'registration', [], response.tokensUsed, true, logger);
+    // First LLM call — might request tool call
+    logger.debug('Generating first answer with tools for registration flow');
+    let response = await this.llmProvider.generateAnswer(
+      messages,
+      { temperature: 0.3, maxTokens: 350, tools: availableTools },
+      requestId
+    );
+
+    let totalTokens = response.tokensUsed;
+
+    // Handle tool calls loop
+    let iterations = 0;
+    while (response.toolCalls && response.toolCalls.length > 0 && iterations < ChatOrchestrator.MAX_TOOL_ITERATIONS) {
+      iterations++;
+      logger.info('LLM requested tool calls', { count: response.toolCalls.length, iteration: iterations });
+
+      messages.push({
+        role: 'assistant',
+        content: response.content || '',
+        tool_calls: response.toolCalls
+      });
+
+      for (const toolCall of response.toolCalls) {
+        logger.info(`Executing tool ${toolCall.function.name}`, { args: toolCall.function.arguments });
+        const toolResult = await this.toolRegistry.executeTool(
+          toolCall.function.name,
+          typeof toolCall.function.arguments === 'string' 
+            ? toolCall.function.arguments 
+            : JSON.stringify(toolCall.function.arguments)
+        );
+
+        messages.push({
+          role: 'tool',
+          content: toolResult,
+          name: toolCall.function.name,
+          tool_call_id: toolCall.id
+        });
+      }
+
+      response = await this.llmProvider.generateAnswer(
+        messages,
+        { temperature: 0.3, maxTokens: 350, tools: availableTools },
+        requestId
+      );
+      totalTokens += response.tokensUsed;
+    }
+
+    const answer = response.content || '';
+    return this.applyPolicy(answer, 'registration', ragResult.sources, totalTokens, false, logger);
   }
 
   // ─── CATALOG FLOW ───────────────────────────────────────────────────────

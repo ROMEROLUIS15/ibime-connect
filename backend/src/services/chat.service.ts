@@ -1,13 +1,8 @@
 /**
- * ChatService — Thin wrapper that delegates to ChatOrchestrator.
+ * ChatService — Wrapper that delegates to ChatOrchestrator.
  *
- * The old ChatService mixed RAG, LLM, tool-calling, and business logic.
- * All decision-making has been moved to ChatOrchestrator with deterministic
- * intent classification. This class exists for backward compatibility with
- * the DI container and controller.
- *
- * @deprecated Use ChatOrchestrator directly. This wrapper will be removed
- *             once all references are migrated.
+ * Maintains backward compatibility with the DI container and controller
+ * while delegating all logic to the ChatOrchestrator with tool calling.
  */
 
 import type { ILLMProvider } from '../domain/interfaces/index.js';
@@ -30,21 +25,19 @@ export class ChatService {
     input: {
       userMessage: string;
       conversationHistory: Array<{ role: 'user' | 'assistant'; text: string }>;
-      userEmail?: string;
     },
     requestId?: string
   ): Promise<ChatResponse> {
     const logger = contextLogger(requestId);
     logger.info('ChatService delegating to ChatOrchestrator', {
       userMessageLength: input.userMessage.length,
-      hasUserEmail: !!input.userEmail,
+      historyLength: input.conversationHistory.length,
     });
 
     return this.orchestrator.process(
       {
         userMessage: input.userMessage,
         conversationHistory: input.conversationHistory,
-        userEmail: input.userEmail,
       },
       requestId
     );
