@@ -104,7 +104,7 @@ const DropdownMenu = ({ item, depth = 0 }: { item: MenuItem; depth?: number }) =
       display:         'flex',
       alignItems:      'center',
       gap:             4,
-      padding:         depth === 0 ? '6px 11px' : '7px 14px',
+      padding:         depth === 0 ? '5px 9px' : '7px 14px',
       fontSize:        13.5,
       textDecoration:  'none',
       transition:      'color 0.15s, background-color 0.15s',
@@ -242,7 +242,7 @@ const MobileMenu = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void 
   };
 
   return (
-    <div className={`fixed inset-0 z-50 lg:hidden transition-all duration-300 ${isOpen ? 'visible' : 'invisible'}`}>
+    <div className={`fixed inset-0 z-50 xl:hidden transition-all duration-300 ${isOpen ? 'visible' : 'invisible'}`}>
       <div
         className={`absolute inset-0 bg-foreground/40 transition-opacity ${isOpen ? 'opacity-100' : 'opacity-0'}`}
         onClick={onClose}
@@ -295,7 +295,7 @@ export const Navbar = () => {
             </a>
 
             {/* Menú desktop */}
-            <div className="hidden lg:flex items-center justify-center flex-1">
+            <div className="hidden xl:flex items-center justify-center flex-1">
               <div className="flex items-center gap-0.5">
                 {menuItems.map((item, i) => (
                   <DropdownMenu key={i} item={item} />
@@ -309,11 +309,11 @@ export const Navbar = () => {
                 <img
                   src={gobernadorLogo}
                   alt="Gobernación de Mérida"
-                  className="h-10 md:h-12 lg:h-14 w-auto object-contain"
+                  className="h-10 md:h-12 xl:h-14 w-auto object-contain"
                 />
               </div>
               <button
-                className="lg:hidden p-2 text-gray-600 transition-colors"
+                className="xl:hidden p-2 text-gray-600 transition-colors"
                 onClick={() => setMobileMenuOpen(true)}
                 aria-label="Abrir menú"
               >

@@ -1,6 +1,19 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
 import request from 'supertest';
 import app from '../app.js';
+
+// Mock Supabase to prevent real network calls in tests.
+// Without this, the /health endpoint hangs waiting for a Supabase
+// connection that does not exist in the test environment.
+vi.mock('../config/supabase.config.js', () => ({
+  supabaseClient: {
+    from: vi.fn().mockReturnValue({
+      select: vi.fn().mockReturnValue({
+        limit: vi.fn().mockResolvedValue({ data: [], error: null }),
+      }),
+    }),
+  },
+}));
 
 describe('API Integration', () => {
   it('should respond with 200 to GET /', async () => {
