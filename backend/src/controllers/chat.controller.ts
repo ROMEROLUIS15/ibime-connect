@@ -29,13 +29,6 @@ export class ChatController {
             role: m.role,
             text: m.text || m.content || '',
           })),
-          userEmail: req.body.userEmail,
-        };
-      } else {
-        // Preserve userEmail if present in original body
-        chatInput = {
-          ...chatInput,
-          userEmail: req.body.userEmail,
         };
       }
 
@@ -51,7 +44,6 @@ export class ChatController {
         {
           userMessage: validation.data.userMessage,
           conversationHistory: validation.data.conversationHistory,
-          userEmail: chatInput.userEmail,
         },
         requestId
       );

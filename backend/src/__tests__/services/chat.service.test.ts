@@ -44,15 +44,16 @@ describe('ChatService', () => {
     expect(mockRAGService.retrieveContext).toHaveBeenCalledWith('¿Qué servicios?', { matchCount: 5 }, undefined);
   });
 
-  it('should handle registration query without email (deterministic)', async () => {
+  it('should process registration queries with tool calling', async () => {
     const result = await service.processChat({
       userMessage: '¿En qué cursos estoy inscrito?',
       conversationHistory: [],
     });
 
-    expect(result.answer).toContain('correo electrónico');
-    expect(result.tokensUsed).toBe(0);
-    expect(mockLLMProvider.generateAnswer).not.toHaveBeenCalled();
+    // Registration flow now uses LLM + tools
+    expect(result.answer).toBe('Respuesta de prueba');
+    expect(mockRAGService.retrieveContext).toHaveBeenCalled();
+    expect(mockLLMProvider.generateAnswer).toHaveBeenCalled();
   });
 
   it('should include conversation history in LLM call', async () => {
