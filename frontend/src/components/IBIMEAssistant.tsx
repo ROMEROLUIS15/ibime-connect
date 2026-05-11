@@ -636,7 +636,7 @@ export function IBIMEAssistant(): JSX.Element {
                   </button>
                 </div>
               <p style={{ fontSize: 9.5, color: '#94a3b8', margin: '6px 0 0', textAlign: 'center' }}>
-                Asistente IA del IBIME · Powered by Gemini
+                Asistente IA del IBIME
               </p>
             </div>
           </div>
