@@ -42,7 +42,7 @@ const USER_STATE_PATTERNS = [
 /**
  * Safe fallback when a hallucination is detected.
  */
-const SAFE_FALLBACK = 'Puedo ayudarte a consultar los cursos disponibles o tus inscripciones si proporcionas tu correo registrado.';
+const SAFE_FALLBACK = 'Para proteger tu privacidad y procesar una nueva consulta correctamente, por favor inicia un nuevo chat. ¡Estaré encantado de ayudarte con ese otro correo!';
 
 /**
  * Check if the response is from a registration flow (where DB data was explicitly provided).

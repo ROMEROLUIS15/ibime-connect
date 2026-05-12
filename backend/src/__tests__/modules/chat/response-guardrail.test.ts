@@ -35,7 +35,7 @@ describe('ResponseGuardrail', () => {
         'catalog'
       );
       expect(result.passed).toBe(false);
-      expect(result.safeResponse).toContain('correo registrado');
+      expect(result.safeResponse).toContain('inicia un nuevo chat');
     });
 
     it('should BLOCK "no se encontró tu inscripción" in catalog flow', () => {
@@ -147,7 +147,7 @@ describe('ResponseGuardrail', () => {
     it('should return safe fallback when blocked', () => {
       const result = checkResponseGuardrail('No estás inscrito', 'catalog');
       expect(result.safeResponse).toBe(
-        'Puedo ayudarte a consultar los cursos disponibles o tus inscripciones si proporcionas tu correo registrado.'
+        'Para proteger tu privacidad y procesar una nueva consulta correctamente, por favor inicia un nuevo chat. ¡Estaré encantado de ayudarte con ese otro correo!'
       );
     });
   });

@@ -101,21 +101,22 @@ export class ChatOrchestrator {
 // Uses RAG for institutional context + Tool calling for DB access.
 // The LLM decides when to call the tool based on conversation context.
 
-private async handleRegistration(
+  private async handleRegistration(
     userMessage: string,
     conversationHistory: Array<{ role: 'user' | 'assistant'; text: string }>,
     requestId?: string
   ): Promise<ChatResponse> {
     const logger = contextLogger(requestId);
 
-    // Get RAG context for institutional knowledge (including tool usage rules)
-    const ragResult = await this.ragService.retrieveContext(
-      userMessage,
-      { matchCount: 5 },
-      requestId
-    );
+    const existingEmail = this.extractEmailFromConversation(conversationHistory, userMessage);
+    const skipRag = existingEmail !== null;
 
-    // Build system prompt with RAG context
+    logger.info('Registration flow', { hasEmail: existingEmail !== null, email: existingEmail, skipRag });
+
+    const ragResult = skipRag
+      ? { context: '', sources: [], maxSimilarity: 0, hit: false }
+      : await this.ragService.retrieveContext(userMessage, { matchCount: 5 }, requestId);
+
     const systemPrompt = CHAT_SYSTEM_PROMPT + this.formatRagContextForPrompt(ragResult.context);
     const trimmedHistory = this.trimHistory(conversationHistory);
 
@@ -130,7 +131,6 @@ private async handleRegistration(
 
     const availableTools = this.toolRegistry.getTools();
 
-    // First LLM call — might request tool call
     logger.debug('Generating first answer with tools for registration flow');
     let response = await this.llmProvider.generateAnswer(
       messages,
@@ -140,7 +140,6 @@ private async handleRegistration(
 
     let totalTokens = response.tokensUsed;
 
-    // Handle tool calls loop
     let iterations = 0;
     while (response.toolCalls && response.toolCalls.length > 0 && iterations < ChatOrchestrator.MAX_TOOL_ITERATIONS) {
       iterations++;
@@ -156,8 +155,8 @@ private async handleRegistration(
         logger.info(`Executing tool ${toolCall.function.name}`, { args: toolCall.function.arguments });
         const toolResult = await this.toolRegistry.executeTool(
           toolCall.function.name,
-          typeof toolCall.function.arguments === 'string' 
-            ? toolCall.function.arguments 
+          typeof toolCall.function.arguments === 'string'
+            ? toolCall.function.arguments
             : JSON.stringify(toolCall.function.arguments)
         );
 
@@ -169,6 +168,47 @@ private async handleRegistration(
         });
       }
 
+      if (iterations === 1) {
+        const lastToolResult = messages.filter(m => m.role === 'tool').pop();
+        const emailForFastPath = existingEmail || this.extractEmailFromToolArguments(messages);
+
+        if (lastToolResult && emailForFastPath) {
+          logger.info('Fast path ACTIVE: registration tool executed', {
+            email: emailForFastPath,
+            toolContent: lastToolResult.content,
+          });
+
+          const rawContent = lastToolResult.content || '';
+
+          if (rawContent.trim() === '') {
+            logger.warn('Fast path: tool returned empty content', { email: emailForFastPath });
+            const fallbackMsg = `No recibí respuesta del sistema de inscripciones para ${emailForFastPath}. Por favor intenta más tarde o contacta al soporte.`;
+            totalTokens += response.tokensUsed;
+            return this.applyPolicy(fallbackMsg, 'registration', ragResult.sources, totalTokens, true, logger);
+          }
+
+          try {
+            const parsed = JSON.parse(rawContent);
+            const answer = this.formatRegistrationResponse(parsed, emailForFastPath);
+            totalTokens += response.tokensUsed;
+            return this.applyPolicy(answer, 'registration', ragResult.sources, totalTokens, true, logger);
+          } catch (parseError) {
+            logger.error('Fast path: failed to parse tool result — forcing deterministic fallback', {
+              email: emailForFastPath,
+              toolContent: rawContent.substring(0, 300),
+              parseError: String(parseError),
+            });
+            const fallbackMsg = `Error al procesar la respuesta del sistema para ${emailForFastPath}: ${rawContent.substring(0, 100)}. Intenta de nuevo o contacta al soporte.`;
+            totalTokens += response.tokensUsed;
+            return this.applyPolicy(fallbackMsg, 'registration', ragResult.sources, totalTokens, true, logger);
+          }
+        } else if (!lastToolResult) {
+          logger.warn('Fast path: tool was called but no result found in messages');
+        } else if (!emailForFastPath) {
+          logger.info('Fast path skipped: no email found for registration tool');
+        }
+      }
+
       response = await this.llmProvider.generateAnswer(
         messages,
         { temperature: 0.3, maxTokens: 350, tools: availableTools },
@@ -178,7 +218,8 @@ private async handleRegistration(
     }
 
     const answer = response.content || '';
-    return this.applyPolicy(answer, 'registration', ragResult.sources, totalTokens, false, logger);
+    const isDbBacked = iterations > 0;
+    return this.applyPolicy(answer, 'registration', ragResult.sources, totalTokens, isDbBacked, logger);
   }
 
   // ─── CATALOG FLOW ───────────────────────────────────────────────────────
@@ -350,6 +391,63 @@ private async handleRegistration(
 
   // ─── Helpers ────────────────────────────────────────────────────────────
 
+  private extractEmailFromToolArguments(
+    messages: LLMMessage[]
+  ): string | null {
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/i;
+
+    for (const msg of messages) {
+      if (msg.role === 'assistant' && msg.tool_calls) {
+        for (const tc of msg.tool_calls) {
+          const rawArgs = tc.function.arguments;
+          const argsString = typeof rawArgs === 'string' ? rawArgs : JSON.stringify(rawArgs);
+          try {
+            const argsObj = JSON.parse(argsString);
+            const rawEmail = argsObj.email || argsObj.correo;
+            if (rawEmail && emailRegex.test(rawEmail)) {
+              return rawEmail.toLowerCase().trim();
+            }
+          } catch {
+            const emailMatch = argsString.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/i);
+            if (emailMatch) {
+              return emailMatch[0].toLowerCase();
+            }
+          }
+        }
+      }
+    }
+    return null;
+  }
+
+  private extractEmailFromConversation(
+    history: Array<{ role: 'user' | 'assistant'; text: string }>,
+    currentMessage: string
+  ): string | null {
+    const allText = [...history, { role: 'user' as const, text: currentMessage }]
+      .map(m => m.text)
+      .join(' ')
+      .toLowerCase();
+
+    const patterns = [
+      /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/gi,
+      /correo[:\s]+([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/gi,
+      /email[:\s]+([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/gi,
+    ];
+
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/i;
+
+    for (const pattern of patterns) {
+      const matches = allText.match(pattern);
+      if (matches && matches.length > 0) {
+        const candidate = matches[0].toLowerCase().trim();
+        if (emailRegex.test(candidate)) {
+          return candidate;
+        }
+      }
+    }
+    return null;
+  }
+
   private isGreeting(message: string): boolean {
     const normalized = message.toLowerCase().trim();
     return /^(hola|buenos|buenas|hey|saludos|qué tal|que tal|hi|buen día|buen dia)$/i.test(normalized)
@@ -387,5 +485,32 @@ private async handleRegistration(
     }
 
     return lines.join('\n');
+  }
+
+  private formatRegistrationResponse(result: any, email: string): string {
+    const content = (result?.content ?? '').replace(/\([^)]*\)/g, '').trim();
+
+    if (!result || typeof result !== 'object') {
+      return `Error interno: el resultado de la consulta no tiene el formato esperado para el correo ${email}. Contacta al soporte si el problema persiste.`;
+    }
+
+    if (result.error) {
+      return `[Error técnico] No pude completar la consulta: ${result.error}. Intenta de nuevo en unos minutos.`;
+    }
+
+    if (result.status === 'no_registrado') {
+      const mensaje = result.mensaje || '';
+      if (mensaje) {
+        return `${mensaje} (Correo consultado: ${email})`;
+      }
+      return `No se encontraron cursos registrados en el sistema para el correo ${email}. ¿Es posible que el correo sea diferente o que aún no te hayas inscrito en un taller?`;
+    }
+
+    if (result.status === 'registrado' && Array.isArray(result.cursos) && result.cursos.length > 0) {
+      const courseList = result.cursos.map((c: string) => `• ${c}`).join('\n');
+      return `¡Encontré tu inscripción! Estás registrado en ${result.cantidad_cursos} curso(s):\n${courseList}\n\n¿Necesitas más información?`;
+    }
+
+    return `[Debug] Resultado inesperado: ${JSON.stringify(result).substring(0, 200)} para ${email}. Contacta al soporte con este mensaje.`;
   }
 }

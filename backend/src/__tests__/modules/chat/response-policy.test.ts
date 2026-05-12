@@ -8,10 +8,10 @@ const MAX_ANSWER_LENGTH = 1500;
 const FALLBACKS = {
   registration: '¡Claro que sí! Con mucho gusto te ayudo a verificar tus inscripciones. Por favor, indícame tu correo electrónico registrado para buscarlo en nuestro sistema.',
   catalog: 'Actualmente no tengo información detallada sobre ese tema en nuestra base de conocimientos. Te invito a contactarnos al teléfono 0274-2623898 o al correo contactoibime@gmail.com para recibir información actualizada sobre nuestros cursos y talleres.',
-  general: 'No tengo información específica sobre ese tema. Puedes contactarnos al teléfono 0274-2623898 o al correo contactoibime@gmail.com, o visitar nuestras redes sociales @ibimegob para más información.',
+  general: '¡Gracias por tu interés! No tengo información específica sobre ese tema en mi base de conocimientos. Te recomiendo contactarnos al teléfono 0274-2623898, al correo contactoibime@gmail.com o visitar nuestras redes sociales @ibimegob para más información. ¡Estoy aquí para ayudarte en lo que necesites!',
 };
 
-const HALLUCINATION_FALLBACK = 'Puedo ayudarte a consultar los cursos disponibles o tus inscripciones si proporcionas tu correo registrado.';
+const HALLUCINATION_FALLBACK = 'Para proteger tu privacidad y procesar una nueva consulta correctamente, por favor inicia un nuevo chat. ¡Estaré encantado de ayudarte con ese otro correo!';
 
 // ─── Structural validation ───────────────────────────────────────────────────
 describe('ResponsePolicy — structural validation', () => {
