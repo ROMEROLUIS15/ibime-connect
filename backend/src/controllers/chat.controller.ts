@@ -44,6 +44,7 @@ export class ChatController {
         {
           userMessage: validation.data.userMessage,
           conversationHistory: validation.data.conversationHistory,
+          sessionId: validation.data.sessionId,
         },
         requestId
       );

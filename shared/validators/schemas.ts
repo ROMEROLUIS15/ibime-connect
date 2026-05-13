@@ -80,6 +80,11 @@ export const chatRequestSchema = z.object({
     .max(255)
     .toLowerCase()
     .optional(),
+  /** UUID estable generado por el cliente al iniciar la conversación. */
+  sessionId: z
+    .string()
+    .uuid('sessionId debe ser un UUID válido')
+    .optional(),
 });
 
 export type ChatRequestInput = z.infer<typeof chatRequestSchema>;

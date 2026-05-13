@@ -1,13 +1,7 @@
-/**
- * ChatService — Wrapper that delegates to ChatOrchestrator.
- *
- * Maintains backward compatibility with the DI container and controller
- * while delegating all logic to the ChatOrchestrator with tool calling.
- */
-
 import type { ILLMProvider } from '../domain/interfaces/index.js';
 import type { RAGService } from './rag.service.js';
 import type { ChatResponse } from '@shared/types/domain.js';
+import type { SessionMemoryService } from './session-memory.service.js';
 import { ChatOrchestrator } from '../modules/chat/chat-orchestrator.js';
 import { contextLogger } from '../infrastructure/logger/index.js';
 
@@ -16,15 +10,17 @@ export class ChatService {
 
   constructor(
     llmProvider: ILLMProvider,
-    ragService: RAGService
+    ragService: RAGService,
+    sessionMemory: SessionMemoryService | null = null
   ) {
-    this.orchestrator = new ChatOrchestrator(llmProvider, ragService);
+    this.orchestrator = new ChatOrchestrator(llmProvider, ragService, sessionMemory);
   }
 
   async processChat(
     input: {
       userMessage: string;
       conversationHistory: Array<{ role: 'user' | 'assistant'; text: string }>;
+      sessionId?: string;
     },
     requestId?: string
   ): Promise<ChatResponse> {
@@ -38,6 +34,7 @@ export class ChatService {
       {
         userMessage: input.userMessage,
         conversationHistory: input.conversationHistory,
+        sessionId: input.sessionId,
       },
       requestId
     );

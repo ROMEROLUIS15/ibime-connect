@@ -23,6 +23,14 @@ export function classifyIntent(userMessage: string): IntentResult {
   const normalized = userMessage.toLowerCase().trim();
 
   // ─── Registration intent ──────────────────────────────────────────────────
+  // PRIORIDAD 0: El mensaje contiene o ES un email → siempre es registro.
+  // Cubre el caso crítico: usuario responde con su correo a la pregunta del asistente.
+  const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/i;
+  if (emailRegex.test(normalized)) {
+    return { intent: 'registration', confidence: 'high' };
+  }
+
+  // ─── Registration intent ──────────────────────────────────────────────────
   // User is asking about THEIR OWN enrollments/registrations.
   // Keywords that indicate a personal query (possessive pronouns + course/inscription).
   const registrationPatterns = [
