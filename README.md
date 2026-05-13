@@ -2,7 +2,6 @@
 
 <div align="center">
 
-
 **Plataforma Digital Oficial del Instituto Autónomo de Servicios de Bibliotecas e Información del Estado Bolivariano de Mérida, Venezuela.**
 
 [![Live](https://img.shields.io/badge/🌐_Live-ibime--connect.vercel.app-000000?style=for-the-badge)](https://ibime-connect.vercel.app)
@@ -14,9 +13,9 @@
 [![React](https://img.shields.io/badge/React-18-61DAFB?style=flat-square&logo=react&logoColor=black)](https://react.dev/)
 [![Express](https://img.shields.io/badge/Express-5.x-000000?style=flat-square&logo=express&logoColor=white)](https://expressjs.com/)
 [![Supabase](https://img.shields.io/badge/Supabase-pgvector-3ECF8E?style=flat-square&logo=supabase&logoColor=white)](https://supabase.com/)
-[![Redis](https://img.shields.io/badge/Redis-Cache-DC382D?style=flat-square&logo=redis&logoColor=white)](https://redis.io/)
+[![Redis](https://img.shields.io/badge/Redis-Cache_+_Session-DC382D?style=flat-square&logo=redis&logoColor=white)](https://redis.io/)
 [![Groq](https://img.shields.io/badge/Groq-Llama_3.1-F55036?style=flat-square)](https://groq.com/)
-[![Vitest](https://img.shields.io/badge/Vitest-175_Tests-6E9F18?style=flat-square&logo=vitest&logoColor=white)](https://vitest.dev/)
+[![Vitest](https://img.shields.io/badge/Vitest-220_Tests-6E9F18?style=flat-square&logo=vitest&logoColor=white)](https://vitest.dev/)
 [![Playwright](https://img.shields.io/badge/Playwright-E2E-2EAD33?style=flat-square&logo=playwright&logoColor=white)](https://playwright.dev/)
 [![Deployed on Vercel](https://img.shields.io/badge/Frontend-Vercel-000000?style=flat-square&logo=vercel)](https://vercel.com/)
 [![Deployed on Render](https://img.shields.io/badge/Backend-Render-46E3B7?style=flat-square&logo=render&logoColor=black)](https://render.com/)
@@ -29,9 +28,9 @@
 
 ## ¿Qué es IBIME Connect?
 
-IBIME Connect es el ecosistema digital completo del IBIME: una plataforma institucional que integra un **asistente virtual de IA con arquitectura RAG**, registro de cursos, formulario de contacto, galería de eventos y acceso a la Red de Bibliotecas del Estado Mérida.
+IBIME Connect es el ecosistema digital completo del IBIME: una plataforma institucional que integra un **asistente virtual de IA con arquitectura híbrida determinista/probabilística**, registro de cursos, formulario de contacto, galería de eventos y acceso a la Red de Bibliotecas del Estado Mérida.
 
-El sistema está construido bajo principios de **Arquitectura Limpia**, con un motor de chat que garantiza que el LLM **nunca controla el output final** — toda respuesta pasa por una cadena de responsabilidad determinista antes de llegar al ciudadano.
+El motor de chat garantiza **cero alucinaciones en el flujo de inscripciones**: el LLM es completamente excluido del camino crítico cuando existe un email conocido. Toda respuesta final pasa por una cadena de responsabilidad determinista antes de llegar al ciudadano.
 
 ---
 
@@ -46,49 +45,67 @@ El sistema está construido bajo principios de **Arquitectura Limpia**, con un m
 | **IA — Embeddings** | Google Gemini (`gemini-embedding-001`, 768 dimensiones) |
 | **IA — Ingestion** | `pdf-parse`, `multer` (Procesamiento en memoria y chunking semántico) |
 | **IA — Inferencia** | Groq Cloud (`llama-3.1-8b-instant`) |
-| **Validación** | Zod (esquemas compartidos frontend ↔ backend) |
+| **Validación** | Zod (esquemas compartidos frontend ↔ backend, incluyendo `sessionId`) |
 | **Observabilidad** | Pino (logs estructurados JSON + `requestId` por petición) |
-| **Testing** | Vitest (175 unit tests), Playwright (E2E) |
+| **Testing** | Vitest (220 unit tests), Playwright (E2E) |
 | **Calidad de Código** | Husky v9 + lint-staged + ESLint (pre-commit & pre-push hooks) + Quality Gate completo |
 | **CI/CD** | GitHub Actions, Vercel CD, Render CD |
 
 ---
 
-## 🏗️ Arquitectura del Motor de Chat
+## 🏗️ Arquitectura del Motor de Chat (Fase 1 + Fase 2)
 
-El corazón del sistema es un motor de decisión **lineal y determinista**. El modelo de lenguaje nunca decide el routing ni el output final.
+El núcleo es un motor de decisión **híbrido**: determinista puro donde la precisión es crítica (flujo de inscripciones), probabilístico controlado en el resto. El LLM **nunca decide el output final**.
 
 ```
- ┌─────────────────────────────────────────────────────────────────┐
- │                     IBIME Chat Pipeline                         │
- └─────────────────────────────────────────────────────────────────┘
+ ┌─────────────────────────────────────────────────────────────────────┐
+ │                    IBIME Chat Pipeline v2                           │
+ └─────────────────────────────────────────────────────────────────────┘
 
- Request
+ HTTP Request (userMessage, conversationHistory, sessionId?)
    │
    ▼
- ChatController ── Zod schema validation ── BadRequest si inválido
+ ChatController ── Zod validation ── BadRequest si inválido
    │
    ▼
- ChatOrchestrator
+ ChatOrchestrator.process()
    │
-   ├─► IntentClassifier (regex determinista — sin LLM)
-   │     ├─ "registration" → consulta personal de inscripciones
-   │     ├─ "catalog"      → catálogo de cursos disponibles
-   │     └─ "general"      → información institucional / saludo
+   ├─► [1] IntentClassifier   (regex determinista — sin LLM)
+   │         ├─ Prioridad 0: regex de email → 'registration'
+   │         ├─ 'registration' │ 'catalog' │ 'general'
    │
-   ├─[registration]
-   │     ├─ sin email → respuesta hardcoded determinista (sin LLM)
-   │     └─ con email → RegistrationService.findByEmail() [DB directo]
-   │                        └─ LLM formatea resultado (temp=0.2)
+   ├─► [2] SentimentAnalyzerService   (síncrono, puro, <1ms)
+   │         └─ isFrustrated: bool + score (umbral ≥ 2)
+   │             ↳ Si frustrado: EMPATHY_ALERT se inyecta al systemPrompt
+   │               de Branch B, catalog y general ÚNICAMENTE
    │
-   ├─[catalog]
-   │     └─ RAGService (threshold fail-hard 0.65)
-   │           └─ LLM genera desde contexto RAG (temp=0.3)
-   │
-   └─[general]
-         ├─ ¿saludo? → respuesta hardcoded (sin LLM, sin RAG)
-         └─ RAGService → LLM genera (temp=0.3)
-               └─ RAG miss → LLM fallback (temp=0.3)
+   └─► [3] switch(intent)
+         │
+         ├─[registration] → handleRegistration()
+         │     │
+         │     ├── Privacy Gate  ←── Redis (fuente autoritativa)
+         │     │     └── serverEmail > conversationHistory > mensaje actual
+         │     │         Si segundo email detectado → cortocircuito inmediato
+         │     │
+         │     ├── BRANCH A  [email conocido]
+         │     │     executeTool('consultar_inscripciones') → DB directa
+         │     │     formatRegistrationResponse() → determinista
+         │     │     LLM: NO LLAMADO. tokensUsed = 0.
+         │     │     ← 100% inmune al sentimiento y al LLM
+         │     │
+         │     └── BRANCH B  [email desconocido]
+         │           LLM pide el email (temperature=0.2, tools=[])
+         │           empathyPrefix aplicado si isFrustrated=true
+         │
+         ├─[catalog] → handleCatalog()
+         │     RAGService (threshold fail-hard 0.65)
+         │     empathyPrefix + CHAT_SYSTEM_PROMPT + RAG context
+         │     LLM genera (temp=0.3)
+         │
+         └─[general] → handleGeneral()
+               ¿saludo? → respuesta hardcoded (sin LLM)
+               RAG hit   → empathyPrefix + LLM (temp=0.3)
+               RAG miss  → handleGeneralFallback() (empathyPrefix + LLM)
    │
    ▼
  ┌──────────────────────────────────────────────────────┐
@@ -97,8 +114,7 @@ El corazón del sistema es un motor de decisión **lineal y determinista**. El m
  │  1. Validación estructural (vacío / <10 / >1500 ch)  │
  │  2. ResponseGuardrail: bloquea alucinaciones de      │
  │     estado de usuario (regex patterns)               │
- │  3. isDbBacked-aware: sin datos DB → guardrail       │
- │     siempre activo, sin importar el intent           │
+ │  3. isDbBacked-aware: Branch A exenta del guardrail  │
  │  4. Fallback por intent si cualquier check falla     │
  └──────────────────────────────────────────────────────┘
    │
@@ -106,209 +122,182 @@ El corazón del sistema es un motor de decisión **lineal y determinista**. El m
  Output final  (controlado 100% por Policy — nunca por LLM)
 ```
 
-### ¿Por qué esta arquitectura?
+---
 
-> En sistemas LLM de producción institucional, el modelo de lenguaje **no puede ser la última línea de defensa**. Una alucinación que diga "no estás registrado" a un ciudadano registrado genera desconfianza institucional irreversible.
->
-> La solución: el LLM solo **formatea** o **genera texto libre**. Toda decisión de negocio, routing y validación de output es del sistema.
+## 🔐 Privacy Gate — Estado de Sesión Autoritativo (Redis)
+
+El Privacy Gate protege el flujo de inscripciones contra inyección de emails cruzados en la misma sesión. Opera en dos fuentes de verdad con jerarquía estricta:
+
+```
+Jerarquía de fuentes (mayor a menor confianza):
+  1. Redis (sessionMemory.getSessionContext)  ← FUENTE AUTORITATIVA (servidor)
+  2. conversationHistory[]                    ← fallback (cliente, menor confianza)
+  3. Mensaje actual                           ← primera aparición del email
+```
+
+**Funcionamiento:**
+1. Si el frontend envía un `sessionId` (UUID v4), se usa como clave Redis.
+2. Si no hay `sessionId`, se deriva un hash estable del primer mensaje del historial (`SHA-256[:24]`).
+3. Al capturar el primer email válido, se persiste en Redis con TTL de 30 minutos.
+4. Si en un turno posterior aparece un **email diferente** al almacenado en Redis → **cortocircuito inmediato** con mensaje de privacidad, sin consultar la DB.
 
 ---
 
-## 🛡️ Capas de Seguridad de IA
+## 🧠 Capa de Inteligencia Emocional — SentimentAnalyzerService
+
+Servicio síncrono puro (`@singleton()`), sin I/O, latencia <1ms. Opera **antes** del switch de intents y **nunca afecta Branch A**.
+
+| Regla | Señal detectada | Puntos |
+|:---|:---|:---:|
+| **Caps sostenidas** | >70% del texto en mayúsculas (mensaje >6 chars) | +2 |
+| **Alta señal** | `pésimo`, `no funciona`, `horrible`, `harto`, `no sirve`, etc. | +2 c/u |
+| **Señal media** | `error`, `ayuda`, `humano`, `no entiendo`, `urgente`, etc. | +1 c/u |
+| **Abuso de signos** | `!!!` o `???` (3+ consecutivos) | +2 |
+
+**Umbral de frustración: score ≥ 2.**
+
+Cuando `isFrustrated = true`, el sistema inyecta al inicio del `systemPrompt` en Branch B, catalog y general:
+> *"ALERTA DE FRUSTRACIÓN: El usuario está experimentando problemas o molestia. Adopta un tono de máxima empatía humana, sé breve, valida su frustración de inmediato, y recuérdale con total cortesía que si lo prefiere puede llamarnos directamente al 0274-2623898 para asistencia manual."*
+
+---
+
+## 🛡️ Capas de Seguridad de IA (5 niveles)
 
 | # | Capa | Módulo | Cuándo actúa |
 |:---:|:---|:---|:---|
-| 1 | **IntentClassifier** | `intent-classifier.ts` | Pre-LLM. Enruta sin modelo. |
-| 2 | **RAG Threshold** | `rag.service.ts` | Pre-LLM. Fail-hard si similitud < 0.65. |
-| 3 | **ResponseGuardrail** | `response-guardrail.ts` | Post-LLM. Detecta alucinaciones de user-state. |
-| 4 | **ResponsePolicy** | `response-policy.ts` | Post-LLM. Última puerta. Fallback por intent. |
+| 1 | **IntentClassifier** | `intent-classifier.ts` | Pre-LLM. Routing sin modelo. Email regex en Prioridad 0. |
+| 2 | **Privacy Gate + Redis** | `chat-orchestrator.ts` + `session-memory.service.ts` | Pre-Branch A/B. Bloquea email-switching cross-turn. |
+| 3 | **RAG Threshold** | `rag.service.ts` | Pre-LLM. Fail-hard si similitud < 0.65. |
+| 4 | **ResponseGuardrail** | `response-guardrail.ts` | Post-LLM. Detecta alucinaciones de user-state. |
+| 5 | **ResponsePolicy** | `response-policy.ts` | Post-LLM. Última puerta. Fallback por intent. |
 
 ---
 
 ## 📂 Estructura Completa del Proyecto
 
 ```
-ibime-connect/                          ← Raíz del proyecto
+ibime-connect/
 │
-├── 📁 .github/
-│   └── workflows/
-│       ├── ci.yml                      ← CI: Quality Gate (Lint + Vitest unit tests)
-│       ├── e2e.yml                     ← E2E: Playwright test suite (Chromium automations)
-│       └── heartbeat.yml               ← Cron: ping Supabase cada 24h (anti-pausa)
+├── 📁 .github/workflows/
+│   ├── ci.yml                      ← CI: Quality Gate (Lint + 220 Vitest unit tests)
+│   ├── e2e.yml                     ← E2E: Playwright (Chromium automations)
+│   └── heartbeat.yml               ← Cron: ping Supabase cada 24h
 │
-├── 📁 backend/                         ← API Node.js/Express/TypeScript
+├── 📁 backend/
 │   ├── src/
-│   │   ├── app.ts                      ← Express app: middlewares, rutas, CORS
-│   │   ├── index.ts                    ← Entry point: servidor HTTP + Redis init
+│   │   ├── app.ts
+│   │   ├── index.ts
 │   │   │
 │   │   ├── 📁 config/
-│   │   │   ├── env.config.ts           ← Variables de entorno validadas con Zod
-│   │   │   └── supabase.config.ts      ← Cliente Supabase (singleton)
+│   │   │   ├── env.config.ts       ← Variables de entorno validadas con Zod
+│   │   │   └── supabase.config.ts
 │   │   │
-│   │   ├── 📁 controllers/             ← HTTP handlers (validan, delegan, responden)
-│   │   │   ├── chat.controller.ts
+│   │   ├── 📁 controllers/
+│   │   │   ├── chat.controller.ts  ← Extrae sessionId del body validado
 │   │   │   ├── contact.controller.ts
-│   │   │   ├── knowledge.controller.ts ← Manejo de Endpoints de Ingesta (PDF/Webhook)
+│   │   │   ├── knowledge.controller.ts
 │   │   │   └── registration.controller.ts
 │   │   │
-│   │   ├── 📁 domain/                  ← Núcleo: contratos sin dependencias externas
-│   │   │   ├── errors/
-│   │   │   │   └── app-error.ts        ← Jerarquía de errores tipados (400/401/403/404/429/500)
-│   │   │   └── interfaces/
-│   │   │       └── index.ts            ← ILLMProvider, IEmbeddingService, IKnowledgeRepository
+│   │   ├── 📁 domain/
+│   │   │   ├── errors/app-error.ts
+│   │   │   └── interfaces/index.ts ← ILLMProvider, IEmbeddingService, IKnowledgeRepository
 │   │   │
-│   │   ├── 📁 infrastructure/          ← Implementaciones técnicas (I/O, external APIs)
+│   │   ├── 📁 infrastructure/
 │   │   │   ├── cache/
-│   │   │   │   ├── cache.service.ts    ← Wrapper Redis: get/set/del/clear + graceful degradation
-│   │   │   │   └── redis.ts            ← Conexión Redis con reconexión automática
+│   │   │   │   ├── cache.service.ts ← Wrapper Redis (graceful degradation)
+│   │   │   │   └── redis.ts         ← Cliente Redis con TLS auto-detect y reconexión
 │   │   │   ├── di/
-│   │   │   │   └── container.ts        ← tsyringe DI container (LLM, RAG, Chat wiring)
-│   │   │   ├── logger/
-│   │   │   │   └── index.ts            ← Pino logger + contextLogger(requestId)
-│   │   │   ├── providers/
-│   │   │   │   └── groq.provider.ts    ← ILLMProvider impl: Groq API (Llama 3.1)
-│   │   │   └── repositories/
-│   │   │       └── knowledge.repository.ts ← IKnowledgeRepository: pgvector similarity search
+│   │   │   │   └── container.ts     ← tsyringe: LLM, RAG, SessionMemory, SentimentAnalyzer
+│   │   │   ├── logger/index.ts      ← Pino + contextLogger(requestId)
+│   │   │   ├── providers/groq.provider.ts
+│   │   │   └── repositories/knowledge.repository.ts
 │   │   │
 │   │   ├── 📁 middlewares/
-│   │   │   └── error.middleware.ts     ← Error handler centralizado + requestId injection
+│   │   │   └── error.middleware.ts
 │   │   │
-│   │   ├── 📁 modules/chat/            ← Motor del asistente virtual (núcleo de IA)
-│   │   │   ├── chat-orchestrator.ts    ← Orquestador principal: routing + coordinación
-│   │   │   ├── email-validator.ts      ← Validación estricta RFC (pre-DB query)
-│   │   │   ├── intent-classifier.ts    ← Clasificador regex determinista (sin LLM)
-│   │   │   ├── response-guardrail.ts   ← Detector post-LLM de alucinaciones user-state
-│   │   │   ├── response-policy.ts      ← Última capa: validación + guardrail + fallbacks
-│   │   │   └── system-prompt.ts        ← Prompt institucional hardened (sin lógica de negocio)
+│   │   ├── 📁 modules/chat/         ← Motor del asistente virtual
+│   │   │   ├── chat-orchestrator.ts ← Orquestador: routing + sentiment + privacy gate
+│   │   │   ├── email-validator.ts
+│   │   │   ├── intent-classifier.ts ← Regex determinista (Prioridad 0: email regex)
+│   │   │   ├── response-guardrail.ts
+│   │   │   ├── response-policy.ts
+│   │   │   └── system-prompt.ts
 │   │   │
 │   │   ├── 📁 routes/
-│   │   │   ├── api.routes.ts           ← Rutas v1 + legacy + admin flush-cache (timing-safe)
-│   │   │   ├── chat.routes.ts          ← Sub-router de chat
-│   │   │   └── knowledge.routes.ts     ← Sub-router de Ingesta RAG (multer memory storage)
+│   │   │   ├── api.routes.ts
+│   │   │   ├── chat.routes.ts
+│   │   │   └── knowledge.routes.ts
 │   │   │
-│   │   ├── 📁 services/                ← Orquestación de lógica de negocio
-│   │   │   ├── chat.service.ts         ← Thin wrapper legacy → ChatOrchestrator
-│   │   │   ├── contact.service.ts      ← Inserción de mensajes de contacto en DB
-│   │   │   ├── document-processor.service.ts ← Extracción de texto y Chunking Inteligente
-│   │   │   ├── embedding.service.ts    ← Google Gemini embeddings (768 dims)
-│   │   │   ├── knowledge-ingestion.service.ts ← Vectorización y carga en Supabase
-│   │   │   ├── rag.service.ts          ← RAGService: embedding + similarity search + cache
-│   │   │   ├── registration.service.ts ← Consulta e inscripción de cursos (Supabase)
-│   │   │   ├── tools.service.ts        ← Dispatcher de herramientas LLM (legacy)
+│   │   ├── 📁 services/
+│   │   │   ├── chat.service.ts              ← Thin wrapper → ChatOrchestrator
+│   │   │   ├── contact.service.ts
+│   │   │   ├── document-processor.service.ts
+│   │   │   ├── embedding.service.ts
+│   │   │   ├── knowledge-ingestion.service.ts
+│   │   │   ├── rag.service.ts
+│   │   │   ├── registration.service.ts
+│   │   │   ├── sentiment-analyzer.service.ts ← [FASE 2] Análisis emocional síncrono
+│   │   │   ├── session-memory.service.ts     ← [FASE 1] Estado de sesión via Redis
+│   │   │   ├── tools.service.ts
 │   │   │   └── tools/
-│   │   │       └── check_registration.tool.ts ← Tool definition (desactivado, DB-directo)
+│   │   │       └── check_registration.tool.ts
 │   │   │
-│   │   └── 📁 __tests__/              ← Suite de tests unitarios (175 tests)
-│   │       ├── api.integration.test.ts ← Smoke tests HTTP con supertest
-│   │       ├── domain/errors/
-│   │       │   └── app-error.test.ts
+│   │   └── 📁 __tests__/            ← 220 unit tests
+│   │       ├── setup.ts             ← [NUEVO] Polyfill reflect-metadata para tsyringe/Vitest
+│   │       ├── api.integration.test.ts
+│   │       ├── domain/errors/app-error.test.ts
 │   │       ├── infrastructure/
-│   │       │   ├── providers/
-│   │       │   │   └── groq.provider.test.ts
-│   │       │   └── repositories/
-│   │       │       └── knowledge.repository.test.ts
-│   │       ├── middlewares/
-│   │       │   └── error.middleware.test.ts
+│   │       │   ├── providers/groq.provider.test.ts
+│   │       │   └── repositories/knowledge.repository.test.ts
+│   │       ├── middlewares/error.middleware.test.ts
 │   │       ├── modules/chat/
-│   │       │   ├── chat-orchestrator.test.ts   ← 13 tests: routing, flows, intent integration
-│   │       │   ├── email-validator.test.ts      ← 17 tests: RFC validation
-│   │       │   ├── intent-classifier.test.ts   ← 25 tests: regex patterns + edge cases
-│   │       │   ├── response-guardrail.test.ts  ← 18 tests: hallucination blocking
-│   │       │   └── response-policy.test.ts     ← 25 tests: full policy layer coverage
+│   │       │   ├── chat-orchestrator.test.ts
+│   │       │   ├── email-validator.test.ts
+│   │       │   ├── intent-classifier.test.ts
+│   │       │   ├── response-guardrail.test.ts
+│   │       │   └── response-policy.test.ts
 │   │       └── services/
 │   │           ├── chat.service.test.ts
 │   │           ├── contact.service.test.ts
 │   │           ├── embedding.service.test.ts
 │   │           ├── rag.service.test.ts
-│   │           └── registration.service.test.ts
+│   │           ├── registration.service.test.ts
+│   │           └── sentiment-analyzer.service.test.ts ← [FASE 2] 27 tests
 │   │
 │   ├── tsconfig.json
-│   ├── vitest.config.ts
+│   ├── vitest.config.ts            ← setupFiles: ['src/__tests__/setup.ts']
 │   ├── .env.example
 │   └── package.json
 │
-├── 📁 frontend/                        ← SPA React/Vite/TypeScript
+├── 📁 frontend/
 │   ├── src/
-│   │   ├── main.tsx                    ← Entry point React
-│   │   ├── App.tsx                     ← Router + layout global
-│   │   │
-│   │   ├── 📁 pages/
-│   │   │   ├── Index.tsx               ← Landing page principal
-│   │   │   ├── FondoEditorialPage.tsx
-│   │   │   ├── KohaPage.tsx            ← Integración OPAC Koha
-│   │   │   ├── LibroHabladoPage.tsx
-│   │   │   └── NotFound.tsx
-│   │   │
-│   │   ├── 📁 components/              ← UI components (secciones del landing)
-│   │   │   ├── IBIMEAssistant.tsx      ← Chat widget del asistente IA
-│   │   │   ├── HeroSection.tsx
-│   │   │   ├── CulturalVideosSection.tsx ← Videoteca con integración Cloudinary
-│   │   │   ├── ServicesSection.tsx
-│   │   │   ├── AboutIBIMESection.tsx
-│   │   │   ├── EventsSection.tsx
-│   │   │   ├── GallerySection.tsx
-│   │   │   ├── NewsSection.tsx
-│   │   │   ├── ContactSection.tsx
-│   │   │   ├── RegistrationModal.tsx
-│   │   │   ├── Navbar.tsx / NavLink.tsx
-│   │   │   ├── Footer.tsx
-│   │   │   ├── FloatingButtons.tsx
-│   │   │   ├── MissionVisionSection.tsx
-│   │   │   ├── VisitorCounter.tsx
-│   │   │   └── ui/                     ← shadcn/ui primitives (Radix UI)
-│   │   │
-│   │   ├── 📁 domain/ports/
-│   │   │   └── AssistantPort.ts        ← Interfaz del asistente (Clean Architecture)
-│   │   │
-│   │   ├── 📁 application/use-cases/
-│   │   │   └── AskAssistantUseCase.ts  ← Caso de uso: envío de pregunta al backend
-│   │   │
-│   │   ├── 📁 infrastructure/adapters/
-│   │   │   └── BackendAssistantAdapter.ts ← Implementa AssistantPort → HTTP API
-│   │   │
-│   │   ├── 📁 hooks/                   ← Custom React hooks
-│   │   ├── 📁 services/                ← Clientes HTTP (contact, events)
-│   │   ├── 📁 lib/                     ← Utilidades (api-url, scroll, animations)
-│   │   │   └── cloudinary.ts           ← Utilidades de CDN para video y portadas
-│   │   └── 📁 test/                    ← Tests unitarios frontend (Vitest)
-│   │
-│   ├── public/
-│   ├── tailwind.config.ts
-│   ├── vite.config.ts
-│   ├── tsconfig.json
+│   │   ├── main.tsx / App.tsx
+│   │   ├── pages/
+│   │   ├── components/
+│   │   │   └── IBIMEAssistant.tsx  ← Genera sessionId (UUID) al iniciar conversación
+│   │   ├── domain/ports/AssistantPort.ts
+│   │   ├── application/use-cases/AskAssistantUseCase.ts
+│   │   └── infrastructure/adapters/BackendAssistantAdapter.ts
+│   ├── tailwind.config.ts / vite.config.ts / tsconfig.json
 │   └── package.json
 │
-├── 📁 shared/                          ← Single Source of Truth (frontend + backend)
-│   ├── types/
-│   │   └── domain.ts                   ← Tipos de dominio: ChatResponse, ChatRequest, etc.
-│   └── validators/
-│       └── schemas.ts                  ← Esquemas Zod compartidos (validación unificada)
+├── 📁 shared/
+│   ├── types/domain.ts
+│   ├── validators/schemas.ts       ← chatRequestSchema con sessionId?: UUID
+│   └── package.json               ← "type": "module" (resolución ESM Node v24)
 │
-├── 📁 supabase/                        ← Base de datos como código
-│   ├── config.toml
-│   └── migrations/
-│       ├── 20260223162342_*.sql        ← Tablas base (cursos, inscripciones)
-│       ├── 20260313162500_*.sql        ← Tablas eventos y contacto + RLS policies
-│       ├── 20260313163500_*.sql        ← Fix RLS anon
-│       ├── 20260319110000_*.sql        ← Habilitación pgvector
-│       ├── 20260319120000_*.sql        ← Índice HNSW + función RPC similarity search
-│       └── 20260320_*.sql             ← Seed base de conocimientos IBIME
+├── 📁 supabase/migrations/
+├── 📁 e2e/
+├── 📁 docs/
+│   ├── AI_STRATEGY.md
+│   ├── ARCHITECTURE.md             ← Actualizado: arquitectura híbrida Fase 1+2
+│   ├── CHANGELOG.md
+│   ├── CODE_QUALITY.md
+│   └── CONTRIBUTING.md
 │
-├── 📁 e2e/                             ← Tests E2E con Playwright
-│   ├── chat.spec.ts                    ← Flujo completo del asistente (con mock API)
-│   └── forms.spec.ts                   ← Registro + contacto (con mock API)
-│
-├── 📁 docs/                            ← Documentación técnica y estratégica del proyecto
-│   ├── AI_STRATEGY.md                  ← Arquitectura detallada del motor de IA
-│   ├── ARCHITECTURE.md                 ← Patrones arquitectónicos y diagramas
-│   ├── CHANGELOG.md                    ← Historial de versiones
-│   ├── CODE_QUALITY.md                 ← Guía de pre-commit, ESLint y CI Pipeline
-│   └── CONTRIBUTING.md                 ← Guía para contribuidores
-│
-├── 📄 render.yaml                      ← IaC: configuración de Render (backend)
-├── 📄 playwright.config.ts             ← Config E2E: base URL, retries, reporters
-├── 📄 tsconfig.backend.json            ← TSConfig raíz para el backend
-└── 📄 package.json                     ← Orquestador del proyecto (scripts paralelos)
+├── render.yaml
+├── playwright.config.ts
+└── package.json
 ```
 
 ---
@@ -317,25 +306,26 @@ ibime-connect/                          ← Raíz del proyecto
 
 ```
           ╔══════════════════════╗
-          ║   E2E (Playwright)   ║  ← 2 specs: chat + forms con mock API (GitHub Action: e2e.yml)
+          ║   E2E (Playwright)   ║  ← chat + forms con mock API
           ╠══════════════════════╣
           ║  Integration Tests   ║  ← Smoke tests HTTP (supertest)
           ╠══════════════════════╣
-          ║    Unit Tests (175)  ║  ← Vitest — lógica, servicios, policy layer (GitHub Action: ci.yml)
+          ║   Unit Tests (220)   ║  ← Vitest — lógica, servicios, policy layer
           ╚══════════════════════╝
 ```
 
 | Suite | Archivo | Tests | Cubre |
 |:---|:---|:---:|:---|
-| Intent Classifier | `intent-classifier.test.ts` | 25 | Regex registration/catalog/general + edge cases |
-| Email Validator | `email-validator.test.ts` | 17 | RFC format, normalización, null/undefined |
-| Response Guardrail | `response-guardrail.test.ts` | 18 | Hallucination blocking por flow |
-| **Response Policy** | **`response-policy.test.ts`** | **25** | **Full policy: estructural + guardrail + fallbacks** |
-| Chat Orchestrator | `chat-orchestrator.test.ts` | 13 | Routing, flows, intent integration |
+| Intent Classifier | `intent-classifier.test.ts` | 25 | Regex + Prioridad 0 (email en cualquier mensaje) |
+| Email Validator | `email-validator.test.ts` | 17 | RFC format, normalización |
+| Response Guardrail | `response-guardrail.test.ts` | 18 | Hallucination blocking |
+| Response Policy | `response-policy.test.ts` | 25 | Estructural + guardrail + fallbacks |
+| Chat Orchestrator | `chat-orchestrator.test.ts` | ~30 | Branch A/B, Privacy Gate, routing, sentiment |
+| **Sentiment Analyzer** | **`sentiment-analyzer.service.test.ts`** | **27** | **4 reglas heurísticas, combinaciones, falsos positivos** |
 | RAG Service | `rag.service.test.ts` | 3 | Threshold, cache, error handling |
 | Groq Provider | `groq.provider.test.ts` | 15 | API calls, tokens, error cases |
-| Registration | `registration.service.test.ts` | 10 | DB insert/query, Supabase errors |
-| **Total** | | **175** | **100% passing** |
+| Registration | `registration.service.test.ts` | 10 | DB insert/query |
+| **Total** | | **220** | **100% passing, 0 errores TypeScript** |
 
 ```bash
 # Ejecutar todos los unit tests
@@ -344,7 +334,7 @@ npm run test --prefix backend
 # Con reporte de cobertura
 npm run test:coverage --prefix backend
 
-# E2E (requiere frontend corriendo)
+# E2E
 npx playwright test
 ```
 
@@ -355,42 +345,22 @@ npx playwright test
 ### Prerrequisitos
 - Node.js 18+ LTS
 - Redis (local o Redis Cloud)
-- Cuenta Supabase con pgvector habilitado
+- Supabase con pgvector habilitado
 - API keys: Groq, Google Gemini
 
 ### Setup
 
 ```bash
-# 1. Clonar el repositorio
-git clone <repo-url>
-cd ibime-connect
-
-# 2. Instalar dependencias (raíz + backend + frontend)
-#    npm install también inicializa Husky automáticamente vía el script "prepare"
+git clone <repo-url> && cd ibime-connect
 npm install
 npm install --prefix backend
 npm install --prefix frontend
-
-# 3. Configurar variables de entorno
 cp backend/.env.example backend/.env
 cp frontend/.env.example frontend/.env
-# Editar ambos archivos con las credenciales correspondientes
-
-# 4. Ejecutar en modo desarrollo (frontend + backend en paralelo)
 npm run dev
-#   Frontend: http://localhost:5173
-#   Backend:  http://localhost:3000
+#  Frontend: http://localhost:5173
+#  Backend:  http://localhost:3000
 ```
-
-### Scripts del proyecto (raíz)
-
-| Script | Descripción |
-|:---|:---|
-| `npm run dev` | Arranca frontend (Vite) y backend (Express) en paralelo |
-| `npm run lint` | ESLint sobre todo el frontend |
-| `npm run typecheck` | TypeScript `tsc --noEmit` sobre el frontend |
-| `npm run test` | Suite Vitest completa del frontend |
-| `npm run prepare` | Inicializa Husky (ejecutado automáticamente por `npm install`) |
 
 ### Variables de entorno requeridas (backend)
 
@@ -399,48 +369,29 @@ npm run dev
 | `GROQ_API_KEY` | API key de Groq Cloud |
 | `GEMINI_API_KEY` | API key de Google Gemini |
 | `SUPABASE_URL` | URL del proyecto Supabase |
-| `SUPABASE_SERVICE_ROLE_KEY` | Service role key (acceso completo) |
-| `REDIS_URL` | URL Redis (redis:// o rediss://) |
-| `ADMIN_SECRET` | Secret para el endpoint `/admin/flush-cache` |
+| `SUPABASE_SERVICE_ROLE_KEY` | Service role key |
+| `REDIS_URL` | URL Redis (`redis://` o `rediss://` para TLS) |
+| `ADMIN_SECRET` | Secret para `/admin/flush-cache` |
 
 ---
 
----
+## 🔒 Calidad de Código — Quality Gate Completo
 
-## 🔒 Calidad de Código — Pre-Commit Quality Gate
+Cada `git commit` y `git push` pasa por validación automática con **Husky v9** + **lint-staged** + **ESLint**.
 
-Cada operación de `git commit` y `git push` pasa por un sistema de validación automática implementado con **Husky v9** + **lint-staged** + **ESLint**.
+### `git commit` → `pre-commit`
+ESLint con auto-fix exclusivamente sobre archivos en staging.
 
-### `git commit` → Hook `pre-commit`
-
-Ejecuta `lint-staged`: corre **ESLint con auto-fix** exclusivamente sobre los archivos TypeScript/JavaScript que están en el staging area (`git add`). Solo se revisa lo que vas a commitear.
-
-```bash
-# Lo que ocurre al hacer git commit:
-npx lint-staged
-# → ESLint --fix sobre *.{js,jsx,ts,tsx} en staging
+### `git push` → `pre-push` (3 etapas secuenciales)
+```
+[1/3] ESLint       → npm run lint       (max-warnings=0)
+[2/3] TypeScript   → tsc --noEmit
+[3/3] Vitest       → vitest run         (220 tests deben pasar)
 ```
 
-### `git push` → Hook `pre-push` (Quality Gate completo)
-
-Ejecuta las **3 etapas** en secuencia. Si alguna falla, el push es cancelado:
-
-```
-╔═══════════════════════════════════════════════════════════╗
-║  PRE-PUSH QUALITY GATE                                    ║
-╚═══════════════════════════════════════════════════════════╝
-
-[1/3] ESLint       → npm run lint
-[2/3] TypeScript   → npm run typecheck (tsc --noEmit)
-[3/3] Vitest       → npm test (vitest run)
-```
-
-En caso de fallo, el hook muestra el diagnóstico detallado, los errores específicos y una sugerencia de comando para resolverlo.
-
-### `Pull Request / Push` → GitHub Actions CI/CD
-Una vez que el código pasa el Quality Gate local y llega a GitHub, se disparan dos rutinas independientes:
-1. **Quality Gate CI (`ci.yml`)**: Validación rápida de linting y los 175 tests unitarios. (Aprox. ~40 segundos).
-2. **Playwright E2E (`e2e.yml`)**: Tubería de robustez extrema enfocada en UI. Despliega Chromium y ejecuta clicks contra un servidor local efímero usando simulaciones (*mocks*) de red para no gastar quotas de la IA. (Aprox. ~3-4 minutos).
+### CI/CD (GitHub Actions)
+1. **`ci.yml`**: Quality Gate rápido (~40s) — lint + 220 tests unitarios.
+2. **`e2e.yml`**: Playwright E2E con Chromium (~3-4 min).
 
 > 📄 Documentación completa: [`CODE_QUALITY.md`](./docs/CODE_QUALITY.md)
 
@@ -450,31 +401,24 @@ Una vez que el código pasa el Quality Gate local y llega a GitHub, se disparan 
 
 | Rama | Propósito |
 |:---|:---|
-| `main` | **Producción.** Vinculada a Vercel CD y Render CD. Solo recibe merges verificados. |
-| `development` | Integración de features antes de pasar a `main`. |
-| `feat/*` | Nuevas funcionalidades. |
+| `main` | **Producción.** Vinculada a Vercel CD y Render CD. |
+| `develop` | Integración de features antes de pasar a `main`. |
+| `feature/*` | Nuevas funcionalidades (ej: `feature/sentiment-detection`). |
 | `fix/*` | Correcciones de bugs. |
 | `docs/*` | Actualizaciones de documentación. |
 
 ---
 
-## ♾️ Estrategia de Alta Disponibilidad (Free Tier)
-
-El sistema opera **100% en infraestructura gratuita** sin Cold Starts ni pérdida de datos, gracias a esta estrategia:
+## ♾️ Alta Disponibilidad (Free Tier)
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                  Keep-Alive Strategy                         │
-├──────────────────┬──────────────────────────────────────────┤
-│ Supabase (DB)    │ GitHub Action heartbeat.yml               │
-│                  │ → curl ping cada 24h (evita pausa 7 días) │
-├──────────────────┼──────────────────────────────────────────┤
-│ Render (Backend) │ UptimeRobot HTTP monitor cada 14 minutos  │
-│                  │ → 750h/mes consumidas, 0 Cold Starts      │
-├──────────────────┼──────────────────────────────────────────┤
-│ Redis Cloud      │ Cascada: Render despierto → socket TCP    │
-│                  │ permanente → Redis nunca cierra (30 días) │
-└──────────────────┴──────────────────────────────────────────┘
+┌──────────────┬──────────────────────────────────────┐
+│ Supabase     │ GitHub Action heartbeat: ping 24h     │
+├──────────────┼──────────────────────────────────────┤
+│ Render       │ UptimeRobot HTTP monitor cada 14 min  │
+├──────────────┼──────────────────────────────────────┤
+│ Redis Cloud  │ Render activo → socket TCP permanente │
+└──────────────┴──────────────────────────────────────┘
 ```
 
 ---
@@ -483,14 +427,14 @@ El sistema opera **100% en infraestructura gratuita** sin Cold Starts ni pérdid
 
 | Mecanismo | Implementación |
 |:---|:---|
-| **Validación de entrada** | Esquemas Zod compartidos `shared/validators/schemas.ts` |
-| **Rate Limiting** | `express-rate-limit` por endpoint (admin: 5 req/min) |
-| **Admin auth** | Comparación timing-safe SHA-256 (`crypto.timingSafeEqual`) |
-| **Prompt hardening** | System prompt sin lógica de negocio + defensa anti-injection RAG |
-| **Guardrail post-LLM** | Patrones regex bloquean alucinaciones de user-state |
-| **ResponsePolicy** | Última capa: validación estructural + fallbacks por intent |
-| **Aislamiento de credenciales** | Todas las API keys residentes en servidor, nunca expuestas al cliente |
-| **Graceful degradation** | Redis failure → bypass automático, sin crash del servicio |
+| **Validación de entrada** | Zod `chatRequestSchema` (incluye `sessionId?: UUID`) |
+| **Privacy Gate** | Redis como fuente autoritativa del email de sesión |
+| **Rate Limiting** | `express-rate-limit` por endpoint |
+| **Admin auth** | `crypto.timingSafeEqual` SHA-256 |
+| **Prompt hardening** | System prompt sin lógica de negocio |
+| **Guardrail post-LLM** | Regex bloquea alucinaciones de user-state |
+| **ResponsePolicy** | Última capa: estructural + fallbacks por intent |
+| **Graceful degradation** | Redis caído → bypass automático, sistema continúa operando |
 
 ---
 
@@ -498,11 +442,11 @@ El sistema opera **100% en infraestructura gratuita** sin Cold Starts ni pérdid
 
 | Documento | Contenido |
 |:---|:---|
-| [`ARCHITECTURE.md`](./docs/ARCHITECTURE.md) | Diagramas Mermaid del pipeline, capas de seguridad, módulos |
-| [`AI_STRATEGY.md`](./docs/AI_STRATEGY.md) | Arquitectura RAG, parámetros de inferencia, 4 capas de defensa anti-alucinación |
-| [`CODE_QUALITY.md`](./docs/CODE_QUALITY.md) | Sistema de pre-commit: Husky v9, lint-staged, ESLint, Quality Gate completo |
-| [`CHANGELOG.md`](./docs/CHANGELOG.md) | Historial de versiones con impacto detallado por release |
-| [`CONTRIBUTING.md`](./docs/CONTRIBUTING.md) | Guía para nuevos contribuidores |
+| [`ARCHITECTURE.md`](./docs/ARCHITECTURE.md) | Diagramas de la arquitectura híbrida Fase 1+2, capas de seguridad |
+| [`AI_STRATEGY.md`](./docs/AI_STRATEGY.md) | RAG, parámetros de inferencia, anti-alucinación |
+| [`CODE_QUALITY.md`](./docs/CODE_QUALITY.md) | Husky, lint-staged, ESLint, Quality Gate |
+| [`CHANGELOG.md`](./docs/CHANGELOG.md) | Historial de versiones |
+| [`CONTRIBUTING.md`](./docs/CONTRIBUTING.md) | Guía para contribuidores |
 
 ---
 

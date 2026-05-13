@@ -29,6 +29,7 @@ import { CHAT_SYSTEM_PROMPT } from './system-prompt.js';
 import { ToolRegistry } from '../../services/tools.service.js';
 import { CheckRegistrationTool } from '../../services/tools/check_registration.tool.js';
 import type { SessionMemoryService } from '../../services/session-memory.service.js';
+import type { SentimentAnalyzerService } from '../../services/sentiment-analyzer.service.js';
 
 export interface ChatOrchestratorInput {
   userMessage: string;
@@ -41,6 +42,17 @@ export interface ChatOrchestratorInput {
 const ASK_FOR_EMAIL_FALLBACK =
   '¡Claro que sí! Con mucho gusto te ayudo a verificar tus inscripciones. Por favor, indícame tu correo electrónico registrado para buscarlo en nuestro sistema.';
 
+/**
+ * Prefijo inyectado al systemPrompt cuando el usuario parece frustrado.
+ * Solo afecta a los flujos que invocan el LLM (Branch B, catalog, general).
+ * Branch A (DB directo) es completamente inmune a esta variable.
+ */
+const EMPATHY_ALERT =
+  'ALERTA DE FRUSTRACIÓN: El usuario está experimentando problemas o molestia. ' +
+  'Adopta un tono de máxima empatía humana, sé breve, valida su frustración de inmediato, ' +
+  'y recuérdale con total cortesía que si lo prefiere puede llamarnos directamente al ' +
+  '0274-2623898 para asistencia manual.\n\n';
+
 @injectable()
 export class ChatOrchestrator {
   private toolRegistry: ToolRegistry;
@@ -48,7 +60,8 @@ export class ChatOrchestrator {
   constructor(
     private llmProvider: ILLMProvider,
     private ragService: typeof import('../../services/rag.service.js').RAGService extends new (...args: any[]) => infer T ? T : never,
-    @inject('SessionMemoryService') private sessionMemory: SessionMemoryService | null = null
+    @inject('SessionMemoryService') private sessionMemory: SessionMemoryService | null = null,
+    @inject('SentimentAnalyzerService') private sentimentAnalyzer: SentimentAnalyzerService | null = null
   ) {
     this.toolRegistry = new ToolRegistry();
     this.toolRegistry.registerTool(new CheckRegistrationTool());
@@ -67,17 +80,28 @@ export class ChatOrchestrator {
     const { intent, confidence } = classifyIntent(userMessage);
     logger.info('Intent classified', { intent, confidence });
 
+    // ── Sentiment analysis (síncrono, puro, <1ms) ─────────────────────────
+    // Corre ANTES del switch. Solo afecta flujos con LLM (Branch B, catalog, general).
+    // Branch A (DB directo) ignora completamente el resultado.
+    const { isFrustrated, score: sentimentScore } = this.sentimentAnalyzer
+      ? this.sentimentAnalyzer.analyzeMessage(userMessage)
+      : { isFrustrated: false, score: 0 };
+
+    if (isFrustrated) {
+      logger.info('Sentiment: user appears frustrated', { sentimentScore });
+    }
+
     let result: ChatResponse;
     switch (intent) {
       case 'registration':
-        result = await this.handleRegistration(userMessage, conversationHistory, requestId, input.sessionId);
+        result = await this.handleRegistration(userMessage, conversationHistory, requestId, input.sessionId, isFrustrated);
         break;
       case 'catalog':
-        result = await this.handleCatalog(userMessage, conversationHistory, requestId);
+        result = await this.handleCatalog(userMessage, conversationHistory, requestId, isFrustrated);
         break;
       case 'general':
       default:
-        result = await this.handleGeneral(userMessage, conversationHistory, requestId);
+        result = await this.handleGeneral(userMessage, conversationHistory, requestId, isFrustrated);
         break;
     }
 
@@ -124,7 +148,8 @@ export class ChatOrchestrator {
     userMessage: string,
     conversationHistory: Array<{ role: 'user' | 'assistant'; text: string }>,
     requestId?: string,
-    sessionId?: string
+    sessionId?: string,
+    isFrustrated?: boolean
   ): Promise<ChatResponse> {
     const logger = contextLogger(requestId);
 
@@ -257,7 +282,9 @@ export class ChatOrchestrator {
     logger.info('BRANCH B — no email found, LLM will ask user for email');
 
     const ragResult = await this.ragService.retrieveContext(userMessage, { matchCount: 5 }, requestId);
-    const systemPrompt = CHAT_SYSTEM_PROMPT + this.formatRagContextForPrompt(ragResult.context);
+    // Branch B: solo cuando el LLM habla (pedir email). Empathy prefix aplica aquí.
+    const empathyPrefix = isFrustrated ? EMPATHY_ALERT : '';
+    const systemPrompt = empathyPrefix + CHAT_SYSTEM_PROMPT + this.formatRagContextForPrompt(ragResult.context);
     const trimmedHistory = this.trimHistory(conversationHistory);
 
     const messages: LLMMessage[] = [
@@ -283,7 +310,8 @@ export class ChatOrchestrator {
   private async handleCatalog(
     userMessage: string,
     conversationHistory: Array<{ role: 'user' | 'assistant'; text: string }>,
-    requestId?: string
+    requestId?: string,
+    isFrustrated?: boolean
   ): Promise<ChatResponse> {
     const logger = contextLogger(requestId);
 
@@ -294,7 +322,8 @@ export class ChatOrchestrator {
       sourceCount: ragResult.sources.length,
     });
 
-    const systemPrompt = CHAT_SYSTEM_PROMPT + this.formatRagContextForPrompt(ragResult.context);
+    const empathyPrefix = isFrustrated ? EMPATHY_ALERT : '';
+    const systemPrompt = empathyPrefix + CHAT_SYSTEM_PROMPT + this.formatRagContextForPrompt(ragResult.context);
     const trimmedHistory = this.trimHistory(conversationHistory);
 
     const messages: LLMMessage[] = [
@@ -319,7 +348,8 @@ export class ChatOrchestrator {
   private async handleGeneral(
     userMessage: string,
     conversationHistory: Array<{ role: 'user' | 'assistant'; text: string }>,
-    requestId?: string
+    requestId?: string,
+    isFrustrated?: boolean
   ): Promise<ChatResponse> {
     const logger = contextLogger(requestId);
 
@@ -337,10 +367,11 @@ export class ChatOrchestrator {
 
     if (!ragResult.hit) {
       logger.info('RAG miss (fail-hard) — using fallback LLM call');
-      return this.handleGeneralFallback(userMessage, conversationHistory, requestId);
+      return this.handleGeneralFallback(userMessage, conversationHistory, requestId, isFrustrated);
     }
 
-    const systemPrompt = CHAT_SYSTEM_PROMPT + this.formatRagContextForPrompt(ragResult.context);
+    const empathyPrefix = isFrustrated ? EMPATHY_ALERT : '';
+    const systemPrompt = empathyPrefix + CHAT_SYSTEM_PROMPT + this.formatRagContextForPrompt(ragResult.context);
     const trimmedHistory = this.trimHistory(conversationHistory);
 
     const messages: LLMMessage[] = [
@@ -365,12 +396,15 @@ export class ChatOrchestrator {
   private async handleGeneralFallback(
     userMessage: string,
     conversationHistory: Array<{ role: 'user' | 'assistant'; text: string }>,
-    requestId?: string
+    requestId?: string,
+    isFrustrated?: boolean
   ): Promise<ChatResponse> {
     const logger = contextLogger(requestId);
     logger.info('Using general fallback (no RAG context)');
 
+    const empathyPrefix = isFrustrated ? EMPATHY_ALERT : '';
     const systemPrompt =
+      empathyPrefix +
       CHAT_SYSTEM_PROMPT +
       '\n\nNota: No se encontró información específica en la base de conocimientos para esta consulta. Responde con tu conocimiento institucional general o indica amablemente que no tienes esa información disponible.';
     const trimmedHistory = this.trimHistory(conversationHistory);
