@@ -36,3 +36,8 @@ test-ingest.mjs
 # Private Documentation
 TECHNICAL_DOCUMENTATION.md
 DEPLOYMENT.md
+
+# Generated reports (don't count towards GitHub language stats)
+playwright-report/
+test-results/
+backend/coverage/

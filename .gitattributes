@@ -1,0 +1,7 @@
+# GitHub Linguist overrides
+# Exclude generated/report directories from language stats
+
+playwright-report/** linguist-generated=true
+test-results/** linguist-generated=true
+backend/coverage/** linguist-generated=true
+docs/** linguist-documentation=true
