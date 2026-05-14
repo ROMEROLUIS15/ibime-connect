@@ -2,7 +2,7 @@ name: Supabase Keep-Alive Heartbeat
 
 on:
   schedule:
-    - cron: '0 */6 * * *'  # Cada 6 horas (4 veces al día)
+    - cron: '0 */6 * * *'  # Cada 6 horas (mantiene Supabase activo; UptimeRobot maneja Render)
   workflow_dispatch:         # Permite ejecución manual desde GitHub
 
 jobs:
