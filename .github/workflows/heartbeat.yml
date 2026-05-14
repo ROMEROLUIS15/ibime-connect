@@ -1,16 +1,89 @@
-name: Ibime Keep-Awake Heartbeat
+name: Supabase Keep-Alive Heartbeat
 
 on:
   schedule:
-    - cron: '0 */12 * * *' # Ejecutar cada 12 horas
-  workflow_dispatch:
+    - cron: '0 */6 * * *'  # Cada 6 horas (4 veces al día)
+  workflow_dispatch:         # Permite ejecución manual desde GitHub
 
 jobs:
   ping:
     runs-on: ubuntu-latest
-    steps:
-      - name: Ping Backend and Database
-        run: |
-          curl -X GET "https://ibime-connect.onrender.com/health" \
-          -H "Accept: application/json"
+    timeout-minutes: 10
 
+    steps:
+      # ── Paso 1: Despertar el backend de Render ──────────────────────────────
+      # Render free tier se duerme tras 15 min; darle tiempo para despertar
+      - name: Wake up Render backend
+        run: |
+          echo "⏳ Enviando ping al backend de Render para despertarlo..."
+          for i in 1 2 3; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+              --max-time 60 \
+              --connect-timeout 30 \
+              "https://ibime-connect.onrender.com/" || echo "000")
+            echo "Intento $i → HTTP $STATUS"
+            if [ "$STATUS" = "200" ]; then
+              echo "✅ Render despertó correctamente."
+              break
+            fi
+            echo "⚠️  Render no respondió aún, esperando 20s..."
+            sleep 20
+          done
+
+      # ── Paso 2: Ping al /health (que consulta Supabase internamente) ─────────
+      - name: Ping health endpoint (keeps Supabase alive)
+        run: |
+          echo "🏥 Consultando /health (incluye query a Supabase)..."
+          RESPONSE=$(curl -s \
+            --max-time 90 \
+            --connect-timeout 30 \
+            --retry 3 \
+            --retry-delay 15 \
+            --retry-all-errors \
+            -w "\nHTTP_STATUS:%{http_code}" \
+            "https://ibime-connect.onrender.com/health")
+
+          HTTP_STATUS=$(echo "$RESPONSE" | grep "HTTP_STATUS:" | cut -d: -f2)
+          BODY=$(echo "$RESPONSE" | grep -v "HTTP_STATUS:")
+
+          echo "📊 HTTP Status: $HTTP_STATUS"
+          echo "📄 Response: $BODY"
+
+          if [ "$HTTP_STATUS" != "200" ]; then
+            echo "❌ Health check falló con status $HTTP_STATUS"
+            exit 1
+          fi
+
+          # Verificar que Supabase respondió correctamente
+          if echo "$BODY" | grep -q '"database":"connected"'; then
+            echo "✅ Supabase está activo y conectado."
+          else
+            echo "❌ Supabase NO está conectado. Respuesta inesperada."
+            exit 1
+          fi
+
+      # ── Paso 3: Ping directo a Supabase REST API (respaldo) ─────────────────
+      - name: Direct Supabase ping (backup)
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_ANON_KEY" ]; then
+            echo "⚠️  Secrets de Supabase no configurados, omitiendo ping directo."
+            exit 0
+          fi
+
+          echo "🗄️  Ping directo a Supabase REST API..."
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            --max-time 30 \
+            -H "apikey: $SUPABASE_ANON_KEY" \
+            -H "Authorization: Bearer $SUPABASE_ANON_KEY" \
+            "$SUPABASE_URL/rest/v1/knowledge?select=id&limit=1")
+
+          echo "📊 Supabase REST HTTP Status: $STATUS"
+
+          if [ "$STATUS" = "200" ] || [ "$STATUS" = "206" ]; then
+            echo "✅ Supabase respondió directamente OK."
+          else
+            echo "⚠️  Supabase devolvió status $STATUS en ping directo."
+          fi
