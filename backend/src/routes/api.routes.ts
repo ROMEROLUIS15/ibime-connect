@@ -8,6 +8,7 @@ import { CacheService } from '../infrastructure/cache/cache.service.js';
 import { ENV } from '../config/env.config.js';
 import { logger } from '../infrastructure/logger/index.js';
 import knowledgeRoutes from './knowledge.routes.js';
+import agentRoutes from './agent.routes.js';
 
 const router = Router();
 
@@ -37,6 +38,7 @@ router.post('/v1/registrations', (req, res, next) =>
 );
 
 router.use('/v1/knowledge', knowledgeRoutes);
+router.use('/v1', agentRoutes);
 
 // Backwards compatibility (Legacy routes)
 router.post('/chat', chatLimiter, (req, res, next) =>
@@ -52,6 +54,7 @@ router.post('/registrations', (req, res, next) =>
 );
 
 router.use('/knowledge', knowledgeRoutes);
+router.use('/', agentRoutes);
 
 // Rate limiter for admin endpoints (5 requests per minute)
 const adminLimiter = rateLimit({
