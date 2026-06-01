@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import multer from 'multer';
 import { KnowledgeController } from '../controllers/knowledge.controller.js';
+import { AgentController } from '../controllers/agent.controller.js';
 // Opcional: Podríamos importar un middleware de autenticación (ej. authMiddleware o apiKeyMiddleware)
 // import { requireApiKey } from '../middlewares/auth.middleware.js';
 
@@ -15,12 +16,12 @@ const upload = multer({
   }
 });
 
-// Endpoint para subir PDFs
+// Endpoint para subir PDFs: Redireccionado para unificar la ingesta de RAG a través del Curation Graph de LangGraph
 // Idealmente esto debería estar protegido: router.post('/upload-pdf', requireApiKey, upload.single('file'), ...)
 router.post(
   '/upload-pdf', 
   upload.single('file'), // 'file' es el nombre del campo en el form-data
-  knowledgeController.uploadPdf
+  (req, res, next) => new AgentController(undefined).handleCurationRequest(req, res, next)
 );
 
 // Endpoint para el Webhook de n8n (Koha)
