@@ -15,6 +15,9 @@ vi.mock('../config/supabase.config.js', () => ({
   }
 }));
 
+// Debe coincidir con ADMIN_SECRET inyectado en vitest.config.ts (test.env)
+const ADMIN_KEY = 'test-admin-secret';
+
 describe('Agent HTTP API Integration', () => {
   let mockLLMProvider: ILLMProvider;
 
@@ -38,9 +41,19 @@ describe('Agent HTTP API Integration', () => {
     container.registerInstance('ILLMProvider', mockLLMProvider);
   });
 
+  it('debería retornar 401 si no se envía la clave admin', async () => {
+    const response = await request(app)
+      .post('/api/v1/agents/curate-catalog')
+      .send({ text: 'Texto de prueba del catálogo de fotografía' });
+
+    expect(response.status).toBe(401);
+    expect(response.body).toHaveProperty('error');
+  });
+
   it('debería retornar 400 si el body no contiene texto para analizar', async () => {
     const response = await request(app)
       .post('/api/v1/agents/curate-catalog')
+      .set('x-admin-key', ADMIN_KEY)
       .send({ text: '' });
 
     expect(response.status).toBe(400);
@@ -51,6 +64,7 @@ describe('Agent HTTP API Integration', () => {
   it('debería retornar 200 y el JSON estructurado si el texto es correcto', async () => {
     const response = await request(app)
       .post('/api/v1/agents/curate-catalog')
+      .set('x-admin-key', ADMIN_KEY)
       .send({ text: 'Texto de prueba del catálogo de fotografía' });
 
     expect(response.status).toBe(200);
@@ -78,6 +92,7 @@ describe('Agent HTTP API Integration', () => {
     for (let i = 0; i < 5; i++) {
       const res = await request(app)
         .post('/api/v1/agents/curate-catalog')
+        .set('x-admin-key', ADMIN_KEY)
         .send({ text: `Texto de prueba de tasa ${i} para el limitador` });
       expect(res.status).toBe(200);
     }
@@ -85,6 +100,7 @@ describe('Agent HTTP API Integration', () => {
     // La sexta petición consecutiva debe ser rechazada con HTTP 429
     const response6 = await request(app)
       .post('/api/v1/agents/curate-catalog')
+      .set('x-admin-key', ADMIN_KEY)
       .send({ text: 'Petición número 6' });
 
     expect(response6.status).toBe(429);

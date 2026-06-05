@@ -2,6 +2,7 @@ import { Router } from 'express';
 import rateLimit from 'express-rate-limit';
 import multer from 'multer';
 import { AgentController } from '../controllers/agent.controller.js';
+import { requireAdminKey } from '../middlewares/admin-auth.middleware.js';
 
 const router = Router();
 
@@ -24,9 +25,11 @@ const curationLimiter = rateLimit({
 });
 
 // Endpoint del sandbox de LangGraph para curación de documentos (acepta tanto PDF en form-data como JSON directo)
+// Protegido: requiere clave admin para evitar envenenamiento de la base de conocimiento y abuso de cuota LLM.
 router.post(
   '/agents/curate-catalog',
   curationLimiter,
+  requireAdminKey, // auth antes de parsear el archivo: rechaza peticiones no autorizadas temprano
   upload.single('file'), // 'file' es el nombre del campo para el archivo en form-data
   (req, res, next) => new AgentController(undefined).handleCurationRequest(req, res, next)
 );
