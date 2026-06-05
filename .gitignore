@@ -19,6 +19,10 @@ dist
 dist-ssr
 *.local
 
+# Test coverage artifacts (generados; no versionar)
+coverage
+**/coverage
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
