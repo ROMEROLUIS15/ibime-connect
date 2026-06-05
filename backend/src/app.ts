@@ -42,7 +42,7 @@ app.get('/', (req, res) => {
 app.get('/health', async (req, res) => {
   try {
     // Ping Supabase to keep it awake (using a simple RPC or query)
-    const { error } = await supabaseClient.from('knowledge').select('id').limit(1);
+    const { error } = await supabaseClient.from('knowledge_base').select('id').limit(1);
     
     if (error) throw error;
 
