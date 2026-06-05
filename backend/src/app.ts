@@ -11,8 +11,16 @@ import { requestLoggerMiddleware } from './infrastructure/logger/index.js';
 const app = express();
 
 // Middlewares globales
+// CORS: en producción solo se permite el frontend oficial. Los orígenes de
+// desarrollo (localhost) se añaden únicamente fuera de producción para no
+// ampliar la superficie de orígenes permitidos en el deploy real.
+const allowedOrigins = [ENV.FRONTEND_URL];
+if (process.env.NODE_ENV !== 'production') {
+  allowedOrigins.push('http://localhost:5173', 'http://localhost:4000', 'http://127.0.0.1:4000');
+}
+
 app.use(cors({
-  origin: [ENV.FRONTEND_URL, 'http://localhost:5173', 'http://localhost:4000', 'http://127.0.0.1:4000'],
+  origin: allowedOrigins,
   credentials: true,
 }));
 
