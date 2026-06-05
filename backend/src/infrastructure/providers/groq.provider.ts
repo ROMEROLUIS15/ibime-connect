@@ -27,7 +27,15 @@ export class GroqProvider implements ILLMProvider {
     const logger = contextLogger(requestId);
 
     // ── Pre-call: check rate limit ───────────────────────────────────────────
-    const estimatedTokens = options?.maxTokens ?? 350;
+    // Estimación pesimista: tokens de prompt (~4 chars/token) + tope de salida.
+    // recordUsage() registra total_tokens (prompt + completion), por lo que el
+    // pre-chequeo debe contemplar ambos; estimar solo maxTokens subcuenta el
+    // consumo real (sobre todo con contexto RAG inyectado) y deja pasar
+    // peticiones que excederán el TPM.
+    const maxOutputTokens = options?.maxTokens ?? 350;
+    const promptChars = messages.reduce((sum, m) => sum + (m.content?.length ?? 0), 0);
+    const estimatedPromptTokens = Math.ceil(promptChars / 4);
+    const estimatedTokens = estimatedPromptTokens + maxOutputTokens;
     const rlCheck = await groqRateLimiter.canProceed(estimatedTokens);
 
     if (!rlCheck.ok) {
