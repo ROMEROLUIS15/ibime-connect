@@ -9,7 +9,8 @@ vi.mock('../config/supabase.config.js', () => ({
   supabaseClient: {
     from: vi.fn().mockReturnValue({
       select: vi.fn().mockReturnValue({
-        eq: vi.fn().mockResolvedValue({ data: [], error: null })
+        eq: vi.fn().mockResolvedValue({ data: [], error: null }),
+        in: vi.fn().mockResolvedValue({ data: [], error: null })
       })
     })
   }

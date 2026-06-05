@@ -206,27 +206,36 @@ export class CurationGraph {
       }
     }
 
-    // 2. Validación de duplicados en la base de datos Supabase
-    try {
-      for (const item of items) {
-        if (!item.title) continue;
+    // 2. Validación de duplicados en la base de datos Supabase (batch: una sola query)
+    const titles = items
+      .map((item) => item.title?.trim())
+      .filter((t): t is string => !!t);
 
+    if (titles.length > 0) {
+      try {
         const { data, error } = await supabaseClient
           .from('knowledge_base')
-          .select('id')
-          .eq('title', item.title.trim());
+          .select('title')
+          .in('title', titles);
 
         if (error) throw error;
 
-        if (data && data.length > 0) {
-          conflicts.push(`El elemento "${item.title}" ya existe en la base de datos institucional.`);
+        const existingTitles = new Set((data ?? []).map((row: any) => String(row.title)));
+        for (const item of items) {
+          const normalized = item.title?.trim();
+          if (normalized && existingTitles.has(normalized)) {
+            conflicts.push(`El elemento "${item.title}" ya existe en la base de datos institucional.`);
+          }
         }
+      } catch (dbError) {
+        // Fail-closed: si no podemos verificar duplicados, NO aprobamos el lote a ciegas.
+        // Aprobar sin verificar permitiría ingestar duplicados justo cuando la DB falla.
+        logger.warn(
+          { requestId, error: String(dbError) },
+          'CurationGraph: DB validation error — el lote no se aprueba sin verificar duplicados'
+        );
+        conflicts.push('No se pudo verificar duplicados contra la base de datos institucional (error de conexión).');
       }
-    } catch (dbError) {
-      logger.warn(
-        { requestId, error: String(dbError) },
-        'CurationGraph: DB validation error — falling back to offline validation'
-      );
     }
 
     return {
