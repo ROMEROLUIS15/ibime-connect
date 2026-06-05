@@ -15,6 +15,7 @@ const upload = multer({
 });
 
 // Limitador de tasa específico para el sandbox de agentes (5 consultas por minuto por IP)
+// TODO (escalabilidad): store en memoria; migrar a rate-limit-redis si se corre multi-instancia.
 const curationLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 5,

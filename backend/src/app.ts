@@ -18,6 +18,12 @@ app.use(cors({
 
 app.use(requestLoggerMiddleware);
 
+// NOTA (escalabilidad): estos limiters usan el store en memoria por defecto,
+// correcto para un único proceso (deploy actual de 1 instancia en Render).
+// TODO: si se escala a múltiples instancias, migrar a un store compartido
+// (rate-limit-redis sobre el redisClient existente); de lo contrario el límite
+// real se multiplica por el número de instancias. El límite que protege la cuota
+// de Groq (GroqRateLimiter) ya es Redis-backed y sí es seguro entre instancias.
 const chatLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 20,

@@ -15,6 +15,7 @@ const router = Router();
 // ── Chat rate limiter: 6 messages/minute per IP ───────────────────────────
 // Protects the Groq free-tier (30 RPM total). A human typically sends 1-2
 // messages per minute, so 6 is generous while blocking runaway clients.
+// TODO (escalabilidad): store en memoria; migrar a rate-limit-redis si se corre multi-instancia.
 const chatLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 6,
