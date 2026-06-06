@@ -21,6 +21,34 @@ Asistente IBIME vía RAG (Retrieval-Augmented Generation).
 
 ---
 
+## Autenticación (x-admin-key)
+
+Las vías que escriben en la base (webhook Koha y curación PDF/texto) exigen una
+clave de administrador. Es **un único secreto** que tú generas:
+
+- En el servidor vive como la variable de entorno **`ADMIN_SECRET`**.
+- El cliente (n8n, curl, scripts) lo envía en el header **`x-admin-key`**.
+- El backend compara ambos (SHA-256 + timing-safe): si coinciden autoriza; si no, `401`.
+
+Configura el **mismo valor** en los tres lugares:
+
+1. **Render** (producción): Environment → Variables → `ADMIN_SECRET=<tu-secreto>` (redespliega solo).
+2. **`backend/.env`** (desarrollo): `ADMIN_SECRET=<tu-secreto>`.
+3. **n8n / clientes**: header `x-admin-key: <tu-secreto>`.
+
+Generar un secreto fuerte:
+
+```bash
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+```
+
+> El guard es **fail-closed**: si `ADMIN_SECRET` no está definido en el servidor,
+> TODAS las cargas devuelven `401` (incluido el admin). Nunca publiques el valor
+> real (no lo subas al repo ni lo pegues en chats). En los ejemplos de abajo,
+> `$ADMIN_SECRET` representa tu clave.
+
+---
+
 ## Métodos para cargar contenido
 
 Hay tres vías. Elige según el origen de los datos.
