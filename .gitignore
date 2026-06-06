@@ -40,3 +40,6 @@ test-ingest.mjs
 # Private Documentation
 TECHNICAL_DOCUMENTATION.md
 DEPLOYMENT.md
+
+# Memoria de trabajo local del agente (no versionar)
+memory/
