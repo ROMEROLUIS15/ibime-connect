@@ -43,3 +43,8 @@ DEPLOYMENT.md
 
 # Memoria de trabajo local del agente (no versionar)
 memory/
+
+# Generated reports (don't count towards GitHub language stats)
+playwright-report/
+test-results/
+backend/coverage/
