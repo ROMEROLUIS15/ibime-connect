@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import request from 'supertest';
 import { container } from 'tsyringe';
 import app from '../app.js';
@@ -40,6 +40,12 @@ describe('Agent HTTP API Integration', () => {
 
     // Sobrescribimos el LLMProvider en el contenedor global de dependencias para los tests
     container.registerInstance('ILLMProvider', mockLLMProvider);
+  });
+
+  afterEach(() => {
+    // Restaura cualquier env stubeado (p. ej. NODE_ENV del test de rate limit)
+    // aunque un expect haya fallado antes, evitando que se filtre a otros tests.
+    vi.unstubAllEnvs();
   });
 
   it('debería retornar 401 si no se envía la clave admin', async () => {
@@ -85,9 +91,10 @@ describe('Agent HTTP API Integration', () => {
   });
 
   it('debería aplicar el límite de tasa de curación y retornar 429 cuando se superan las 5 peticiones por minuto', async () => {
-    const originalEnv = process.env.NODE_ENV;
-    // Forzamos temporalmente a que el skip del rate limiter sea falso (simulando producción)
-    process.env.NODE_ENV = 'production';
+    // Forzamos el skip del rate limiter a falso (simulando producción).
+    // vi.stubEnv se auto-restaura en afterEach aunque un expect falle antes
+    // del final, evitando filtrar NODE_ENV=production a otros tests del proceso.
+    vi.stubEnv('NODE_ENV', 'production');
 
     // Realizamos 5 llamadas consecutivas exitosas
     for (let i = 0; i < 5; i++) {
@@ -106,8 +113,5 @@ describe('Agent HTTP API Integration', () => {
 
     expect(response6.status).toBe(429);
     expect(response6.body.error).toContain('Demasiadas solicitudes');
-
-    // Restauramos el entorno de test
-    process.env.NODE_ENV = originalEnv;
   });
 });
