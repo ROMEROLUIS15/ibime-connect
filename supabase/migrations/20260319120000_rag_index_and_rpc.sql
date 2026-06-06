@@ -1,5 +1,9 @@
 -- Fix: Add RLS and RPC for vector search.
--- We omit the vector index since Exact Nearest Neighbor is perfectly fine (and fast) for small datasets.
+-- NOTA: el índice vectorial (ivfflat) ya se creó en la migración previa
+-- 20260319110000_enable_rag.sql. Esta migración NO lo elimina ni lo recrea:
+-- solo (re)define las políticas RLS y la función match_knowledge.
+-- (Correlación corregida: el comentario anterior afirmaba erróneamente que se
+--  omitía el índice vectorial.)
 
 -- RLS policies (idempotent)
 alter table public.knowledge_base enable row level security;
