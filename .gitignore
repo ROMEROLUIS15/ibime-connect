@@ -19,6 +19,10 @@ dist
 dist-ssr
 *.local
 
+# Test coverage artifacts (generados; no versionar)
+coverage
+**/coverage
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
@@ -36,6 +40,9 @@ test-ingest.mjs
 # Private Documentation
 TECHNICAL_DOCUMENTATION.md
 DEPLOYMENT.md
+
+# Memoria de trabajo local del agente (no versionar)
+memory/
 
 # Generated reports (don't count towards GitHub language stats)
 playwright-report/

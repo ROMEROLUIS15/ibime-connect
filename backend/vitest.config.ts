@@ -12,6 +12,10 @@ export default defineConfig({
     environment: 'node',
     testTimeout: 15000,
     setupFiles: ['src/__tests__/setup.ts'],
+    // Clave admin determinista para los tests de endpoints protegidos (auth guard).
+    env: {
+      ADMIN_SECRET: 'test-admin-secret',
+    },
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],

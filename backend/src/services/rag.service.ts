@@ -1,3 +1,4 @@
+import { createHash } from 'crypto';
 import type { IEmbeddingService, IKnowledgeRepository } from '../domain/interfaces/index.js';
 import type { KnowledgeMatch } from '../domain/interfaces/index.js';
 import { contextLogger } from '../infrastructure/logger/index.js';
@@ -21,6 +22,17 @@ export class RAGService {
   // MINIMUM quality threshold — below this, results are considered noise (fail-hard)
   private static readonly MIN_VALID_THRESHOLD = 0.65;
 
+  /**
+   * Deriva una clave de caché estable a partir del mensaje del usuario.
+   * Normaliza (trim + lowercase) y aplica SHA-256 para:
+   *  - evitar PII del usuario como claves en Redis,
+   *  - acotar el keyspace (longitud fija),
+   *  - mejorar el hit-rate (variantes de espacios/mayúsculas colapsan).
+   */
+  private static hashMessage(userMessage: string): string {
+    return createHash('sha256').update(userMessage.trim().toLowerCase()).digest('hex');
+  }
+
   constructor(
     private embeddingService: IEmbeddingService,
     private knowledgeRepository: IKnowledgeRepository
@@ -35,7 +47,8 @@ export class RAGService {
     const startTime = Date.now();
 
     try {
-      const cacheKey = `${RAGService.CACHE_KEY_PREFIX}${userMessage}`;
+      const messageHash = RAGService.hashMessage(userMessage);
+      const cacheKey = `${RAGService.CACHE_KEY_PREFIX}${messageHash}`;
       const cached = await this.cacheService.get<{ context: string; sources: KnowledgeMatch[]; maxSimilarity: number }>(cacheKey, requestId);
 
       if (cached) {
@@ -47,7 +60,7 @@ export class RAGService {
       }
 
       // Try caching just the embedding too (longer TTL)
-      const embeddingCacheKey = `${RAGService.EMBEDDING_KEY_PREFIX}${userMessage}`;
+      const embeddingCacheKey = `${RAGService.EMBEDDING_KEY_PREFIX}${messageHash}`;
       let embedding = await this.cacheService.get<number[]>(embeddingCacheKey, requestId);
 
       if (!embedding) {

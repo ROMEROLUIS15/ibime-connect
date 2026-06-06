@@ -11,13 +11,27 @@ import { requestLoggerMiddleware } from './infrastructure/logger/index.js';
 const app = express();
 
 // Middlewares globales
+// CORS: en producción solo se permite el frontend oficial. Los orígenes de
+// desarrollo (localhost) se añaden únicamente fuera de producción para no
+// ampliar la superficie de orígenes permitidos en el deploy real.
+const allowedOrigins = [ENV.FRONTEND_URL];
+if (process.env.NODE_ENV !== 'production') {
+  allowedOrigins.push('http://localhost:5173', 'http://localhost:4000', 'http://127.0.0.1:4000');
+}
+
 app.use(cors({
-  origin: [ENV.FRONTEND_URL, 'http://localhost:5173', 'http://localhost:4000', 'http://127.0.0.1:4000'],
+  origin: allowedOrigins,
   credentials: true,
 }));
 
 app.use(requestLoggerMiddleware);
 
+// NOTA (escalabilidad): estos limiters usan el store en memoria por defecto,
+// correcto para un único proceso (deploy actual de 1 instancia en Render).
+// TODO: si se escala a múltiples instancias, migrar a un store compartido
+// (rate-limit-redis sobre el redisClient existente); de lo contrario el límite
+// real se multiplica por el número de instancias. El límite que protege la cuota
+// de Groq (GroqRateLimiter) ya es Redis-backed y sí es seguro entre instancias.
 const chatLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 20,
@@ -42,7 +56,7 @@ app.get('/', (req, res) => {
 app.get('/health', async (req, res) => {
   try {
     // Ping Supabase to keep it awake (using a simple RPC or query)
-    const { error } = await supabaseClient.from('knowledge').select('id').limit(1);
+    const { error } = await supabaseClient.from('knowledge_base').select('id').limit(1);
     
     if (error) throw error;
 

@@ -8,12 +8,14 @@ import { CacheService } from '../infrastructure/cache/cache.service.js';
 import { ENV } from '../config/env.config.js';
 import { logger } from '../infrastructure/logger/index.js';
 import knowledgeRoutes from './knowledge.routes.js';
+import agentRoutes from './agent.routes.js';
 
 const router = Router();
 
 // ── Chat rate limiter: 6 messages/minute per IP ───────────────────────────
 // Protects the Groq free-tier (30 RPM total). A human typically sends 1-2
 // messages per minute, so 6 is generous while blocking runaway clients.
+// TODO (escalabilidad): store en memoria; migrar a rate-limit-redis si se corre multi-instancia.
 const chatLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 6,
@@ -37,6 +39,7 @@ router.post('/v1/registrations', (req, res, next) =>
 );
 
 router.use('/v1/knowledge', knowledgeRoutes);
+router.use('/v1', agentRoutes);
 
 // Backwards compatibility (Legacy routes)
 router.post('/chat', chatLimiter, (req, res, next) =>
@@ -52,6 +55,7 @@ router.post('/registrations', (req, res, next) =>
 );
 
 router.use('/knowledge', knowledgeRoutes);
+router.use('/', agentRoutes);
 
 // Rate limiter for admin endpoints (5 requests per minute)
 const adminLimiter = rateLimit({

@@ -32,6 +32,11 @@ export class KnowledgeRepository implements IKnowledgeRepository {
         matchCount: results.length,
       });
 
+      // NOTA: el RPC match_knowledge solo retorna id, title, content, similarity.
+      // 'category' viene undefined porque la función no lo proyecta (vive en
+      // knowledge_base.metadata->>'category'). Se mantiene el campo de forma
+      // defensiva: si en el futuro se necesita filtrar/mostrar por categoría,
+      // ampliar el RPC para retornarla (migración) en vez de leer aquí.
       return results.map((row: any) => ({
         id: row.id,
         category: row.category,
