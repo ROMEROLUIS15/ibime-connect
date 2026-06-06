@@ -21,27 +21,16 @@ export class KnowledgeController {
 
       logger.info(`Recibida petición Webhook Koha con ${items.length} elementos.`);
 
-      // Convertimos el JSON crudo en "chunks" compatibles con nuestro sistema
-      // Asumiendo que n8n envía: [{ titulo: "Libro 1", autor: "Autor 1", resumen: "..." }]
-      const chunks = items.map((item, index) => {
-        // Concatenamos las propiedades importantes en un solo string
-        const content = Object.entries(item)
-          .map(([key, value]) => `${key}: ${value}`)
-          .join('\n');
-
-        return {
-          content: `[Catálogo Koha]\n${content}`,
-          metadata: { source: 'koha_webhook', itemIndex: index }
-        };
-      });
-
-      // Procesamos la ingesta
-      const result = await this.ingestionService.ingestChunks(chunks, 'catalogo', 'Actualización Koha');
+      // Ingesta idempotente: upsert por koha_id + hash de contenido (evita
+      // duplicados en cada sync y re-embeddings innecesarios).
+      // n8n debe enviar un identificador estable por ítem (biblionumber/id/biblio_id).
+      const requestId = req.headers['x-request-id'] as string;
+      const result = await this.ingestionService.upsertKohaItems(items, 'catalogo', requestId);
 
       return res.status(200).json({
         message: 'Webhook Koha procesado.',
         registrosRecibidos: items.length,
-        resultadosIngesta: result
+        resultado: result
       });
 
     } catch (error: any) {
