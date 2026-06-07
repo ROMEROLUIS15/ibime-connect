@@ -27,7 +27,7 @@ El sistema actúa en tres fases de defensa. Garantiza que el código defectuoso 
 │    ├─► .github/workflows/ci.yml (Rápido: ~40s)                          │
 │    │     ├─► Instalación con --legacy-peer-deps                         │
 │    │     ├─► Simulación de Entorno (Dummy Env Vars)                     │
-│    │     └─► Quality Gate Remoto (175 Vitests)                          │
+│    │     └─► Quality Gate Remoto (235 Vitests)                          │
 │    │                                                                    │
 │    └─► .github/workflows/e2e.yml (Pesado: ~3m)                          │
 │          ├─► Configuración Node + Dependencias                          │

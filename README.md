@@ -181,7 +181,7 @@ ibime-connect/
 ├── 📁 .github/workflows/
 │   ├── ci.yml                      ← CI: Quality Gate (Lint + 230+ Vitest unit tests)
 │   ├── e2e.yml                     ← E2E: Playwright (Chromium automations)
-│   └── heartbeat.yml               ← Cron: ping Supabase cada 24h
+│   └── heartbeat.yml               ← Cron: ping Supabase + Render cada 6h
 │
 ├── 📁 backend/
 │   ├── src/
@@ -189,7 +189,7 @@ ibime-connect/
 │   │   ├── index.ts
 │   │   │
 │   │   ├── 📁 config/
-│   │   │   ├── env.config.ts       ← Variables de entorno validadas con Zod
+│   │   │   ├── env.config.ts       ← Variables de entorno validadas al arranque (con check manual + process.exit)
 │   │   │   └── supabase.config.ts
 │   │   │
 │   │   ├── 📁 controllers/
@@ -274,7 +274,7 @@ ibime-connect/
 │   │   ├── main.tsx / App.tsx
 │   │   ├── pages/
 │   │   ├── components/
-│   │   │   └── IBIMEAssistant.tsx  ← Genera sessionId (UUID) al iniciar conversación
+│   │   │   └── IBIMEAssistant.tsx  ← Widget de chat (sin sessionId — el backend lo deriva del historial si no se envía)
 │   │   ├── domain/ports/AssistantPort.ts
 │   │   ├── application/use-cases/AskAssistantUseCase.ts
 │   │   └── infrastructure/adapters/BackendAssistantAdapter.ts

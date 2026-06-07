@@ -205,15 +205,15 @@ Si el modelo de embeddings cambia, todas las claves previas son automáticamente
 - **Función**: Motor de inferencia (generación de texto)
 - **Propósito**: Latencia ultra baja, crítica para UX del ciudadano
 
-### Parámetros reales de inferencia por flow
+### Parámetros reales de inferencia por flow (v2.3.0)
 
 | Flow | Temperatura | Max Tokens | Rol del LLM |
 |:---|:---:|:---:|:---|
-| `registration` (con email, formateado) | `0.2` | `400` | Solo formatea datos de DB. Sin decisiones. |
-| `registration` (sin email) | — | `0` | No se invoca. Respuesta hardcoded. |
-| `catalog` (RAG) | `0.3` | `600` | Genera desde contexto RAG acotado. |
-| `general` (RAG hit) | `0.3` | `600` | Responde con conocimiento institucional. |
-| `general` (RAG miss / fallback) | `0.3` | `500` | Genera con nota de ausencia de contexto. |
+| `registration` (con email) | — | `0` | No se invoca. Branch A: DB directo, formateo determinista. Sin LLM. |
+| `registration` (sin email) | `0.2` | `200` | Branch B: Solo pide el email al usuario. No accede a DB. |
+| `catalog` (RAG) | `0.3` | `350` | Genera desde contexto RAG acotado. |
+| `general` (RAG hit) | `0.3` | `350` | Responde con conocimiento institucional. |
+| `general` (RAG miss / fallback) | `0.3` | `300` | Genera con nota de ausencia de contexto. |
 | `general` (saludo) | — | `0` | No se invoca. Respuesta hardcoded contextual. |
 
 ---
@@ -381,8 +381,8 @@ Request del usuario
 
 | Flow | Temperatura | Max Tokens | Cambio |
 |:---|:---:|:---:|:---:|
-| `registration` (con email, formateado) | `0.2` | **250** | ↓ de 400 |
-| `registration` (sin email) | — | `0` | Sin cambio |
+| `registration` (con email) | — | `0` | Sin cambio — Branch A sin LLM |
+| `registration` (sin email) | `0.2` | **200** | ↓ de 400 (Branch B pide email) |
 | `catalog` (RAG) | `0.3` | **350** | ↓ de 600 |
 | `general` (RAG hit) | `0.3` | **350** | ↓ de 600 |
 | `general` (RAG miss / fallback) | `0.3` | **300** | ↓ de 500 |
@@ -392,8 +392,8 @@ Request del usuario
 
 | Escenario | Tokens/request (prom.) | 10 usuarios | ¿Dentro del umbral? |
 |:---|:---:|:---:|:---:|
-| **Antes** (v2.2.0) | ~700 | ~7,000 TPM | ❌ Supera límite |
-| **Después** (v2.3.0) | ~370 | ~3,700 TPM | ✅ 61% del límite |
+| **Antes** (v2.2.0) | ~550 | ~5,500 TPM | ❌ Supera límite (115%) |
+| **Después** (v2.3.0) | ~300 | ~3,000 TPM | ✅ 63% del límite |
 
 ### Comportamiento ante saturación
 
@@ -421,7 +421,7 @@ Request del usuario
 
 Todas las claves de API (`GROQ_API_KEY`, `GEMINI_API_KEY`, `SUPABASE_SERVICE_ROLE_KEY`) residen exclusivamente en el entorno del servidor. Nunca se exponen al navegador ni al frontend.
 
-La validación de variables de entorno se realiza al arrancar el servidor via **Zod** en `config/env.config.ts`. Variables faltantes causan error inmediato con mensaje descriptivo.
+La validación de variables de entorno se realiza al arrancar el servidor en `config/env.config.ts` mediante un **check manual**: itera sobre las requeridas y llama `process.exit(1)` si falta alguna, con mensaje descriptivo.
 
 ---
 
