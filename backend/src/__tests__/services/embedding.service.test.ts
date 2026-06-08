@@ -1,42 +1,69 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+﻿import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { EmbeddingService } from '../../services/embedding.service.js';
+
+// --- Suite --------------------------------------------------------------------
 
 describe('EmbeddingService', () => {
   let service: EmbeddingService;
+  let mockFetch: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
-    service = new EmbeddingService();
     vi.clearAllMocks();
+    mockFetch = vi.fn();
+    global.fetch = mockFetch as unknown as typeof fetch;
+    service = new EmbeddingService();
   });
 
-  it('should generate embedding for valid text', async () => {
-    // Mock global fetch
-    global.fetch = vi.fn().mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ embedding: { values: [0.1, 0.2, 0.3] } }),
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  describe('getEmbedding — successful call', () => {
+    it('should return the embedding values array from the Gemini API response', async () => {
+      // Arrange
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ embedding: { values: [0.1, 0.2, 0.3] } }),
+      });
+
+      // Act
+      const result = await service.getEmbedding('test text');
+
+      // Assert
+      expect(result).toEqual([0.1, 0.2, 0.3]);
+      expect(mockFetch).toHaveBeenCalledTimes(1);
     });
-
-    const result = await service.getEmbedding('test');
-    expect(result).toEqual([0.1, 0.2, 0.3]);
-    expect(global.fetch).toHaveBeenCalledTimes(1);
   });
 
-  it('should throw on empty text', async () => {
-    await expect(service.getEmbedding('')).rejects.toThrow('Text cannot be empty');
-  });
-
-  it('should handle API errors', async () => {
-    global.fetch = vi.fn().mockResolvedValueOnce({
-      ok: false,
-      status: 401,
-      text: async () => 'Invalid API key',
+  describe('getEmbedding — input validation', () => {
+    it('should throw with message "Text cannot be empty" when input is an empty string', async () => {
+      // Act & Assert — no network call should be made
+      await expect(service.getEmbedding('')).rejects.toThrow('Text cannot be empty');
+      expect(mockFetch).not.toHaveBeenCalled();
     });
-
-    await expect(service.getEmbedding('test')).rejects.toThrow('Gemini API Error (401)');
   });
 
-  it('should handle network errors', async () => {
-    global.fetch = vi.fn().mockRejectedValueOnce(new Error('Network error'));
-    await expect(service.getEmbedding('test')).rejects.toThrow('Network error');
+  describe('getEmbedding — API errors', () => {
+    it('should throw with the HTTP status code when the Gemini API responds with a non-OK status', async () => {
+      // Arrange
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 401,
+        text: async () => 'Invalid API key',
+      });
+
+      // Act & Assert
+      await expect(service.getEmbedding('test text')).rejects.toThrow('Gemini API Error (401)');
+    });
+  });
+
+  describe('getEmbedding — network errors', () => {
+    it('should propagate the original error when a network failure occurs', async () => {
+      // Arrange
+      mockFetch.mockRejectedValueOnce(new Error('Network error'));
+
+      // Act & Assert
+      await expect(service.getEmbedding('test text')).rejects.toThrow('Network error');
+    });
   });
 });
