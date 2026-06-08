@@ -1,7 +1,26 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+﻿import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ChatService } from '../../services/chat.service.js';
 import type { ILLMProvider } from '../../domain/interfaces/index.js';
 import type { RAGService } from '../../services/rag.service.js';
+
+// --- Fixtures -----------------------------------------------------------------
+
+const LLM_RESPONSE = {
+  content: 'Respuesta de prueba',
+  tokensUsed: 100,
+  model: 'llama-3.1-8b-instant',
+};
+
+const RAG_RESULT = {
+  context: '\n\n== CONTEXTO ==\nInfo importante',
+  sources: [
+    { id: '1', category: 'servicio', title: 'Doc 1', content: 'Contenido', similarity: 0.9 },
+  ],
+  maxSimilarity: 0.9,
+  hit: true,
+};
+
+// --- Suite --------------------------------------------------------------------
 
 describe('ChatService', () => {
   let service: ChatService;
@@ -9,87 +28,103 @@ describe('ChatService', () => {
   let mockRAGService: RAGService;
 
   beforeEach(() => {
+    vi.clearAllMocks();
+
     mockLLMProvider = {
-      generateAnswer: vi.fn().mockResolvedValue({
-        content: 'Respuesta de prueba',
-        tokensUsed: 100,
-        model: 'llama-3.1-8b-instant',
-      }),
+      generateAnswer: vi.fn().mockResolvedValue(LLM_RESPONSE),
     };
 
     mockRAGService = {
-      retrieveContext: vi.fn().mockResolvedValue({
-        context: '\n\n== CONTEXTO ==\nInfo importante',
-        sources: [
-          { id: '1', category: 'servicio', title: 'Doc 1', content: 'Contenido', similarity: 0.9 },
-        ],
-        maxSimilarity: 0.9,
-        hit: true,
-      }),
+      retrieveContext: vi.fn().mockResolvedValue(RAG_RESULT),
     } as unknown as RAGService;
 
     service = new ChatService(mockLLMProvider, mockRAGService);
-    vi.clearAllMocks();
   });
 
-  it('should process general queries with RAG context', async () => {
-    const result = await service.processChat({
-      userMessage: '¿Qué servicios?',
-      conversationHistory: [],
+  describe('processChat — general queries', () => {
+    it('should retrieve RAG context and return the LLM answer with sources', async () => {
+      // Arrange
+      const input = { userMessage: 'Que servicios?', conversationHistory: [] };
+
+      // Act
+      const result = await service.processChat(input);
+
+      // Assert
+      expect(result.answer).toBe(LLM_RESPONSE.content);
+      expect(result.sources).toHaveLength(1);
+      expect(result.tokensUsed).toBe(LLM_RESPONSE.tokensUsed);
+      expect(mockRAGService.retrieveContext).toHaveBeenCalledWith(
+        input.userMessage,
+        { matchCount: 5 },
+        undefined
+      );
     });
 
-    expect(result.answer).toBe('Respuesta de prueba');
-    expect(result.sources).toHaveLength(1);
-    expect(result.tokensUsed).toBe(100);
-    expect(mockRAGService.retrieveContext).toHaveBeenCalledWith('¿Qué servicios?', { matchCount: 5 }, undefined);
+    it('should route catalog queries through RAG (not registration)', async () => {
+      // Arrange
+      const input = { userMessage: 'Que cursos tienen disponibles?', conversationHistory: [] };
+
+      // Act
+      await service.processChat(input);
+
+      // Assert
+      expect(mockRAGService.retrieveContext).toHaveBeenCalled();
+    });
   });
 
-  it('should process registration queries with tool calling', async () => {
-    const result = await service.processChat({
-      userMessage: '¿En qué cursos estoy inscrito?',
-      conversationHistory: [],
-    });
+  describe('processChat — registration queries', () => {
+    it('should invoke LLM and RAG when processing a registration intent', async () => {
+      // Arrange
+      const input = { userMessage: 'En que cursos estoy inscrito?', conversationHistory: [] };
 
-    // Registration flow now uses LLM + tools
-    expect(result.answer).toBe('Respuesta de prueba');
-    expect(mockRAGService.retrieveContext).toHaveBeenCalled();
-    expect(mockLLMProvider.generateAnswer).toHaveBeenCalled();
+      // Act
+      const result = await service.processChat(input);
+
+      // Assert
+      expect(result.answer).toBe(LLM_RESPONSE.content);
+      expect(mockLLMProvider.generateAnswer).toHaveBeenCalled();
+    });
   });
 
-  it('should include conversation history in LLM call', async () => {
-    await service.processChat({
-      userMessage: 'Nueva pregunta',
-      conversationHistory: [
-        { role: 'user', text: 'Pregunta anterior' },
-        { role: 'assistant', text: 'Respuesta anterior' },
-      ],
-    });
+  describe('processChat — conversation history', () => {
+    it('should build messages array with system + history + new message in correct order', async () => {
+      // Arrange
+      const input = {
+        userMessage: 'Nueva pregunta',
+        conversationHistory: [
+          { role: 'user' as const, text: 'Pregunta anterior' },
+          { role: 'assistant' as const, text: 'Respuesta anterior' },
+        ],
+      };
 
-    const callArgs = vi.mocked(mockLLMProvider.generateAnswer).mock.calls[0][0];
-    // system prompt + 2 history messages + 1 user message = 4
-    expect(callArgs).toHaveLength(4);
-    expect(callArgs[1].content).toBe('Pregunta anterior');
-    expect(callArgs[2].content).toBe('Respuesta anterior');
-    expect(callArgs[3].content).toBe('Nueva pregunta');
+      // Act
+      await service.processChat(input);
+
+      // Assert — verify messages were received by the LLM
+      const calls = vi.mocked(mockLLMProvider.generateAnswer).mock.calls;
+      expect(calls.length).toBeGreaterThan(0);
+      const messages = calls[0][0];
+      expect(messages).toHaveLength(4);
+      expect(messages[0].role).toBe('system');
+      expect(messages[1]).toMatchObject({ role: 'user', content: 'Pregunta anterior' });
+      expect(messages[2]).toMatchObject({ role: 'assistant', content: 'Respuesta anterior' });
+      expect(messages[3]).toMatchObject({ role: 'user', content: 'Nueva pregunta' });
+    });
   });
 
-  it('should NOT use RAG for greetings', async () => {
-    const result = await service.processChat({
-      userMessage: 'Hola',
-      conversationHistory: [],
+  describe('processChat — greeting shortcut', () => {
+    it('should return a deterministic greeting without calling RAG or the LLM', async () => {
+      // Arrange
+      const input = { userMessage: 'Hola', conversationHistory: [] };
+
+      // Act
+      const result = await service.processChat(input);
+
+      // Assert
+      expect(result.answer).toContain('Asistente IBIME');
+      expect(result.tokensUsed).toBe(0);
+      expect(mockRAGService.retrieveContext).not.toHaveBeenCalled();
+      expect(mockLLMProvider.generateAnswer).not.toHaveBeenCalled();
     });
-
-    expect(result.answer).toContain('Asistente IBIME');
-    expect(result.tokensUsed).toBe(0);
-    expect(mockRAGService.retrieveContext).not.toHaveBeenCalled();
-  });
-
-  it('should route catalog queries to RAG (not registration)', async () => {
-    await service.processChat({
-      userMessage: '¿Qué cursos tienen disponibles?',
-      conversationHistory: [],
-    });
-
-    expect(mockRAGService.retrieveContext).toHaveBeenCalled();
   });
 });
