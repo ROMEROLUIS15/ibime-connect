@@ -1,5 +1,7 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+﻿import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { LLMMessage, ITool } from '../../../domain/interfaces/index.js';
+
+// --- Module-level mocks (hoisted before imports) ------------------------------
 
 const mockFetch = vi.fn();
 global.fetch = mockFetch as unknown as typeof fetch;
@@ -8,36 +10,38 @@ vi.mock('../../../config/env.config.js', () => ({
   ENV: { GROQ_API_KEY: 'test-groq-key' },
 }));
 
-// Mock para el rate limiter para permitir todas las solicitudes
-vi.mock('../../../infrastructure/providers/groq-rate-limiter.js', () => {
-  return {
-    groqRateLimiter: {
-      canProceed: vi.fn().mockResolvedValue({ ok: true, waitMs: 0 }),
-      recordUsage: vi.fn(),
-    }
-  };
-});
+vi.mock('../../../infrastructure/providers/groq-rate-limiter.js', () => ({
+  groqRateLimiter: {
+    canProceed: vi.fn().mockResolvedValue({ ok: true, waitMs: 0 }),
+    recordUsage: vi.fn(),
+  },
+}));
 
 import { GroqProvider } from '../../../infrastructure/providers/groq.provider.js';
+
+// --- Fixtures -----------------------------------------------------------------
 
 const SAMPLE_MESSAGES: LLMMessage[] = [
   { role: 'system', content: 'You are a helpful assistant.' },
   { role: 'user', content: 'Hello' },
 ];
 
-function mockGroqResponse(overrides: Partial<any> = {}) {
+/** Builds a minimal valid Groq API response, merging any field overrides. */
+function buildGroqResponse(messageOverrides: Partial<Record<string, unknown>> = {}) {
   return {
     choices: [{
       message: {
         content: 'Hello! How can I help you?',
         tool_calls: null,
-        ...overrides,
+        ...messageOverrides,
       },
     }],
     usage: { total_tokens: 50 },
     model: 'llama-3.1-8b-instant',
   };
 }
+
+// --- Suite --------------------------------------------------------------------
 
 describe('GroqProvider', () => {
   let provider: GroqProvider;
@@ -47,148 +51,142 @@ describe('GroqProvider', () => {
     provider = new GroqProvider();
   });
 
-  afterEach(() => {
-    vi.useRealTimers();
-  });
+  describe('generateAnswer — successful responses', () => {
+    it('should return content, tokensUsed, model, and null toolCalls from a plain text response', async () => {
+      // Arrange
+      mockFetch.mockResolvedValueOnce({ ok: true, json: async () => buildGroqResponse() });
 
-  describe('generateAnswer', () => {
-    it('should return content from a successful response', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockGroqResponse(),
-      });
-
+      // Act
       const result = await provider.generateAnswer(SAMPLE_MESSAGES);
 
+      // Assert
       expect(result.content).toBe('Hello! How can I help you?');
       expect(result.tokensUsed).toBe(50);
       expect(result.model).toBe('llama-3.1-8b-instant');
       expect(result.toolCalls).toBeNull();
     });
 
-    it('should return toolCalls when LLM requests them', async () => {
+    it('should return non-null toolCalls and null content when the LLM requests a tool call', async () => {
+      // Arrange
       const toolCalls = [{ id: 'tc1', function: { name: 'check_registration', arguments: '{}' } }];
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: async () => mockGroqResponse({ content: null, tool_calls: toolCalls }),
+        json: async () => buildGroqResponse({ content: null, tool_calls: toolCalls }),
       });
 
+      // Act
       const result = await provider.generateAnswer(SAMPLE_MESSAGES);
 
+      // Assert
       expect(result.content).toBeNull();
       expect(result.toolCalls).toEqual(toolCalls);
     });
 
-    it('should send tools in payload when provided', async () => {
+    it('should default tokensUsed to 0 when the usage object is absent from the response', async () => {
+      // Arrange
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ choices: [{ message: { content: 'Hi' } }] }),
+      });
+
+      // Act
+      const result = await provider.generateAnswer(SAMPLE_MESSAGES);
+
+      // Assert
+      expect(result.tokensUsed).toBe(0);
+    });
+
+    it('should return 0 tokensUsed when usage.total_tokens is zero', async () => {
+      // Arrange
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ ...buildGroqResponse(), usage: { total_tokens: 0 } }),
+      });
+
+      // Act
+      const result = await provider.generateAnswer(SAMPLE_MESSAGES);
+
+      // Assert
+      expect(result.tokensUsed).toBe(0);
+    });
+  });
+
+  describe('generateAnswer — request payload construction', () => {
+    it('should include the Authorization header with the configured API key', async () => {
+      // Arrange
+      mockFetch.mockResolvedValueOnce({ ok: true, json: async () => buildGroqResponse() });
+
+      // Act
+      await provider.generateAnswer(SAMPLE_MESSAGES);
+
+      // Assert
+      const callHeaders = mockFetch.mock.calls[0][1].headers;
+      expect(callHeaders['Authorization']).toBe('Bearer test-groq-key');
+    });
+
+    it('should use default temperature=0.6 and maxTokens=350 when no options are passed', async () => {
+      // Arrange
+      mockFetch.mockResolvedValueOnce({ ok: true, json: async () => buildGroqResponse() });
+
+      // Act
+      await provider.generateAnswer(SAMPLE_MESSAGES);
+
+      // Assert
+      const payload = JSON.parse(mockFetch.mock.calls[0][1].body);
+      expect(payload.temperature).toBe(0.6);
+      expect(payload.max_tokens).toBe(350);
+    });
+
+    it('should override temperature and maxTokens when custom options are provided', async () => {
+      // Arrange
+      mockFetch.mockResolvedValueOnce({ ok: true, json: async () => buildGroqResponse() });
+
+      // Act
+      await provider.generateAnswer(SAMPLE_MESSAGES, { temperature: 0.2, maxTokens: 200 });
+
+      // Assert
+      const payload = JSON.parse(mockFetch.mock.calls[0][1].body);
+      expect(payload.temperature).toBe(0.2);
+      expect(payload.max_tokens).toBe(200);
+    });
+
+    it('should omit the tools field from the payload when no tools are provided', async () => {
+      // Arrange
+      mockFetch.mockResolvedValueOnce({ ok: true, json: async () => buildGroqResponse() });
+
+      // Act
+      await provider.generateAnswer(SAMPLE_MESSAGES);
+
+      // Assert
+      const payload = JSON.parse(mockFetch.mock.calls[0][1].body);
+      expect(payload.tools).toBeUndefined();
+    });
+
+    it('should include serialized tools and tool_choice="auto" in the payload when tools are provided', async () => {
+      // Arrange
       const tools: ITool[] = [{
         name: 'check_registration',
         description: 'Check user registrations',
         parameters: { type: 'object', properties: { email: { type: 'string' } } },
         execute: async () => ({}),
       }];
-
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: async () => mockGroqResponse({ content: null, tool_calls: [{ id: 'tc1' }] }),
+        json: async () => buildGroqResponse({ content: null, tool_calls: [{ id: 'tc1' }] }),
       });
 
+      // Act
       await provider.generateAnswer(SAMPLE_MESSAGES, { tools });
 
-      const callArgs = mockFetch.mock.calls[0][1];
-      const payload = JSON.parse(callArgs.body);
+      // Assert
+      const payload = JSON.parse(mockFetch.mock.calls[0][1].body);
       expect(payload.tools).toHaveLength(1);
       expect(payload.tools[0].function.name).toBe('check_registration');
       expect(payload.tool_choice).toBe('auto');
     });
 
-    it('should not include tools in payload when none provided', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockGroqResponse(),
-      });
-
-      await provider.generateAnswer(SAMPLE_MESSAGES);
-
-      const callArgs = mockFetch.mock.calls[0][1];
-      const payload = JSON.parse(callArgs.body);
-      expect(payload.tools).toBeUndefined();
-    });
-
-    it('should use default temperature and maxTokens', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockGroqResponse(),
-      });
-
-      await provider.generateAnswer(SAMPLE_MESSAGES);
-
-      const callArgs = mockFetch.mock.calls[0][1];
-      const payload = JSON.parse(callArgs.body);
-      expect(payload.temperature).toBe(0.6);
-      expect(payload.max_tokens).toBe(350); // Changed from default 800 to 350 after v2.3.0 token budget reduction
-    });
-
-    it('should use custom temperature and maxTokens when provided', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockGroqResponse(),
-      });
-
-      await provider.generateAnswer(SAMPLE_MESSAGES, { temperature: 0.2, maxTokens: 200 });
-
-      const callArgs = mockFetch.mock.calls[0][1];
-      const payload = JSON.parse(callArgs.body);
-      expect(payload.temperature).toBe(0.2);
-      expect(payload.max_tokens).toBe(200);
-    });
-
-    it('should throw on empty string content (treated as empty response)', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockGroqResponse({ content: '' }),
-      });
-
-      // Empty string is falsy in JS, so provider throws "Empty response from Groq"
-      await expect(provider.generateAnswer(SAMPLE_MESSAGES)).rejects.toThrow('Empty response from Groq');
-    });
-
-    it('should throw on empty response (no content, no toolCalls)', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockGroqResponse({ content: null, tool_calls: null }),
-      });
-
-      await expect(provider.generateAnswer(SAMPLE_MESSAGES)).rejects.toThrow('Empty response from Groq');
-    });
-
-    it('should throw on API error response', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        status: 400, // Changed to 400 instead of 429 to avoid the 429 special handling
-        text: async () => 'Bad Request',
-      });
-
-      await expect(provider.generateAnswer(SAMPLE_MESSAGES)).rejects.toThrow('Groq API Error (400)');
-    });
-
-    it('should throw timeout message on AbortError', async () => {
-      mockFetch.mockRejectedValueOnce(new DOMException('The operation was aborted', 'AbortError'));
-
-      await expect(provider.generateAnswer(SAMPLE_MESSAGES)).rejects.toThrow('Groq request timeout (25s)');
-    });
-
-    it('should handle network error gracefully', async () => {
-      mockFetch.mockRejectedValueOnce(new Error('Network error'));
-
-      await expect(provider.generateAnswer(SAMPLE_MESSAGES)).rejects.toThrow('Network error');
-    });
-
-    it('should remap messages with tool_call_id and tool_calls', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockGroqResponse(),
-      });
-
+    it('should correctly remap tool_calls and tool_call_id fields in multi-turn tool messages', async () => {
+      // Arrange
       const messagesWithTool: LLMMessage[] = [
         { role: 'user', content: 'Check my registrations' },
         {
@@ -198,55 +196,64 @@ describe('GroqProvider', () => {
         },
         { role: 'tool', content: 'No registrations found', name: 'check', tool_call_id: 'tc1' },
       ];
+      mockFetch.mockResolvedValueOnce({ ok: true, json: async () => buildGroqResponse() });
 
+      // Act
       await provider.generateAnswer(messagesWithTool);
 
-      const callArgs = mockFetch.mock.calls[0][1];
-      const payload = JSON.parse(callArgs.body);
+      // Assert
+      const payload = JSON.parse(mockFetch.mock.calls[0][1].body);
       expect(payload.messages[1].tool_calls).toBeDefined();
       expect(payload.messages[2].tool_call_id).toBe('tc1');
       expect(payload.messages[2].name).toBe('check');
     });
+  });
 
-    it('should include Authorization header with API key', async () => {
+  describe('generateAnswer — error handling', () => {
+    it('should throw "Empty response from Groq" when content is an empty string', async () => {
+      // Arrange
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: async () => mockGroqResponse(),
+        json: async () => buildGroqResponse({ content: '' }),
       });
 
-      await provider.generateAnswer(SAMPLE_MESSAGES);
-
-      const callArgs = mockFetch.mock.calls[0][1];
-      expect(callArgs.headers['Authorization']).toBe('Bearer test-groq-key');
+      // Act & Assert
+      await expect(provider.generateAnswer(SAMPLE_MESSAGES)).rejects.toThrow('Empty response from Groq');
     });
 
-    it('should handle response with zero tokens', async () => {
+    it('should throw "Empty response from Groq" when both content and toolCalls are null', async () => {
+      // Arrange
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: async () => ({
-          ...mockGroqResponse(),
-          usage: { total_tokens: 0 },
-        }),
+        json: async () => buildGroqResponse({ content: null, tool_calls: null }),
       });
 
-      const result = await provider.generateAnswer(SAMPLE_MESSAGES);
-      expect(result.tokensUsed).toBe(0);
+      // Act & Assert
+      await expect(provider.generateAnswer(SAMPLE_MESSAGES)).rejects.toThrow('Empty response from Groq');
     });
 
-    it('should handle response with missing usage object', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          choices: [{ message: { content: 'Hi' } }],
-        }),
-      });
+    it('should throw "Groq API Error (400)" when the API responds with a non-OK HTTP status', async () => {
+      // Arrange
+      mockFetch.mockResolvedValueOnce({ ok: false, status: 400, text: async () => 'Bad Request' });
 
-      const result = await provider.generateAnswer(SAMPLE_MESSAGES);
-      expect(result.tokensUsed).toBe(0);
+      // Act & Assert
+      await expect(provider.generateAnswer(SAMPLE_MESSAGES)).rejects.toThrow('Groq API Error (400)');
     });
 
-    // Tests for 429 handling
-    // Skipping this test temporarily due to complexity of mocking Response objects
-    // TODO: Implement a more robust test for 429 handling in the future
+    it('should throw "Groq request timeout (25s)" when fetch is aborted', async () => {
+      // Arrange
+      mockFetch.mockRejectedValueOnce(new DOMException('The operation was aborted', 'AbortError'));
+
+      // Act & Assert
+      await expect(provider.generateAnswer(SAMPLE_MESSAGES)).rejects.toThrow('Groq request timeout (25s)');
+    });
+
+    it('should propagate the original error message on a network failure', async () => {
+      // Arrange
+      mockFetch.mockRejectedValueOnce(new Error('Network error'));
+
+      // Act & Assert
+      await expect(provider.generateAnswer(SAMPLE_MESSAGES)).rejects.toThrow('Network error');
+    });
   });
 });

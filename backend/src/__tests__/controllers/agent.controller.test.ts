@@ -1,81 +1,89 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+﻿import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { AgentController } from '../../controllers/agent.controller.js';
 import type { CurationGraph } from '../../modules/agents/curation-graph.js';
 import type { Request, Response, NextFunction } from 'express';
 
+// --- Constants ----------------------------------------------------------------
+
+const CURATED_ITEM = {
+  title: 'Curso Merida',
+  category: 'curso',
+  content: 'Curso de pintura al oleo tradicional.',
+  keyDetails: 'Sabados',
+};
+
+const SAMPLE_CURATE_RESULT = {
+  approved: true,
+  iterations: 1,
+  conflicts: [],
+  extractedItems: [CURATED_ITEM],
+};
+
+// --- Suite --------------------------------------------------------------------
+
 describe('AgentController', () => {
   let controller: AgentController;
   let mockCurationGraph: CurationGraph;
-  let mockRequest: Partial<Request>;
-  let mockResponse: Partial<Response>;
+  let mockRes: Partial<Response>;
   let mockNext: NextFunction;
 
   beforeEach(() => {
+    vi.clearAllMocks();
+
     mockCurationGraph = {
-      curate: vi.fn().mockResolvedValue({
-        approved: true,
-        iterations: 1,
-        conflicts: [],
-        extractedItems: [
-          {
-            title: "Curso Mérida",
-            category: "curso",
-            content: "Curso de pintura al óleo tradicional.",
-            keyDetails: "Sábados"
-          }
-        ]
-      })
+      curate: vi.fn().mockResolvedValue(SAMPLE_CURATE_RESULT),
     } as unknown as CurationGraph;
 
     controller = new AgentController(mockCurationGraph);
 
-    mockRequest = {
-      body: {},
-    };
-
-    mockResponse = {
+    mockRes = {
       status: vi.fn().mockReturnThis(),
       json: vi.fn().mockReturnThis(),
     };
 
     mockNext = vi.fn();
-    vi.clearAllMocks();
   });
 
-  it('debería retornar 400 si no se provee el texto en el body', async () => {
-    mockRequest.body = { text: '' };
+  describe('handleCurationRequest', () => {
+    it('should forward a BadRequestError to next() when the body text is empty', async () => {
+      // Arrange
+      const req = { body: { text: '' } } as Request;
 
-    await controller.handleCurationRequest(
-      mockRequest as Request,
-      mockResponse as Response,
-      mockNext
-    );
+      // Act
+      await controller.handleCurationRequest(req, mockRes as Response, mockNext);
 
-    expect(mockNext).toHaveBeenCalledWith(expect.objectContaining({
-      statusCode: 400,
-      message: 'Debe proveer el texto del documento a analizar en el cuerpo (text).'
-    }));
-  });
+      // Assert
+      expect(mockNext).toHaveBeenCalledWith(
+        expect.objectContaining({
+          statusCode: 400,
+          message: 'Debe proveer el texto del documento a analizar en el cuerpo (text).',
+        })
+      );
+      expect(mockRes.status).not.toHaveBeenCalled();
+    });
 
-  it('debería retornar 200 con el reporte de curación si el texto es válido', async () => {
-    mockRequest.body = { text: 'Texto de prueba del catálogo de Mérida' };
+    it('should return 200 with the structured curation report when the body text is valid', async () => {
+      // Arrange
+      const inputText = 'Texto de prueba del catalogo de Merida';
+      const req = { body: { text: inputText } } as Request;
 
-    await controller.handleCurationRequest(
-      mockRequest as Request,
-      mockResponse as Response,
-      mockNext
-    );
+      // Act
+      await controller.handleCurationRequest(req, mockRes as Response, mockNext);
 
-    expect(mockCurationGraph.curate).toHaveBeenCalledWith(
-      'Texto de prueba del catálogo de Mérida',
-      undefined
-    );
-    expect(mockResponse.status).toHaveBeenCalledWith(200);
-    expect(mockResponse.json).toHaveBeenCalledWith(expect.objectContaining({
-      success: true,
-      iterations: 1,
-      conflicts: [],
-      items: expect.any(Array)
-    }));
+      // Assert — curate was called with the exact input
+      expect(mockCurationGraph.curate).toHaveBeenCalledWith(inputText, undefined);
+
+      // Assert — response shape matches curation contract
+      expect(mockRes.status).toHaveBeenCalledWith(200);
+      expect(mockRes.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: true,
+          iterations: SAMPLE_CURATE_RESULT.iterations,
+          conflicts: SAMPLE_CURATE_RESULT.conflicts,
+          items: expect.any(Array),
+        })
+      );
+      expect(mockNext).not.toHaveBeenCalled();
+    });
   });
 });

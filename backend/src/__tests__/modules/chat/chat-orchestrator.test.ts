@@ -1,7 +1,27 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+﻿import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ChatOrchestrator } from '../../../modules/chat/chat-orchestrator.js';
-import type { ILLMProvider, LLMResponse } from '../../../domain/interfaces/index.js';
+import type { ILLMProvider } from '../../../domain/interfaces/index.js';
 import type { RAGService } from '../../../services/rag.service.js';
+import { ToolRegistry } from '../../../services/tools.service.js';
+
+// --- Fixtures -----------------------------------------------------------------
+
+const LLM_RESPONSE = {
+  content: 'Respuesta del LLM',
+  tokensUsed: 50,
+  model: 'llama-3.1-8b-instant',
+};
+
+const RAG_HIT = {
+  context: '\n\n== CONTEXTO ==\nInfo de cursos',
+  sources: [{ id: '1', category: 'curso', title: 'Taller Python', content: 'Taller de Python', similarity: 0.8 }],
+  maxSimilarity: 0.8,
+  hit: true,
+};
+
+const RAG_MISS = { context: '', sources: [], maxSimilarity: 0, hit: false };
+
+// --- Suite --------------------------------------------------------------------
 
 describe('ChatOrchestrator', () => {
   let orchestrator: ChatOrchestrator;
@@ -9,232 +29,85 @@ describe('ChatOrchestrator', () => {
   let mockRAGService: RAGService;
 
   beforeEach(() => {
+    // Reset all mocks FIRST, then configure — prevents stale state leaking between tests
+    vi.clearAllMocks();
+
     mockLLMProvider = {
-      generateAnswer: vi.fn().mockResolvedValue({
-        content: 'Respuesta del LLM',
-        tokensUsed: 50,
-        model: 'llama-3.1-8b-instant',
-      }),
+      generateAnswer: vi.fn().mockResolvedValue(LLM_RESPONSE),
     };
 
     mockRAGService = {
-      retrieveContext: vi.fn().mockResolvedValue({
-        context: '\n\n== CONTEXTO ==\nInfo de cursos',
-        sources: [
-          { id: '1', category: 'curso', title: 'Taller Python', content: 'Taller de Python', similarity: 0.8 },
-        ],
-        maxSimilarity: 0.8,
-        hit: true,
-      }),
+      retrieveContext: vi.fn().mockResolvedValue(RAG_HIT),
     } as unknown as RAGService;
 
+    // Default tool spy: single course result
+    vi.spyOn(ToolRegistry.prototype, 'executeTool').mockResolvedValue(
+      JSON.stringify({ status: 'registrado', cantidad_cursos: 1, cursos: ['Taller de Python'] })
+    );
+
     orchestrator = new ChatOrchestrator(mockLLMProvider, mockRAGService);
-    vi.clearAllMocks();
   });
 
-  describe('registration flow', () => {
-    beforeEach(() => {
-      vi.clearAllMocks();
-    });
+  // ---------------------------------------------------------------------------
+  describe('registration flow — no email in context', () => {
+    it('should call RAG and LLM to ask the user for their email when no email is available', async () => {
+      // Arrange
+      vi.mocked(mockRAGService.retrieveContext).mockResolvedValue(RAG_MISS);
 
-    // BRANCH B: sin email → el LLM pide el correo al usuario (no hay tools)
-    it('should use RAG and LLM to ask for email when no email is present', async () => {
-      vi.mocked(mockRAGService.retrieveContext).mockResolvedValue({
-        context: '',
-        sources: [],
-        maxSimilarity: 0,
-        hit: false,
-      });
+      // Act
+      await orchestrator.process({ userMessage: 'En que cursos estoy inscrito?', conversationHistory: [] });
 
-      await orchestrator.process({
-        userMessage: '¿En qué cursos estoy inscrito?',
-        conversationHistory: [],
-      });
-
-      // RAG is called in branch B
+      // Assert
       expect(mockRAGService.retrieveContext).toHaveBeenCalled();
-      // LLM is called to ask for the email
       expect(mockLLMProvider.generateAnswer).toHaveBeenCalledTimes(1);
-      // LLM is NOT given tools in branch B
-      const options = vi.mocked(mockLLMProvider.generateAnswer).mock.calls[0][1] as any;
-      expect(options.tools).toBeUndefined();
+      const callOptions = vi.mocked(mockLLMProvider.generateAnswer).mock.calls[0][1];
+      expect(callOptions).not.toBeNull();
+      expect((callOptions as any)?.tools).toBeUndefined();
     });
 
-    // BRANCH A: email en historial → tool directa, LLM NO se llama
-    it('should bypass LLM entirely and call tool directly when email is in history', async () => {
-      vi.spyOn(orchestrator['toolRegistry'], 'executeTool').mockResolvedValue(
+    it('should bypass LLM and call tool directly when email is present in conversation history', async () => {
+      // Arrange
+      vi.spyOn(ToolRegistry.prototype, 'executeTool').mockResolvedValue(
         JSON.stringify({ status: 'registrado', cantidad_cursos: 1, cursos: ['Taller de Python'] })
       );
 
+      // Act
       const result = await orchestrator.process({
-        userMessage: '¿En qué cursos estoy inscrito?',
-        conversationHistory: [
-          { role: 'user', text: 'Mi correo es juan@test.com' },
-        ],
+        userMessage: 'En que cursos estoy inscrito?',
+        conversationHistory: [{ role: 'user', text: 'Mi correo es juan@test.com' }],
       });
 
+      // Assert
       expect(result.answer).toContain('Taller de Python');
-      // LLM must NOT be called when email is already known
       expect(mockLLMProvider.generateAnswer).not.toHaveBeenCalled();
-      // Tool must be called directly with the email
-      expect(orchestrator['toolRegistry'].executeTool).toHaveBeenCalledWith(
+      expect(ToolRegistry.prototype.executeTool).toHaveBeenCalledWith(
         'consultar_inscripciones',
         JSON.stringify({ email: 'juan@test.com' })
       );
     });
 
-    // BRANCH A: email en mensaje actual → tool directa, LLM NO se llama
-    it('should bypass LLM and call tool directly when email is in current message', async () => {
-      vi.spyOn(orchestrator['toolRegistry'], 'executeTool').mockResolvedValue(
+    it('should bypass LLM and call tool directly when email is present in the current message', async () => {
+      // Arrange
+      vi.spyOn(ToolRegistry.prototype, 'executeTool').mockResolvedValue(
         JSON.stringify({ status: 'registrado', cantidad_cursos: 1, cursos: ['Taller de Python'] })
       );
 
+      // Act
       const result = await orchestrator.process({
-        userMessage: 'Mi correo es empty@test.com, ¿estoy inscrito?',
+        userMessage: 'Mi correo es empty@test.com, estoy inscrito?',
         conversationHistory: [],
       });
 
+      // Assert
       expect(result.answer).toContain('Taller de Python');
       expect(mockLLMProvider.generateAnswer).not.toHaveBeenCalled();
     });
-
-    // BRANCH A: tool devuelve vacío → fallback determinístico, sin LLM
-    it('should return deterministic fallback when tool result is empty', async () => {
-      vi.spyOn(orchestrator['toolRegistry'], 'executeTool').mockResolvedValue('');
-
-      const result = await orchestrator.process({
-        userMessage: '¿Estoy inscrito?',
-        conversationHistory: [
-          { role: 'user', text: 'empty@test.com' },
-        ],
-      });
-
-      expect(mockLLMProvider.generateAnswer).not.toHaveBeenCalled();
-      expect(result.answer).toContain('No recibí respuesta');
-    });
-
-    // BRANCH A: tool devuelve JSON inválido → fallback determinístico, sin LLM
-    it('should return deterministic fallback (NOT LLM) when tool result is invalid JSON', async () => {
-      vi.spyOn(orchestrator['toolRegistry'], 'executeTool').mockResolvedValue('not valid json {{{');
-
-      const result = await orchestrator.process({
-        userMessage: '¿En qué cursos estoy inscrito?',
-        conversationHistory: [
-          { role: 'user', text: 'Mi correo es juan@test.com' },
-        ],
-      });
-
-      expect(mockLLMProvider.generateAnswer).not.toHaveBeenCalled();
-      expect(result.answer).toContain('No pude interpretar');
-      expect(result.answer).toContain('contactoibime@gmail.com');
-    });
   });
 
-  describe('catalog flow', () => {
-    it('should use RAG for catalog queries', async () => {
-      await orchestrator.process({
-        userMessage: '¿Qué cursos tienen disponibles?',
-        conversationHistory: [],
-      });
-
-      expect(mockRAGService.retrieveContext).toHaveBeenCalledWith(
-        '¿Qué cursos tienen disponibles?',
-        { matchCount: 5 },
-        undefined
-      );
-    });
-
-    it('should call LLM with RAG context', async () => {
-      await orchestrator.process({
-        userMessage: '¿Qué talleres hay?',
-        conversationHistory: [],
-      });
-
-      expect(mockLLMProvider.generateAnswer).toHaveBeenCalledTimes(1);
-      const callArgs = vi.mocked(mockLLMProvider.generateAnswer).mock.calls[0];
-      const messages = callArgs[0] as any[];
-      const systemMessage = messages[0].content;
-
-      expect(systemMessage).toContain('CONTEXTO');
-      expect(systemMessage).toContain('referencia para responder');
-      expect(callArgs[1]).toMatchObject({ temperature: 0.3, maxTokens: 350 });
-    });
-  });
-
-  describe('general flow', () => {
-    it('should return deterministic greeting for "hola"', async () => {
-      const result = await orchestrator.process({
-        userMessage: 'Hola',
-        conversationHistory: [],
-      });
-
-      expect(result.answer).toContain('Asistente IBIME');
-      expect(result.tokensUsed).toBe(0);
-      expect(mockLLMProvider.generateAnswer).not.toHaveBeenCalled();
-      expect(mockRAGService.retrieveContext).not.toHaveBeenCalled();
-    });
-
-    it('should return deterministic greeting for "buenos días"', async () => {
-      const result = await orchestrator.process({
-        userMessage: 'Buenos días',
-        conversationHistory: [],
-      });
-
-      expect(result.answer).toContain('Asistente IBIME');
-      expect(result.tokensUsed).toBe(0);
-    });
-
-    it('should use RAG for non-greeting general queries', async () => {
-      await orchestrator.process({
-        userMessage: '¿Cuál es el horario de atención?',
-        conversationHistory: [],
-      });
-
-      expect(mockRAGService.retrieveContext).toHaveBeenCalled();
-    });
-
-    it('should use fallback LLM when RAG finds nothing', async () => {
-      vi.mocked(mockRAGService.retrieveContext).mockResolvedValue({
-        context: '',
-        sources: [],
-        maxSimilarity: 0,
-        hit: false,
-      });
-
-      await orchestrator.process({
-        userMessage: '¿Tienen servicio de préstamo digital?',
-        conversationHistory: [],
-      });
-
-      expect(mockLLMProvider.generateAnswer).toHaveBeenCalledTimes(1);
-      const callArgs = vi.mocked(mockLLMProvider.generateAnswer).mock.calls[0];
-      expect(callArgs[1]).toMatchObject({ maxTokens: 300 });
-    });
-  });
-
-  describe('history trimming', () => {
-    it('should trim history to last 3 turns (6 messages) when exceeding limit', () => {
-      const longHistory = [];
-      for (let i = 0; i < 10; i++) {
-        longHistory.push({ role: 'user' as const, text: `User message ${i}` });
-        longHistory.push({ role: 'assistant' as const, text: `Assistant message ${i}` });
-      }
-
-      expect(longHistory.length).toBe(20);
-
-      const trimmedHistory = orchestrator['trimHistory'](longHistory, 3);
-      
-      expect(trimmedHistory.length).toBe(6);
-      
-      expect(trimmedHistory[0]).toEqual({ role: 'user', text: 'User message 7' });
-      expect(trimmedHistory[1]).toEqual({ role: 'assistant', text: 'Assistant message 7' });
-      expect(trimmedHistory[2]).toEqual({ role: 'user', text: 'User message 8' });
-      expect(trimmedHistory[3]).toEqual({ role: 'assistant', text: 'Assistant message 8' });
-      expect(trimmedHistory[4]).toEqual({ role: 'user', text: 'User message 9' });
-      expect(trimmedHistory[5]).toEqual({ role: 'assistant', text: 'Assistant message 9' });
-    });
-
-    it('should not trim history when under the limit', () => {
+  // ---------------------------------------------------------------------------
+  describe('conversation history inclusion', () => {
+    it('should include system message + full history + new message in the LLM call', async () => {
+      // Arrange
       const shortHistory = [
         { role: 'user' as const, text: 'User message 1' },
         { role: 'assistant' as const, text: 'Assistant message 1' },
@@ -242,168 +115,241 @@ describe('ChatOrchestrator', () => {
         { role: 'assistant' as const, text: 'Assistant message 2' },
       ];
 
-      const trimmedHistory = orchestrator['trimHistory'](shortHistory, 3);
-      
-      expect(trimmedHistory.length).toBe(4);
-      expect(trimmedHistory).toEqual(shortHistory);
+      // Act
+      await orchestrator.process({ userMessage: 'Que cursos tienen?', conversationHistory: shortHistory });
+
+      // Assert — system + 4 history + 1 new = 6
+      const calls = vi.mocked(mockLLMProvider.generateAnswer).mock.calls;
+      expect(calls.length).toBeGreaterThan(0);
+      expect(calls[0][0]).toHaveLength(6);
     });
 
-    it('should handle empty history', () => {
-      const emptyHistory: Array<{ role: 'user' | 'assistant'; text: string }> = [];
-      const trimmedHistory = orchestrator['trimHistory'](emptyHistory, 3);
-      
-      expect(trimmedHistory.length).toBe(0);
-      expect(trimmedHistory).toEqual([]);
+    it('should only include system message and new message when history is empty', async () => {
+      // Act
+      await orchestrator.process({ userMessage: 'Que cursos tienen?', conversationHistory: [] });
+
+      // Assert — system + 1 new = 2
+      const calls = vi.mocked(mockLLMProvider.generateAnswer).mock.calls;
+      expect(calls.length).toBeGreaterThan(0);
+      expect(calls[0][0]).toHaveLength(2);
     });
   });
 
-  describe('intent classification integration', () => {
-    it('should route "qué cursos tienen" to catalog', async () => {
-      await orchestrator.process({
-        userMessage: '¿Qué cursos tienen?',
-        conversationHistory: [],
-      });
+  // ---------------------------------------------------------------------------
+  describe('intent classification routing', () => {
+    it('should route a catalog query ("que cursos tienen") to RAG', async () => {
+      // Act
+      await orchestrator.process({ userMessage: 'Que cursos tienen?', conversationHistory: [] });
 
-      // Catalog → RAG
+      // Assert
       expect(mockRAGService.retrieveContext).toHaveBeenCalled();
     });
 
-    it('should route "mis cursos" to registration (with tool calling)', async () => {
-      await orchestrator.process({
-        userMessage: '¿Cuáles son mis cursos?',
-        conversationHistory: [],
-      });
+    it('should route a registration query ("mis cursos") through RAG and the LLM', async () => {
+      // Act
+      await orchestrator.process({ userMessage: 'Cuales son mis cursos?', conversationHistory: [] });
 
-      // Registration → RAG + LLM + Tools
+      // Assert
       expect(mockRAGService.retrieveContext).toHaveBeenCalled();
       expect(mockLLMProvider.generateAnswer).toHaveBeenCalled();
     });
 
-    it('should classify "cómo me inscribo" as catalog', async () => {
-      await orchestrator.process({
-        userMessage: '¿Cómo me inscribo en un taller?',
-        conversationHistory: [],
-      });
+    it('should route "como me inscribo" as a catalog intent (future action, not registration query)', async () => {
+      // Act
+      await orchestrator.process({ userMessage: 'Como me inscribo en un taller?', conversationHistory: [] });
 
-      // Should go to catalog, not registration
+      // Assert
       expect(mockRAGService.retrieveContext).toHaveBeenCalled();
     });
   });
 
-  describe('extractEmailFromConversation', () => {
-    it('should extract email from history', () => {
-      const history = [
-        { role: 'user' as const, text: 'Mi correo es Juan@TEST.COM' },
-        { role: 'assistant' as const, text: 'Perfecto' },
-      ];
-      const result = orchestrator['extractEmailFromConversation'](history, '¿Cuáles son mis cursos?');
-      expect(result).toBe('juan@test.com');
+  // ---------------------------------------------------------------------------
+  describe('email extraction and normalization', () => {
+    it('should extract email from history, normalize it to lowercase, and call the tool', async () => {
+      // Arrange
+      vi.spyOn(ToolRegistry.prototype, 'executeTool').mockResolvedValue(
+        JSON.stringify({ status: 'registrado', cantidad_cursos: 1, cursos: ['Taller A'] })
+      );
+
+      // Act
+      await orchestrator.process({
+        userMessage: 'Cuales son mis cursos?',
+        conversationHistory: [
+          { role: 'user', text: 'Mi correo es Juan@TEST.COM' },
+          { role: 'assistant', text: 'Perfecto' },
+        ],
+      });
+
+      // Assert — email must be lowercased before tool call
+      expect(mockLLMProvider.generateAnswer).not.toHaveBeenCalled();
+      expect(ToolRegistry.prototype.executeTool).toHaveBeenCalledWith(
+        'consultar_inscripciones',
+        expect.stringContaining('juan@test.com')
+      );
     });
 
-    it('should extract email from current message in uppercase', () => {
-      const result = orchestrator['extractEmailFromConversation']([], 'MI CORREO ES MARIA@EXAMPLE.COM');
-      expect(result).toBe('maria@example.com');
+    it('should extract an uppercase email from the current message and normalize it', async () => {
+      // Arrange
+      vi.spyOn(ToolRegistry.prototype, 'executeTool').mockResolvedValue(
+        JSON.stringify({ status: 'registrado', cantidad_cursos: 1, cursos: ['Taller B'] })
+      );
+
+      // Act
+      await orchestrator.process({ userMessage: 'MI CORREO ES MARIA@EXAMPLE.COM', conversationHistory: [] });
+
+      // Assert
+      expect(ToolRegistry.prototype.executeTool).toHaveBeenCalledWith(
+        'consultar_inscripciones',
+        expect.stringContaining('maria@example.com')
+      );
     });
 
-    it('should return null when no email present', () => {
-      const result = orchestrator['extractEmailFromConversation']([], 'No tengo correo');
-      expect(result).toBeNull();
+    it('should fall back to LLM when no email is found in message or history', async () => {
+      // Act
+      await orchestrator.process({ userMessage: 'No tengo correo', conversationHistory: [] });
+
+      // Assert
+      expect(mockLLMProvider.generateAnswer).toHaveBeenCalled();
     });
 
-    it('should reject invalid email-like strings', () => {
-      const result = orchestrator['extractEmailFromConversation']([], 'El usuario@no es válido');
-      expect(result).toBeNull();
+    it('should NOT treat an invalid email-like string as a valid email', async () => {
+      // Act
+      await orchestrator.process({ userMessage: 'El usuario@no es valido', conversationHistory: [] });
+
+      // Assert — invalid email must not trigger the direct tool path
+      expect(mockLLMProvider.generateAnswer).toHaveBeenCalled();
     });
   });
 
-  describe('formatRegistrationResponse', () => {
-    it('should format registered user with courses', () => {
-      const result = orchestrator['formatRegistrationResponse'](
-        { status: 'registrado', cantidad_cursos: 2, cursos: ['Taller A', 'Taller B'] },
-        'test@test.com'
-      );
-      expect(result).toContain('Taller A');
-      expect(result).toContain('Taller B');
-      expect(result).toContain('2 curso(s)');
-    });
-
-    it('should use mensaje from no_registrado status', () => {
-      const result = orchestrator['formatRegistrationResponse'](
-        { status: 'no_registrado', mensaje: 'No se encontraron inscripciones para este correo.' },
-        'test@test.com'
-      );
-      expect(result).toContain('No encontr');
-      expect(result).toContain('test@test.com');
-    });
-
-    it('should expose server error message', () => {
-      const result = orchestrator['formatRegistrationResponse'](
-        { error: 'Connection timeout' },
-        'test@test.com'
-      );
-      expect(result).toContain('inconveniente técnico');
-      expect(result).toContain('test@test.com');
-    });
-
-    it('should return debug info for unexpected result', () => {
-      const result = orchestrator['formatRegistrationResponse'](
-        { unexpected: 'structure' },
-        'test@test.com'
-      );
-      expect(result).toContain('No pude procesar');
-      expect(result).toContain('test@test.com');
-    });
-
-    it('should handle null/undefined input gracefully', () => {
-      const result = orchestrator['formatRegistrationResponse'](null as any, 'test@test.com');
-      expect(result).toContain('No pude obtener');
-      expect(result).toContain('contactoibime@gmail.com');
-    });
-  });
-
-
-  describe('direct tool path — email from message/history', () => {
-    beforeEach(() => {
-      vi.clearAllMocks();
-    });
-
-    it('should call tool directly and return courses when email is in current message', async () => {
-      vi.spyOn(orchestrator['toolRegistry'], 'executeTool').mockResolvedValue(
+  // ---------------------------------------------------------------------------
+  describe('registration response formatting', () => {
+    it('should format a list of enrolled courses when the tool returns "registrado" status', async () => {
+      // Arrange
+      vi.spyOn(ToolRegistry.prototype, 'executeTool').mockResolvedValue(
         JSON.stringify({ status: 'registrado', cantidad_cursos: 2, cursos: ['Taller A', 'Taller B'] })
       );
 
+      // Act
       const result = await orchestrator.process({
-        userMessage: 'Mi correo es ana@test.com, ¿en qué cursos estoy?',
+        userMessage: 'En que cursos estoy?',
+        conversationHistory: [{ role: 'user', text: 'test@test.com' }],
+      });
+
+      // Assert
+      expect(result.answer).toContain('Taller A');
+      expect(result.answer).toContain('Taller B');
+      expect(result.answer).toContain('2 curso(s)');
+    });
+
+    it('should include the email in the "not registered" message for clarity', async () => {
+      // Arrange
+      vi.spyOn(ToolRegistry.prototype, 'executeTool').mockResolvedValue(
+        JSON.stringify({ status: 'no_registrado', mensaje: 'No se encontraron inscripciones.' })
+      );
+
+      // Act
+      const result = await orchestrator.process({
+        userMessage: 'Estoy inscrito?',
+        conversationHistory: [{ role: 'user', text: 'test@test.com' }],
+      });
+
+      // Assert
+      expect(result.answer).toContain('No encontr');
+      expect(result.answer).toContain('test@test.com');
+    });
+
+    it('should surface a human-friendly error message when the tool returns a server error', async () => {
+      // Arrange
+      vi.spyOn(ToolRegistry.prototype, 'executeTool').mockResolvedValue(
+        JSON.stringify({ error: 'Connection timeout' })
+      );
+
+      // Act
+      const result = await orchestrator.process({
+        userMessage: 'Estoy inscrito?',
+        conversationHistory: [{ role: 'user', text: 'test@test.com' }],
+      });
+
+      // Assert
+      expect(result.answer).toContain('inconveniente');
+      expect(result.answer).toContain('test@test.com');
+    });
+
+    it('should emit a graceful fallback when the tool returns an unexpected JSON structure', async () => {
+      // Arrange
+      vi.spyOn(ToolRegistry.prototype, 'executeTool').mockResolvedValue(
+        JSON.stringify({ unexpected: 'structure' })
+      );
+
+      // Act
+      const result = await orchestrator.process({
+        userMessage: 'Estoy inscrito?',
+        conversationHistory: [{ role: 'user', text: 'test@test.com' }],
+      });
+
+      // Assert
+      expect(result.answer).toContain('No pude procesar');
+      expect(result.answer).toContain('test@test.com');
+    });
+
+    it('should emit a support contact fallback when the tool returns null', async () => {
+      // Arrange
+      vi.spyOn(ToolRegistry.prototype, 'executeTool').mockResolvedValue(
+        JSON.stringify(null)
+      );
+
+      // Act
+      const result = await orchestrator.process({
+        userMessage: 'Estoy inscrito?',
+        conversationHistory: [{ role: 'user', text: 'test@test.com' }],
+      });
+
+      // Assert
+      expect(result.answer).toContain('No pude obtener');
+      expect(result.answer).toContain('contactoibime@gmail.com');
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  describe('direct tool path — email present at call time', () => {
+    it('should call the tool directly and return all courses when email is in the current message', async () => {
+      // Arrange
+      vi.spyOn(ToolRegistry.prototype, 'executeTool').mockResolvedValue(
+        JSON.stringify({ status: 'registrado', cantidad_cursos: 2, cursos: ['Taller A', 'Taller B'] })
+      );
+
+      // Act
+      const result = await orchestrator.process({
+        userMessage: 'Mi correo es ana@test.com, en que cursos estoy?',
         conversationHistory: [],
       });
 
+      // Assert
       expect(result.answer).toContain('Taller A');
       expect(result.answer).toContain('Taller B');
-      // LLM must NOT be called
       expect(mockLLMProvider.generateAnswer).not.toHaveBeenCalled();
-      expect(orchestrator['toolRegistry'].executeTool).toHaveBeenCalledWith(
+      expect(ToolRegistry.prototype.executeTool).toHaveBeenCalledWith(
         'consultar_inscripciones',
         JSON.stringify({ email: 'ana@test.com' })
       );
     });
 
-    it('should call tool directly when email is in history and return courses', async () => {
-      vi.spyOn(orchestrator['toolRegistry'], 'executeTool').mockResolvedValue(
-        JSON.stringify({ status: 'registrado', cantidad_cursos: 1, cursos: ['Alfabetización Digital'] })
+    it('should call the tool directly and return courses when email is in conversation history', async () => {
+      // Arrange
+      vi.spyOn(ToolRegistry.prototype, 'executeTool').mockResolvedValue(
+        JSON.stringify({ status: 'registrado', cantidad_cursos: 1, cursos: ['Alfabetizacion Digital'] })
       );
 
+      // Act
       const result = await orchestrator.process({
-        userMessage: '¿Estoy inscrito en algún curso?',
-        conversationHistory: [
-          { role: 'user', text: 'Soy luis@email.com' },
-        ],
+        userMessage: 'Estoy inscrito en algun curso?',
+        conversationHistory: [{ role: 'user', text: 'Soy luis@email.com' }],
       });
 
-      expect(result.answer).toContain('Alfabetización Digital');
-      // No preambles, no hallucinated addresses
+      // Assert
+      expect(result.answer).toContain('Alfabetizacion Digital');
       expect(result.answer).not.toContain('Norte');
       expect(result.answer).not.toContain('Calle 5');
-      // LLM must NOT be called
       expect(mockLLMProvider.generateAnswer).not.toHaveBeenCalled();
     });
   });

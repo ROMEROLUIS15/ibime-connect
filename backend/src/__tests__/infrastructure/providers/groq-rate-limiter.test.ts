@@ -1,6 +1,7 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+﻿import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-// Mock para redisClient
+// --- Mock Redis client --------------------------------------------------------
+
 const mockRedisClient = vi.hoisted(() => ({
   isOpen: true,
   get: vi.fn(),
@@ -15,15 +16,17 @@ vi.mock('../../../infrastructure/cache/redis.js', () => ({
   },
 }));
 
-// Importar después del mock
 import { GroqRateLimiter } from '../../../infrastructure/providers/groq-rate-limiter.js';
+
+// --- Suite --------------------------------------------------------------------
 
 describe('GroqRateLimiter', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.useFakeTimers();
+    // Fix the clock so time-based Redis keys are deterministic across runs
     vi.setSystemTime(new Date(2026, 3, 16, 12, 0, 0));
-    // Reset isOpen since some tests mutate it
+    // Restore isOpen to default healthy state before each test
     mockRedisClient.isOpen = true;
   });
 
@@ -31,106 +34,108 @@ describe('GroqRateLimiter', () => {
     vi.useRealTimers();
   });
 
-  it('should create an instance correctly', () => {
-    const rateLimiter = new GroqRateLimiter();
-    expect(rateLimiter).toBeInstanceOf(GroqRateLimiter);
-  });
+  describe('instantiation', () => {
+    it('should create an instance successfully', () => {
+      expect(new GroqRateLimiter()).toBeInstanceOf(GroqRateLimiter);
+    });
 
-  it('should have correct default limits accessible via static properties', () => {
-    expect(GroqRateLimiter.TPM_LIMIT).toBe(4800);
-    expect(GroqRateLimiter.RPM_LIMIT).toBe(24);
+    it('should expose correct default TPM and RPM limits as static properties', () => {
+      expect(GroqRateLimiter.TPM_LIMIT).toBe(4800);
+      expect(GroqRateLimiter.RPM_LIMIT).toBe(24);
+    });
   });
 
   describe('canProceed', () => {
-    it('should allow request when under limit', async () => {
+    it('should allow the request when both TPM and RPM counters are under the limit', async () => {
+      // Arrange
       const rateLimiter = new GroqRateLimiter();
-      
-      // Mock para simular que el contador actual es menor que el límite
       mockRedisClient.get.mockResolvedValue('5');
 
+      // Act
       const result = await rateLimiter.canProceed();
 
+      // Assert
       expect(result.ok).toBe(true);
       expect(result.waitMs).toBe(0);
     });
 
-    it('should deny request when over TPM limit', async () => {
+    it('should deny the request with reason "tpm" when the TPM counter exceeds the limit', async () => {
+      // Arrange
       const rateLimiter = new GroqRateLimiter();
-      
-      // Mock para simular que el contador actual supera el límite
-      mockRedisClient.get.mockResolvedValue('5000');
+      mockRedisClient.get.mockResolvedValue(String(GroqRateLimiter.TPM_LIMIT + 200));
 
+      // Act
       const result = await rateLimiter.canProceed();
 
+      // Assert
       expect(result.ok).toBe(false);
       expect(result.reason).toBe('tpm');
     });
 
-    it('should deny request when over RPM limit', async () => {
+    it('should deny the request with reason "rpm" when RPM exceeds the limit but TPM is fine', async () => {
+      // Arrange
       const rateLimiter = new GroqRateLimiter();
-      
-      // Mock para simular que el contador actual supera el límite
-      mockRedisClient.get.mockResolvedValueOnce('5') // TPM check
-                           .mockResolvedValue('30'); // RPM check
+      mockRedisClient.get
+        .mockResolvedValueOnce('5')  // TPM check — under limit
+        .mockResolvedValue(String(GroqRateLimiter.RPM_LIMIT + 6)); // RPM check — over limit
 
+      // Act
       const result = await rateLimiter.canProceed();
 
+      // Assert
       expect(result.ok).toBe(false);
       expect(result.reason).toBe('rpm');
     });
 
-    it('should fail open when Redis is closed', async () => {
-      // Simular que Redis está cerrado
-      Object.defineProperty(mockRedisClient, 'isOpen', {
-        value: false,
-        writable: true,
-      });
-      
+    it('should fail open (allow the request) when Redis is not connected', async () => {
+      // Arrange — simulate Redis being closed
+      mockRedisClient.isOpen = false;
       const rateLimiter = new GroqRateLimiter();
+
+      // Act
       const result = await rateLimiter.canProceed();
 
+      // Assert — fail-open: prefer availability over strict rate limiting
       expect(result.ok).toBe(true);
       expect(result.waitMs).toBe(0);
     });
   });
 
   describe('recordUsage', () => {
-    it('should record token usage correctly', async () => {
+    it('should increment both TPM and RPM counters and set their TTLs', async () => {
+      // Arrange
       const rateLimiter = new GroqRateLimiter();
-      const tokensUsed = 100;
-      
-      // Mock para las operaciones de Redis
-      mockRedisClient.incrBy.mockResolvedValue(Promise.resolve());
-      mockRedisClient.incr.mockResolvedValue(Promise.resolve());
-      mockRedisClient.expire.mockResolvedValue(Promise.resolve());
+      mockRedisClient.incrBy.mockResolvedValue(undefined);
+      mockRedisClient.incr.mockResolvedValue(undefined);
+      mockRedisClient.expire.mockResolvedValue(undefined);
 
-      await rateLimiter.recordUsage(tokensUsed);
+      // Act
+      await rateLimiter.recordUsage(100);
 
-      // Verificamos que se hayan llamado las funciones de Redis
-      expect(mockRedisClient.incrBy).toHaveBeenCalled();
-      expect(mockRedisClient.incr).toHaveBeenCalled();
-      expect(mockRedisClient.expire).toHaveBeenCalledTimes(2); // Se llama dos veces en Promise.all
+      // Assert — both counters must be updated atomically
+      expect(mockRedisClient.incrBy).toHaveBeenCalledTimes(1);
+      expect(mockRedisClient.incr).toHaveBeenCalledTimes(1);
+      expect(mockRedisClient.expire).toHaveBeenCalledTimes(2);
     });
   });
 
   describe('getUsage', () => {
-    it('should return current usage stats', async () => {
+    it('should return current TPM and RPM usage along with their configured limits', async () => {
+      // Arrange
       const rateLimiter = new GroqRateLimiter();
-      
-      // Simular diferentes valores para TPM y RPM
-      const mockGet = vi.fn()
-        .mockResolvedValueOnce('100') // Primer llamado: tpm
-        .mockResolvedValueOnce('10'); // Segundo llamado: rpm
-      
-      mockRedisClient.get = mockGet;
+      mockRedisClient.get = vi.fn()
+        .mockResolvedValueOnce('100') // first call: tpm counter
+        .mockResolvedValueOnce('10'); // second call: rpm counter
 
+      // Act
       const result = await rateLimiter.getUsage();
 
+      // Assert
       expect(result).toEqual({
         tpm: 100,
         rpm: 10,
-        tpmLimit: 4800,
-        rpmLimit: 24
+        tpmLimit: GroqRateLimiter.TPM_LIMIT,
+        rpmLimit: GroqRateLimiter.RPM_LIMIT,
       });
     });
   });
