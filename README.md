@@ -229,7 +229,7 @@ ibime-connect/
 │   │   ├── index.ts
 │   │   │
 │   │   ├── 📁 config/
-│   │   │   ├── env.config.ts       ← Variables de entorno validadas al arranque (con check manual + process.exit)
+│   │   │   ├── env.config.ts       ← Variables de entorno validadas con Zod al arranque (schema = tipos, process.exit si faltan/mal formato)
 │   │   │   └── supabase.config.ts
 │   │   │
 │   │   ├── 📁 controllers/
