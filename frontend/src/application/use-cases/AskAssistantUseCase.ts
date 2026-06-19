@@ -15,6 +15,8 @@ import type { ChatResponse, ApiResult } from '@shared/types/domain';
 export interface AskAssistantInput {
   readonly userMessage: string;
   readonly conversationHistory: ReadonlyArray<{ readonly role: 'user' | 'assistant'; readonly text: string }>;
+  /** UUID v4 estable por conversación, generado por el widget al montarse. */
+  readonly sessionId?: string;
 }
 
 // ─── Use Case ─────────────────────────────────────────────────────────────────
@@ -28,6 +30,7 @@ export class AskAssistantUseCase {
       userMessage: input.userMessage,
       conversationHistory: input.conversationHistory,
       context: [], // El backend inyecta el contexto automáticamente
+      sessionId: input.sessionId,
     });
   }
 }

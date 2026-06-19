@@ -38,6 +38,23 @@ describe('AskAssistantUseCase', () => {
       });
     });
 
+    it('should forward sessionId to the port when provided', async () => {
+      (mockPort.generateAnswer as ReturnType<typeof vi.fn>).mockResolvedValue({
+        ok: true,
+        data: { answer: 'OK', sources: [] },
+      });
+
+      await useCase.execute({
+        userMessage: 'Mis inscripciones',
+        conversationHistory: [],
+        sessionId: '123e4567-e89b-42d3-a456-426614174000',
+      });
+
+      expect(mockPort.generateAnswer).toHaveBeenCalledWith(
+        expect.objectContaining({ sessionId: '123e4567-e89b-42d3-a456-426614174000' })
+      );
+    });
+
     it('should pass empty context array', async () => {
       (mockPort.generateAnswer as ReturnType<typeof vi.fn>).mockResolvedValue({
         ok: true,

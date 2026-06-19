@@ -22,6 +22,9 @@ export class BackendAssistantAdapter implements IAssistantPort {
         role: m.role,
         text: m.text,
       })),
+      // Fuente autoritativa del Privacy Gate (Redis). Solo se envía si existe;
+      // el backend valida que sea un UUID y cae al fallback por historial si falta.
+      ...(input.sessionId ? { sessionId: input.sessionId } : {}),
     };
 
     try {

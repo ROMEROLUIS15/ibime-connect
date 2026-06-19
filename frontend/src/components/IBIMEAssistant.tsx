@@ -29,6 +29,7 @@ import { useFloatingButtonsTheme } from '@/hooks/useFloatingButtonsTheme';
 import { useFocusTrap, useEscapeKey } from '@/hooks/use-focus-trap';
 import { AskAssistantUseCase, type AskAssistantInput } from '@/application/use-cases/AskAssistantUseCase';
 import { BackendAssistantAdapter } from '@/infrastructure/adapters/BackendAssistantAdapter';
+import { createSessionId } from '@/lib/session-id';
 import type { ChatMessage, KnowledgeMatch } from '@shared/types/domain';
 
 // ─── Assets ───────────────────────────────────────────────────────────────────
@@ -224,6 +225,12 @@ export function IBIMEAssistant(): JSX.Element {
   const [inputValue, setInputValue] = useState<string>('');
   const [isTyping, setIsTyping] = useState<boolean>(false);
 
+  // UUID v4 estable durante toda la vida de la conversación (un solo valor por
+  // montaje del widget). Es la clave autoritativa del Privacy Gate en Redis:
+  // sin él, el backend caía al fallback por hash del historial, manipulable
+  // desde un cliente modificado.
+  const [sessionId] = useState<string>(() => createSessionId());
+
   // Drag logic for mobile
   const [dragOffset, setDragOffset] = useState<number>(0);
   const [isDraggingActive, setIsDraggingActive] = useState<boolean>(false);
@@ -338,6 +345,7 @@ export function IBIMEAssistant(): JSX.Element {
       const input: AskAssistantInput = {
         userMessage: trimmed,
         conversationHistory: history,
+        sessionId,
       };
 
       const result = await askAssistant.execute(input);
@@ -368,7 +376,7 @@ export function IBIMEAssistant(): JSX.Element {
     } finally {
       setIsTyping(false);
     }
-  }, [inputValue, isTyping, messages, askAssistant]);
+  }, [inputValue, isTyping, messages, askAssistant, sessionId]);
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>): void => {
     if (e.key === 'Enter' && !e.shiftKey) {

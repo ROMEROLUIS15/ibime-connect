@@ -88,8 +88,10 @@ El núcleo es un motor de decisión **híbrido**: determinista puro donde la pre
          │     │         Si segundo email detectado → cortocircuito inmediato
          │     │
          │     ├── BRANCH A  [email conocido]
-         │     │     executeTool('consultar_inscripciones') → DB directa
-         │     │     formatRegistrationResponse() → determinista
+         │     │     sin teléfono → pedir teléfono (verificación de propiedad)
+         │     │     con teléfono → throttle → tool.verify(email, phone)
+         │     │       verified → lista de cursos | not_verified → genérica
+         │     │     formatVerifiedResponse() → determinista
          │     │     LLM: NO LLAMADO. tokensUsed = 0.
          │     │     ← 100% inmune al sentimiento y al LLM
          │     │
@@ -136,10 +138,48 @@ Jerarquía de fuentes (mayor a menor confianza):
 ```
 
 **Funcionamiento:**
-1. Si el frontend envía un `sessionId` (UUID v4), se usa como clave Redis.
-2. Si no hay `sessionId`, se deriva un hash estable del primer mensaje del historial (`SHA-256[:24]`).
+1. El frontend (`IBIMEAssistant`) genera un `sessionId` (UUID v4) estable por conversación y lo envía en cada petición; se usa como clave Redis (fuente autoritativa).
+2. Si no llega `sessionId` (cliente legacy), se deriva un hash estable del primer mensaje del historial (`SHA-256[:24]`) como fallback.
 3. Al capturar el primer email válido, se persiste en Redis con TTL de 30 minutos.
 4. Si en un turno posterior aparece un **email diferente** al almacenado en Redis → **cortocircuito inmediato** con mensaje de privacidad, sin consultar la DB.
+
+> **Alcance del Privacy Gate (importante).** El gate evita *cruzar* dos correos dentro de una misma sesión; **no** es un control de propiedad ni de enumeración (la primera consulta de una sesión siempre se atiende, y abrir una sesión nueva es libre). La protección de la PII la aporta la **verificación de propiedad** descrita abajo.
+
+---
+
+## 🔒 Verificación de propiedad de inscripciones (modelo de amenaza)
+
+El endpoint de chat es **público y sin autenticación**. La consulta `consultar_inscripciones` devuelve PII (los talleres asociados a un correo), por lo que se protege con verificación de propiedad + defensa en profundidad.
+
+**Modelo de amenaza y controles:**
+
+| Amenaza | Control | Dónde |
+| --- | --- | --- |
+| **Mirada puntual** — alguien con tu correo ve tus talleres | **Verificación por teléfono**: la tool no revela nada sin un teléfono que coincida con el registrado | `check_registration.tool.ts`, `chat-orchestrator.ts` (Branch A) |
+| **Enumeración de existencia** — descubrir si un correo está registrado | **Respuesta genérica idéntica** para «correo inexistente» y «teléfono no coincide» (`status: not_verified`) | `check_registration.tool.ts` |
+| **Fuerza bruta del teléfono** — adivinar el teléfono de un correo conocido | **Throttle por correo** (5 intentos fallidos / 15 min, Redis) + rate-limit por IP del router | `verification-throttle.service.ts`, `api.routes.ts` |
+| **Tool-use inseguro del agente** — engañar al LLM para filtrar PII | La tool es **auto-protegida**: exige `email` + `phone` y verifica propiedad sin importar el llamador | `check_registration.tool.ts` |
+| **PII en logs** | Auditoría con **correo enmascarado** (`j***@gmail.com`) y nunca en claro | `pii.util.ts`, logs `registration_verification: *` |
+
+**Flujo determinista (sin LLM en la ruta crítica):**
+```
+email conocido?  ──no──▶  pedir correo (Branch B, LLM solo pregunta)
+   │ sí
+   ▼
+teléfono conocido?  ──no──▶  pedir teléfono (mensaje determinista)
+   │ sí
+   ▼
+throttle por correo  ──bloqueado──▶  mensaje de seguridad (sin tocar la DB)
+   │ permitido
+   ▼
+tool.verify(email, phone)
+   ├─ verified      → lista de cursos (reset throttle)
+   └─ not_verified  → respuesta GENÉRICA (recordFailure throttle)
+```
+
+**Comparación de teléfono tolerante a formato** (`phone.util.ts`): se comparan los últimos 7 dígitos, ignorando prefijo país, espacios y separadores, para no penalizar al usuario legítimo por el formato.
+
+**Riesgo residual (decisión consciente).** La verificación por teléfono asume que el teléfono es un secreto razonable; no es infalible si un atacante ya conoce correo **y** teléfono de la víctima. Se consideró OTP por email (más fuerte) pero se descartó por falta de infraestructura de correo y por fricción desproporcionada para un dato de sensibilidad moderada. El throttle + rate-limit acotan la fuerza bruta del segundo factor.
 
 ---
 
@@ -274,7 +314,7 @@ ibime-connect/
 │   │   ├── main.tsx / App.tsx
 │   │   ├── pages/
 │   │   ├── components/
-│   │   │   └── IBIMEAssistant.tsx  ← Widget de chat (sin sessionId — el backend lo deriva del historial si no se envía)
+│   │   │   └── IBIMEAssistant.tsx  ← Widget de chat (genera sessionId UUID v4 estable y lo envía al backend)
 │   │   ├── domain/ports/AssistantPort.ts
 │   │   ├── application/use-cases/AskAssistantUseCase.ts
 │   │   └── infrastructure/adapters/BackendAssistantAdapter.ts

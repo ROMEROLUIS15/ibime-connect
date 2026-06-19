@@ -71,6 +71,19 @@ export function classifyIntent(userMessage: string): IntentResult {
     }
   }
 
+  // ─── Registration continuation: respuesta que es (casi) solo un teléfono ───
+  // El asistente solo pide un teléfono dentro del flujo de verificación de
+  // inscripciones. Una respuesta mayormente numérica (7-15 dígitos, poco texto)
+  // se trata como continuación de ese flujo. Se evalúa DESPUÉS de catálogo para
+  // no secuestrar mensajes como "quiero el curso, mi número 0412...".
+  const digitCount = (normalized.match(/\d/g) || []).length;
+  const letterCount = (normalized.match(/[a-záéíóúñ]/gi) || []).length;
+  const looksLikePhone =
+    digitCount >= 7 && digitCount <= 15 && letterCount <= 15 && /\+?\d[\d\s().-]{5,}\d/.test(normalized);
+  if (looksLikePhone) {
+    return { intent: 'registration', confidence: 'low' };
+  }
+
   // ─── General (fallback) ───────────────────────────────────────────────────
   return { intent: 'general', confidence: 'low' };
 }
