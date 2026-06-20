@@ -2,6 +2,7 @@ import { ENV } from '../../config/env.config.js';
 import { contextLogger } from '../logger/index.js';
 import type { ILLMProvider, LLMMessage, LLMResponse, ITool } from '../../domain/interfaces/index.js';
 import { groqRateLimiter } from './groq-rate-limiter.js';
+import { wrapLLM } from '../observability/tracing.js';
 
 /**
  * GroqProvider — LLM inference via Groq API (OpenAI-compatible).
@@ -19,7 +20,19 @@ export class GroqProvider implements ILLMProvider {
   /** Maximum wait time for a Retry-After backoff (capped to avoid blocking too long) */
   private static readonly MAX_RETRY_WAIT_MS = 5_000;
 
-  async generateAnswer(
+  generateAnswer = wrapLLM(
+    async (
+      messages: LLMMessage[],
+      options?: { temperature?: number; maxTokens?: number; tools?: ITool[] },
+      requestId?: string
+    ): Promise<LLMResponse> => {
+      return this._generateAnswer(messages, options, requestId);
+    },
+    'GroqProvider.generateAnswer',
+    { model: GroqProvider.DEFAULT_MODEL }
+  );
+
+  private async _generateAnswer(
     messages: LLMMessage[],
     options?: { temperature?: number; maxTokens?: number; tools?: ITool[] },
     requestId?: string

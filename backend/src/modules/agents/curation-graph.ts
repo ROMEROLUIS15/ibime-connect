@@ -3,6 +3,7 @@ import { StateGraph, Annotation, CompiledStateGraph } from '@langchain/langgraph
 import type { ILLMProvider, LLMMessage } from '../../domain/interfaces/index.js';
 import { supabaseClient } from '../../config/supabase.config.js';
 import { logger } from '../../infrastructure/logger/index.js';
+import { wrapChain } from '../../infrastructure/observability/tracing.js';
 import { z } from 'zod';
 
 export interface ExtractedItem {
@@ -33,10 +34,15 @@ export class CurationGraph {
     this.compiledGraph = this.buildGraph();
   }
 
-  /**
-   * Ejecuta el flujo de curación asíncrono para un texto crudo de PDF.
-   */
-  async curate(rawText: string, requestId?: string): Promise<CurationState> {
+  curate = wrapChain(
+    async (rawText: string, requestId?: string): Promise<CurationState> => {
+      return this._curate(rawText, requestId);
+    },
+    'CurationGraph.curate',
+    { graph: 'curation' }
+  );
+
+  private async _curate(rawText: string, requestId?: string): Promise<CurationState> {
     const startTime = Date.now();
     logger.info({ requestId, textLength: rawText.length }, 'CurationGraph: starting curating execution');
 

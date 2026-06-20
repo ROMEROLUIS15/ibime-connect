@@ -25,6 +25,7 @@ import { createHash } from 'crypto';
 import { classifyIntent } from './intent-classifier.js';
 import { applyResponsePolicy, type ChatIntent as PolicyIntent } from './response-policy.js';
 import { contextLogger } from '../../infrastructure/logger/index.js';
+import { wrapChain } from '../../infrastructure/observability/tracing.js';
 import { CHAT_SYSTEM_PROMPT } from './system-prompt.js';
 import { ToolRegistry } from '../../services/tools.service.js';
 import { CheckRegistrationTool } from '../../services/tools/check_registration.tool.js';
@@ -92,7 +93,15 @@ export class ChatOrchestrator {
     this.toolRegistry.registerTool(new CheckRegistrationTool());
   }
 
-  async process(input: ChatOrchestratorInput, requestId?: string): Promise<ChatResponse> {
+  process = wrapChain(
+    async (input: ChatOrchestratorInput, requestId?: string): Promise<ChatResponse> => {
+      return this._process(input, requestId);
+    },
+    'ChatOrchestrator.process',
+    { service: 'chat' }
+  );
+
+  private async _process(input: ChatOrchestratorInput, requestId?: string): Promise<ChatResponse> {
     const logger = contextLogger(requestId);
     const { userMessage, conversationHistory } = input;
     const startTime = Date.now();
@@ -105,9 +114,6 @@ export class ChatOrchestrator {
     const { intent, confidence } = classifyIntent(userMessage);
     logger.info('Intent classified', { intent, confidence });
 
-    // ── Sentiment analysis (síncrono, puro, <1ms) ─────────────────────────
-    // Corre ANTES del switch. Solo afecta flujos con LLM (Branch B, catalog, general).
-    // Branch A (DB directo) ignora completamente el resultado.
     const { isFrustrated, score: sentimentScore } = this.sentimentAnalyzer
       ? this.sentimentAnalyzer.analyzeMessage(userMessage)
       : { isFrustrated: false, score: 0 };
@@ -169,7 +175,21 @@ export class ChatOrchestrator {
   // Privacy gate runs BEFORE both branches to block second-email attacks.
   // ═══════════════════════════════════════════════════════════════════════════
 
-  private async handleRegistration(
+  private handleRegistration = wrapChain(
+    async (
+      userMessage: string,
+      conversationHistory: Array<{ role: 'user' | 'assistant'; text: string }>,
+      requestId?: string,
+      sessionId?: string,
+      isFrustrated?: boolean
+    ): Promise<ChatResponse> => {
+      return this._handleRegistration(userMessage, conversationHistory, requestId, sessionId, isFrustrated);
+    },
+    'ChatOrchestrator.handleRegistration',
+    { flow: 'registration' }
+  );
+
+  private async _handleRegistration(
     userMessage: string,
     conversationHistory: Array<{ role: 'user' | 'assistant'; text: string }>,
     requestId?: string,
@@ -357,7 +377,20 @@ export class ChatOrchestrator {
   }
 
   // ─── CATALOG FLOW ───────────────────────────────────────────────────────
-  private async handleCatalog(
+  private handleCatalog = wrapChain(
+    async (
+      userMessage: string,
+      conversationHistory: Array<{ role: 'user' | 'assistant'; text: string }>,
+      requestId?: string,
+      isFrustrated?: boolean
+    ): Promise<ChatResponse> => {
+      return this._handleCatalog(userMessage, conversationHistory, requestId, isFrustrated);
+    },
+    'ChatOrchestrator.handleCatalog',
+    { flow: 'catalog' }
+  );
+
+  private async _handleCatalog(
     userMessage: string,
     conversationHistory: Array<{ role: 'user' | 'assistant'; text: string }>,
     requestId?: string,
@@ -395,7 +428,20 @@ export class ChatOrchestrator {
   }
 
   // ─── GENERAL FLOW ───────────────────────────────────────────────────────
-  private async handleGeneral(
+  private handleGeneral = wrapChain(
+    async (
+      userMessage: string,
+      conversationHistory: Array<{ role: 'user' | 'assistant'; text: string }>,
+      requestId?: string,
+      isFrustrated?: boolean
+    ): Promise<ChatResponse> => {
+      return this._handleGeneral(userMessage, conversationHistory, requestId, isFrustrated);
+    },
+    'ChatOrchestrator.handleGeneral',
+    { flow: 'general' }
+  );
+
+  private async _handleGeneral(
     userMessage: string,
     conversationHistory: Array<{ role: 'user' | 'assistant'; text: string }>,
     requestId?: string,
@@ -443,7 +489,20 @@ export class ChatOrchestrator {
   }
 
   // ─── GENERAL FALLBACK ───────────────────────────────────────────────────
-  private async handleGeneralFallback(
+  private handleGeneralFallback = wrapChain(
+    async (
+      userMessage: string,
+      conversationHistory: Array<{ role: 'user' | 'assistant'; text: string }>,
+      requestId?: string,
+      isFrustrated?: boolean
+    ): Promise<ChatResponse> => {
+      return this._handleGeneralFallback(userMessage, conversationHistory, requestId, isFrustrated);
+    },
+    'ChatOrchestrator.handleGeneralFallback',
+    { flow: 'general-fallback' }
+  );
+
+  private async _handleGeneralFallback(
     userMessage: string,
     conversationHistory: Array<{ role: 'user' | 'assistant'; text: string }>,
     requestId?: string,

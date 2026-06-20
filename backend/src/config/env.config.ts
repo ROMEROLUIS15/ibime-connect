@@ -40,6 +40,15 @@ export const envSchema = z.object({
   FRONTEND_URL: z.string().url('FRONTEND_URL debe ser una URL válida').default('http://localhost:5173'),
   REDIS_URL: z.string().url('REDIS_URL debe ser una URL válida').default('redis://localhost:6379'),
   ADMIN_SECRET: z.string().optional(),
+
+  // Observability (LangSmith) — opcional, graceful degradation si no está
+  LANGSMITH_API_KEY: z.string().optional(),
+  LANGSMITH_TRACING: z
+    .string()
+    .optional()
+    .default('true')
+    .transform((v) => v === 'true' || v === '1'),
+  LANGSMITH_PROJECT: z.string().optional().default('ibime-connect'),
 });
 
 export type Env = z.infer<typeof envSchema>;
