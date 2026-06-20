@@ -40,3 +40,11 @@ services:
         sync: false
       - key: ADMIN_SECRET
         sync: false
+
+      # 3. Observability (LangSmith)
+      - key: LANGSMITH_API_KEY
+        sync: false
+      - key: LANGSMITH_TRACING
+        sync: false
+      - key: LANGSMITH_PROJECT
+        sync: false
