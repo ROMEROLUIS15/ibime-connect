@@ -148,6 +148,24 @@ describe('IntentClassifier', () => {
     });
   });
 
+  describe('phone continuation heuristic (registration verification)', () => {
+    it('should treat a bare phone number as a registration continuation', () => {
+      expect(classifyIntent('04121234567').intent).toBe('registration');
+    });
+
+    it('should treat a phone with light prefatory text as registration', () => {
+      expect(classifyIntent('mi telefono es 0412-123 4567').intent).toBe('registration');
+    });
+
+    it('should NOT treat a long number embedded in prose as a phone', () => {
+      expect(classifyIntent('el curso cuesta 1500000 bolivares por mes en total').intent).not.toBe('registration');
+    });
+
+    it('should NOT treat a short number as a phone', () => {
+      expect(classifyIntent('son 12345').intent).toBe('general');
+    });
+  });
+
   describe('edge cases', () => {
     it('should handle empty string', () => {
       const result = classifyIntent('');

@@ -3,6 +3,7 @@ import type { RAGService } from './rag.service.js';
 import type { ChatResponse } from '@shared/types/domain.js';
 import type { SessionMemoryService } from './session-memory.service.js';
 import type { SentimentAnalyzerService } from './sentiment-analyzer.service.js';
+import type { VerificationThrottleService } from './verification-throttle.service.js';
 import { ChatOrchestrator } from '../modules/chat/chat-orchestrator.js';
 import { contextLogger } from '../infrastructure/logger/index.js';
 
@@ -13,9 +14,16 @@ export class ChatService {
     llmProvider: ILLMProvider,
     ragService: RAGService,
     sessionMemory: SessionMemoryService | null = null,
-    sentimentAnalyzer: SentimentAnalyzerService | null = null
+    sentimentAnalyzer: SentimentAnalyzerService | null = null,
+    verificationThrottle: VerificationThrottleService | null = null
   ) {
-    this.orchestrator = new ChatOrchestrator(llmProvider, ragService, sessionMemory, sentimentAnalyzer);
+    this.orchestrator = new ChatOrchestrator(
+      llmProvider,
+      ragService,
+      sessionMemory,
+      sentimentAnalyzer,
+      verificationThrottle
+    );
   }
 
   async processChat(

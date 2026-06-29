@@ -25,11 +25,14 @@ import { createHash } from 'crypto';
 import { classifyIntent } from './intent-classifier.js';
 import { applyResponsePolicy, type ChatIntent as PolicyIntent } from './response-policy.js';
 import { contextLogger } from '../../infrastructure/logger/index.js';
+import { wrapChain } from '../../infrastructure/observability/tracing.js';
 import { CHAT_SYSTEM_PROMPT } from './system-prompt.js';
 import { ToolRegistry } from '../../services/tools.service.js';
 import { CheckRegistrationTool } from '../../services/tools/check_registration.tool.js';
 import type { SessionMemoryService } from '../../services/session-memory.service.js';
 import type { SentimentAnalyzerService } from '../../services/sentiment-analyzer.service.js';
+import type { VerificationThrottleService } from '../../services/verification-throttle.service.js';
+import { maskEmail } from '../../utils/pii.util.js';
 
 export interface ChatOrchestratorInput {
   userMessage: string;
@@ -41,6 +44,28 @@ export interface ChatOrchestratorInput {
 /** Fallback hardcoded para cuando el LLM no devuelve nada al pedir el email */
 const ASK_FOR_EMAIL_FALLBACK =
   '¡Claro que sí! Con mucho gusto te ayudo a verificar tus inscripciones. Por favor, indícame tu correo electrónico registrado para buscarlo en nuestro sistema.';
+
+/**
+ * Solicitud determinista del teléfono como prueba de propiedad.
+ * Se muestra cuando ya tenemos el correo pero falta verificar la identidad.
+ */
+const ASK_FOR_PHONE =
+  'Para proteger tus datos personales, antes de mostrarte tus inscripciones necesito verificar tu identidad. ¿Me confirmas el número de teléfono con el que te registraste?';
+
+/**
+ * Respuesta GENÉRICA anti-enumeración. Idéntica tanto si el correo no existe como
+ * si el teléfono no coincide: así nunca se revela si un correo está o no registrado.
+ */
+const NOT_VERIFIED_GENERIC =
+  'No encontré inscripciones que coincidan con los datos proporcionados. Verifica que el correo y el teléfono sean exactamente los que usaste al registrarte. Si el problema persiste, contáctanos al 0274-2623898 o a contactoibime@gmail.com.';
+
+/** Mensaje cuando el throttle anti fuerza-bruta bloquea temporalmente un correo. */
+const THROTTLE_MSG =
+  'Por seguridad hemos pausado temporalmente la verificación para este correo debido a varios intentos seguidos. Por favor intenta de nuevo en unos minutos, o contáctanos directamente al 0274-2623898 para ayudarte.';
+
+/** Error técnico genérico — nunca expone detalles internos ni el correo consultado. */
+const TECH_ERROR_MSG =
+  'Tuve un problema técnico al consultar el sistema de inscripciones. Por favor intenta de nuevo en unos minutos o contáctanos al 0274-2623898.';
 
 /**
  * Prefijo inyectado al systemPrompt cuando el usuario parece frustrado.
@@ -61,13 +86,22 @@ export class ChatOrchestrator {
     private llmProvider: ILLMProvider,
     private ragService: typeof import('../../services/rag.service.js').RAGService extends new (...args: any[]) => infer T ? T : never,
     @inject('SessionMemoryService') private sessionMemory: SessionMemoryService | null = null,
-    @inject('SentimentAnalyzerService') private sentimentAnalyzer: SentimentAnalyzerService | null = null
+    @inject('SentimentAnalyzerService') private sentimentAnalyzer: SentimentAnalyzerService | null = null,
+    @inject('VerificationThrottleService') private verificationThrottle: VerificationThrottleService | null = null
   ) {
     this.toolRegistry = new ToolRegistry();
     this.toolRegistry.registerTool(new CheckRegistrationTool());
   }
 
-  async process(input: ChatOrchestratorInput, requestId?: string): Promise<ChatResponse> {
+  process = wrapChain(
+    async (input: ChatOrchestratorInput, requestId?: string): Promise<ChatResponse> => {
+      return this._process(input, requestId);
+    },
+    'ChatOrchestrator.process',
+    { service: 'chat' }
+  );
+
+  private async _process(input: ChatOrchestratorInput, requestId?: string): Promise<ChatResponse> {
     const logger = contextLogger(requestId);
     const { userMessage, conversationHistory } = input;
     const startTime = Date.now();
@@ -80,9 +114,6 @@ export class ChatOrchestrator {
     const { intent, confidence } = classifyIntent(userMessage);
     logger.info('Intent classified', { intent, confidence });
 
-    // ── Sentiment analysis (síncrono, puro, <1ms) ─────────────────────────
-    // Corre ANTES del switch. Solo afecta flujos con LLM (Branch B, catalog, general).
-    // Branch A (DB directo) ignora completamente el resultado.
     const { isFrustrated, score: sentimentScore } = this.sentimentAnalyzer
       ? this.sentimentAnalyzer.analyzeMessage(userMessage)
       : { isFrustrated: false, score: 0 };
@@ -144,7 +175,21 @@ export class ChatOrchestrator {
   // Privacy gate runs BEFORE both branches to block second-email attacks.
   // ═══════════════════════════════════════════════════════════════════════════
 
-  private async handleRegistration(
+  private handleRegistration = wrapChain(
+    async (
+      userMessage: string,
+      conversationHistory: Array<{ role: 'user' | 'assistant'; text: string }>,
+      requestId?: string,
+      sessionId?: string,
+      isFrustrated?: boolean
+    ): Promise<ChatResponse> => {
+      return this._handleRegistration(userMessage, conversationHistory, requestId, sessionId, isFrustrated);
+    },
+    'ChatOrchestrator.handleRegistration',
+    { flow: 'registration' }
+  );
+
+  private async _handleRegistration(
     userMessage: string,
     conversationHistory: Array<{ role: 'user' | 'assistant'; text: string }>,
     requestId?: string,
@@ -216,66 +261,91 @@ export class ChatOrchestrator {
     const existingEmail = firstEmailInHistory ?? emailInCurrentMessage;
     logger.info('Registration flow', { hasEmail: existingEmail !== null, email: existingEmail });
 
-    // ─── BRANCH A: EMAIL KNOWN → DIRECT TOOL CALL, NO LLM ───────────────────
+    // ─── BRANCH A: EMAIL KNOWN → OWNERSHIP VERIFICATION, NO LLM ─────────────
+    // Antes de revelar PII exigimos el teléfono registrado (prueba de propiedad).
+    // La tool es auto-protegida: nunca devuelve cursos sin un teléfono que coincida.
     if (existingEmail !== null) {
-      logger.info('BRANCH A — direct tool call, LLM bypassed entirely', { email: existingEmail });
+      const maskedEmail = maskEmail(existingEmail);
+
+      // Reúne el teléfono SOLO de los mensajes del usuario, no del asistente
+      // (evita capturar números que el propio bot menciona, p.ej. 0274-2623898).
+      const existingPhone = this.extractPhoneFromUserMessages(conversationHistory, userMessage);
+
+      if (existingPhone === null) {
+        logger.info('BRANCH A — email conocido, falta teléfono: solicitando verificación', {
+          email: maskedEmail,
+        });
+        return this.applyPolicy(ASK_FOR_PHONE, 'registration', [], 0, true, logger);
+      }
+
+      // Throttle anti fuerza-bruta del teléfono (por correo). Complementa el
+      // rate-limit por IP del router. Fail-open si Redis no está disponible.
+      if (this.verificationThrottle) {
+        const throttle = await this.verificationThrottle.check(existingEmail);
+        if (!throttle.allowed) {
+          logger.warn('registration_verification: throttled', {
+            email: maskedEmail,
+            retryAfterSeconds: throttle.retryAfterSeconds,
+          });
+          return this.applyPolicy(THROTTLE_MSG, 'registration', [], 0, true, logger);
+        }
+      }
 
       let rawResult: string;
       try {
         rawResult = await this.toolRegistry.executeTool(
           'consultar_inscripciones',
-          JSON.stringify({ email: existingEmail })
+          JSON.stringify({ email: existingEmail, phone: existingPhone })
         );
       } catch (toolExecError) {
-        logger.error('Direct tool execution threw an exception', {
-          email: existingEmail,
+        logger.error('registration_verification: tool execution threw', {
+          email: maskedEmail,
           error: String(toolExecError),
         });
-        return this.applyPolicy(
-          `Tuve un problema técnico al consultar el sistema para ${existingEmail}. Por favor intenta de nuevo en unos minutos o contáctanos al 0274-2623898.`,
-          'registration',
-          [],
-          0,
-          true,
-          logger
-        );
+        return this.applyPolicy(TECH_ERROR_MSG, 'registration', [], 0, true, logger);
       }
 
-      logger.info('BRANCH A — direct tool result received', {
-        email: existingEmail,
-        resultLength: rawResult?.length ?? 0,
-      });
-
-      if (!rawResult || rawResult.trim() === '') {
-        return this.applyPolicy(
-          `No recibí respuesta del sistema de inscripciones para ${existingEmail}. Por favor intenta más tarde o contacta al soporte.`,
-          'registration',
-          [],
-          0,
-          true,
-          logger
-        );
-      }
-
+      let parsed: { status?: string; cantidad_cursos?: number; cursos?: unknown; error?: string };
       try {
-        const parsed = JSON.parse(rawResult);
-        const answer = this.formatRegistrationResponse(parsed, existingEmail);
-        return this.applyPolicy(answer, 'registration', [], 0, true, logger);
+        parsed = JSON.parse(rawResult);
       } catch (parseError) {
-        logger.error('BRANCH A — failed to parse JSON result', {
-          email: existingEmail,
-          rawResult: rawResult.substring(0, 300),
+        logger.error('registration_verification: failed to parse tool result', {
+          email: maskedEmail,
           parseError: String(parseError),
         });
-        return this.applyPolicy(
-          `No pude interpretar la respuesta del sistema para ${existingEmail}. Por favor intenta de nuevo o contacta al soporte (contactoibime@gmail.com).`,
-          'registration',
-          [],
-          0,
-          true,
-          logger
-        );
+        return this.applyPolicy(TECH_ERROR_MSG, 'registration', [], 0, true, logger);
       }
+
+      if (!parsed || typeof parsed !== 'object') {
+        logger.error('registration_verification: tool returned non-object result', { email: maskedEmail });
+        return this.applyPolicy(TECH_ERROR_MSG, 'registration', [], 0, true, logger);
+      }
+
+      if (parsed.error) {
+        logger.error('registration_verification: tool returned error', { email: maskedEmail });
+        return this.applyPolicy(TECH_ERROR_MSG, 'registration', [], 0, true, logger);
+      }
+
+      // El teléfono provisto no era suficiente (la tool aún exige uno válido).
+      if (parsed.status === 'needs_phone') {
+        return this.applyPolicy(ASK_FOR_PHONE, 'registration', [], 0, true, logger);
+      }
+
+      if (parsed.status === 'verified') {
+        await this.verificationThrottle?.reset(existingEmail);
+        logger.info('registration_verification: success', {
+          email: maskedEmail,
+          courseCount: parsed.cantidad_cursos,
+        });
+        const answer = this.formatVerifiedResponse(parsed);
+        return this.applyPolicy(answer, 'registration', [], 0, true, logger);
+      }
+
+      // status === 'not_verified' (correo inexistente O teléfono no coincide →
+      // tratados idénticamente). Cuenta como intento fallido para el throttle.
+      await this.verificationThrottle?.recordFailure(existingEmail);
+      logger.warn('registration_verification: not_verified', { email: maskedEmail });
+      return this.applyPolicy(NOT_VERIFIED_GENERIC, 'registration', [], 0, true, logger);
     }
 
     // ─── BRANCH B: EMAIL UNKNOWN → LLM asks user for email ──────────────────
@@ -307,7 +377,20 @@ export class ChatOrchestrator {
   }
 
   // ─── CATALOG FLOW ───────────────────────────────────────────────────────
-  private async handleCatalog(
+  private handleCatalog = wrapChain(
+    async (
+      userMessage: string,
+      conversationHistory: Array<{ role: 'user' | 'assistant'; text: string }>,
+      requestId?: string,
+      isFrustrated?: boolean
+    ): Promise<ChatResponse> => {
+      return this._handleCatalog(userMessage, conversationHistory, requestId, isFrustrated);
+    },
+    'ChatOrchestrator.handleCatalog',
+    { flow: 'catalog' }
+  );
+
+  private async _handleCatalog(
     userMessage: string,
     conversationHistory: Array<{ role: 'user' | 'assistant'; text: string }>,
     requestId?: string,
@@ -345,7 +428,20 @@ export class ChatOrchestrator {
   }
 
   // ─── GENERAL FLOW ───────────────────────────────────────────────────────
-  private async handleGeneral(
+  private handleGeneral = wrapChain(
+    async (
+      userMessage: string,
+      conversationHistory: Array<{ role: 'user' | 'assistant'; text: string }>,
+      requestId?: string,
+      isFrustrated?: boolean
+    ): Promise<ChatResponse> => {
+      return this._handleGeneral(userMessage, conversationHistory, requestId, isFrustrated);
+    },
+    'ChatOrchestrator.handleGeneral',
+    { flow: 'general' }
+  );
+
+  private async _handleGeneral(
     userMessage: string,
     conversationHistory: Array<{ role: 'user' | 'assistant'; text: string }>,
     requestId?: string,
@@ -393,7 +489,20 @@ export class ChatOrchestrator {
   }
 
   // ─── GENERAL FALLBACK ───────────────────────────────────────────────────
-  private async handleGeneralFallback(
+  private handleGeneralFallback = wrapChain(
+    async (
+      userMessage: string,
+      conversationHistory: Array<{ role: 'user' | 'assistant'; text: string }>,
+      requestId?: string,
+      isFrustrated?: boolean
+    ): Promise<ChatResponse> => {
+      return this._handleGeneralFallback(userMessage, conversationHistory, requestId, isFrustrated);
+    },
+    'ChatOrchestrator.handleGeneralFallback',
+    { flow: 'general-fallback' }
+  );
+
+  private async _handleGeneralFallback(
     userMessage: string,
     conversationHistory: Array<{ role: 'user' | 'assistant'; text: string }>,
     requestId?: string,
@@ -468,17 +577,53 @@ export class ChatOrchestrator {
   /**
    * Extrae el primer email del historial + (opcionalmente) del mensaje actual.
    * Si currentMessage es '' (vacío), sólo analiza el historial.
+   *
+   * IMPORTANTE: solo considera mensajes del USUARIO. Los mensajes del asistente
+   * contienen correos institucionales (contactoibime@gmail.com) que no deben
+   * confundirse con el correo que el usuario provee.
    */
   private extractEmailFromConversation(
     history: Array<{ role: 'user' | 'assistant'; text: string }>,
     currentMessage: string
   ): string | null {
-    const sources = currentMessage.trim() === ''
-      ? history
-      : [...history, { role: 'user' as const, text: currentMessage }];
-
-    const allText = sources.map(m => m.text).join(' ');
+    const allText = this.collectUserText(history, currentMessage);
     return this.extractEmailFromText(allText);
+  }
+
+  /** Une el texto de los mensajes del usuario (historial + mensaje actual). */
+  private collectUserText(
+    history: Array<{ role: 'user' | 'assistant'; text: string }>,
+    currentMessage: string
+  ): string {
+    const userTexts = history.filter((m) => m.role === 'user').map((m) => m.text);
+    if (currentMessage.trim() !== '') userTexts.push(currentMessage);
+    return userTexts.join(' ');
+  }
+
+  /**
+   * Extrae el primer teléfono plausible (7-15 dígitos) de un texto, ignorando
+   * los dígitos que pertenezcan a correos. Devuelve la subcadena original (la
+   * normalización para comparar se hace en la capa de verificación).
+   */
+  private extractPhoneFromText(text: string): string | null {
+    if (!text || text.trim() === '') return null;
+    // Quita correos para no confundir sus dígitos con un teléfono.
+    const withoutEmails = text.replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/gi, ' ');
+    const candidates = withoutEmails.match(/\+?\d[\d\s().-]{5,}\d/g);
+    if (!candidates) return null;
+    for (const candidate of candidates) {
+      const digits = candidate.replace(/\D/g, '');
+      if (digits.length >= 7 && digits.length <= 15) return candidate.trim();
+    }
+    return null;
+  }
+
+  /** Extrae el teléfono solo de los mensajes del usuario (nunca del asistente). */
+  private extractPhoneFromUserMessages(
+    history: Array<{ role: 'user' | 'assistant'; text: string }>,
+    currentMessage: string
+  ): string | null {
+    return this.extractPhoneFromText(this.collectUserText(history, currentMessage));
   }
 
 
@@ -514,36 +659,23 @@ export class ChatOrchestrator {
     return `\n\n${ragContext}\n\nUtiliza la información anterior como referencia para responder con precisión. Si no es relevante para la pregunta del usuario, responde con tu conocimiento institucional.`;
   }
 
-  private formatRegistrationResponse(result: any, email: string): string {
-    if (!result || typeof result !== 'object') {
-      return `No pude obtener información del sistema para el correo ${email}. Por favor intenta de nuevo o contacta al soporte (contactoibime@gmail.com).`;
+  /**
+   * Formatea la respuesta de una verificación EXITOSA (identidad ya probada por
+   * teléfono). Solo se invoca con status 'verified', por lo que asume que hay
+   * registros; si por inconsistencia de datos no hay cursos legibles, degrada con
+   * gracia sin afirmar nada falso.
+   */
+  private formatVerifiedResponse(result: { cantidad_cursos?: number; cursos?: unknown }): string {
+    const cursos = Array.isArray(result.cursos)
+      ? (result.cursos as unknown[]).filter((c): c is string => typeof c === 'string' && c.trim() !== '')
+      : [];
+
+    if (cursos.length === 0) {
+      return 'Verifiqué tu identidad correctamente, pero no pude obtener el detalle de tus cursos en este momento. Por favor contáctanos al 0274-2623898 para ayudarte directamente.';
     }
 
-    if (result.error) {
-      return `Tuve un inconveniente técnico al consultar las inscripciones para ${email}. Por favor intenta en unos minutos o comunícate con nosotros al 0274-2623898.`;
-    }
-
-    // PRIORIDAD 1: hay cursos → mostrarlos siempre (evaluado ANTES de result.status)
-    if (Array.isArray(result.cursos) && result.cursos.length > 0) {
-      const cantidad = result.cantidad_cursos ?? result.cursos.length;
-      const courseList = result.cursos
-        .filter((c: any) => typeof c === 'string' && c.trim() !== '')
-        .map((c: string) => `• ${c.trim()}`)
-        .join('\n');
-      return `¡Encontré tu inscripción! Estás registrado(a) en ${cantidad} curso(s):\n${courseList}\n\n¿Hay algo más en lo que pueda ayudarte?`;
-    }
-
-    // PRIORIDAD 2: sin cursos, estado explícito
-    if (result.status === 'no_registrado') {
-      return `No encontré inscripciones activas en el sistema para el correo **${email}**. ¿Es posible que hayas usado un correo diferente al registrarte, o que aún no te hayas inscrito en algún taller? Puedes contactarnos al 0274-2623898 para más información.`;
-    }
-
-    // PRIORIDAD 3: estado 'registrado' pero array vacío/ausente (inconsistencia de DB)
-    if (result.status === 'registrado') {
-      return `El sistema indica que tienes un registro para el correo ${email}, pero no pude obtener el detalle de los cursos en este momento. Por favor contáctanos al 0274-2623898 para que podamos ayudarte directamente.`;
-    }
-
-    // Fallback seguro — nunca expone internals de depuración al usuario
-    return `No pude procesar la respuesta del sistema para el correo ${email}. Por favor intenta de nuevo o contáctanos al 0274-2623898 o a contactoibime@gmail.com.`;
+    const cantidad = result.cantidad_cursos ?? cursos.length;
+    const courseList = cursos.map((c) => `• ${c.trim()}`).join('\n');
+    return `¡Listo! Verifiqué tu identidad. Estás inscrito(a) en ${cantidad} curso(s):\n${courseList}\n\n¿Hay algo más en lo que pueda ayudarte?`;
   }
 }

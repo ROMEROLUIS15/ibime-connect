@@ -7,6 +7,7 @@ import { RAGService } from '../../services/rag.service.js';
 import { ChatService } from '../../services/chat.service.js';
 import { SessionMemoryService } from '../../services/session-memory.service.js';
 import { SentimentAnalyzerService } from '../../services/sentiment-analyzer.service.js';
+import { VerificationThrottleService } from '../../services/verification-throttle.service.js';
 import { CurationGraph } from '../../modules/agents/curation-graph.js';
 import type { IEmbeddingService, IKnowledgeRepository, ILLMProvider } from '../../domain/interfaces/index.js';
 
@@ -15,6 +16,7 @@ container.registerSingleton<IKnowledgeRepository>('IKnowledgeRepository', Knowle
 container.registerSingleton<ILLMProvider>('ILLMProvider', GroqProvider);
 container.registerSingleton<SessionMemoryService>('SessionMemoryService', SessionMemoryService);
 container.registerSingleton<SentimentAnalyzerService>('SentimentAnalyzerService', SentimentAnalyzerService);
+container.registerSingleton<VerificationThrottleService>('VerificationThrottleService', VerificationThrottleService);
 container.registerSingleton<CurationGraph>(CurationGraph);
 
 container.register('RAGService', {
@@ -32,7 +34,8 @@ container.register('ChatService', {
       c.resolve<ILLMProvider>('ILLMProvider'),
       c.resolve<RAGService>('RAGService'),
       c.resolve<SessionMemoryService>('SessionMemoryService'),
-      c.resolve<SentimentAnalyzerService>('SentimentAnalyzerService')
+      c.resolve<SentimentAnalyzerService>('SentimentAnalyzerService'),
+      c.resolve<VerificationThrottleService>('VerificationThrottleService')
     );
   },
 });

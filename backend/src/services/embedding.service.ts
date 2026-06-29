@@ -27,7 +27,7 @@ export class EmbeddingService implements IEmbeddingService {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-goog-api-key': ENV.GEMINI_API_KEY as string,
+          'x-goog-api-key': ENV.GEMINI_API_KEY,
         },
         body: JSON.stringify({
           model: `models/${EmbeddingService.MODEL}`,

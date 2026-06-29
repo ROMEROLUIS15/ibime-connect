@@ -16,6 +16,8 @@ export interface GenerateAnswerInput {
   readonly userMessage: string;
   readonly conversationHistory: ReadonlyArray<{ readonly role: 'user' | 'assistant'; readonly text: string }>;
   readonly context: readonly KnowledgeMatch[];
+  /** UUID v4 estable por conversación. Clave autoritativa del Privacy Gate en Redis. */
+  readonly sessionId?: string;
 }
 
 // ─── Port ─────────────────────────────────────────────────────────────────────

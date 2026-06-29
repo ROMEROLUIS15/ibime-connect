@@ -87,8 +87,8 @@ describe('RegistrationService', () => {
     it('should return matching registrations for the given email', async () => {
       // Arrange
       const expected = [
-        { course_name: 'Curso A', name: 'Juan', created_at: '2026-01-01' },
-        { course_name: 'Curso B', name: 'Juan', created_at: '2026-02-01' },
+        { course_name: 'Curso A', name: 'Juan', phone: '04121234567', created_at: '2026-01-01' },
+        { course_name: 'Curso B', name: 'Juan', phone: '04121234567', created_at: '2026-02-01' },
       ];
       mocks.mockSelect.mockReturnValueOnce({ eq: mocks.mockEq });
       mocks.mockEq.mockResolvedValueOnce({ data: expected, error: null });
@@ -98,7 +98,7 @@ describe('RegistrationService', () => {
 
       // Assert
       expect(results).toEqual(expected);
-      expect(mocks.mockSelect).toHaveBeenCalledWith('course_name, name, created_at');
+      expect(mocks.mockSelect).toHaveBeenCalledWith('course_name, name, phone, created_at');
       expect(mocks.mockEq).toHaveBeenCalledWith('email', 'juan@test.com');
     });
 

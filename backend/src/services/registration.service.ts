@@ -35,7 +35,7 @@ export class RegistrationService {
 
     const { data, error } = await supabaseClient
       .from('course_registrations')
-      .select('course_name, name, created_at')
+      .select('course_name, name, phone, created_at')
       .eq('email', normalizedEmail);
 
     if (error) {

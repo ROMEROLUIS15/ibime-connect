@@ -1,6 +1,7 @@
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { z } from 'zod';
 
 // --- SOLUCIÓN PARA ESM ---
 // En ES Modules (__dirname) no existe, debemos construirlo así:
@@ -17,31 +18,57 @@ if (result.error) {
   console.log(`[ibime-backend] Archivo .env cargado desde: ${envPath}`);
 }
 
-export const ENV = {
-  PORT: process.env.PORT || 3000,
-  SUPABASE_URL: process.env.SUPABASE_URL,
-  SUPABASE_PROJECT_ID: process.env.SUPABASE_PROJECT_ID,
-  SUPABASE_PUBLISHABLE_KEY: process.env.SUPABASE_PUBLISHABLE_KEY,
-  SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
-  GEMINI_API_KEY: process.env.GEMINI_API_KEY,
-  GROQ_API_KEY: process.env.GROQ_API_KEY,
-  FRONTEND_URL: process.env.FRONTEND_URL || 'http://localhost:5173',
-  REDIS_URL: process.env.REDIS_URL || 'redis://localhost:6379',
-  ADMIN_SECRET: process.env.ADMIN_SECRET,
-};
+/**
+ * Schema de variables de entorno — ÚNICA fuente de verdad.
+ * El tipo `Env` se infiere de aquí, por lo que validación y tipos no pueden
+ * divergir (a diferencia de un check manual + `as string`).
+ *
+ * - Requeridas: sin default → la app no arranca si faltan o tienen mal formato.
+ * - Opcionales: `.optional()` → quedan `string | undefined` a propósito.
+ * - Con default: usan el valor de desarrollo cuando la variable no está.
+ *
+ * Se exporta para poder probarlo sin disparar el `process.exit` del arranque.
+ */
+export const envSchema = z.object({
+  PORT: z.coerce.number().int().positive().default(3000),
+  SUPABASE_URL: z.string().url('SUPABASE_URL debe ser una URL válida'),
+  SUPABASE_PROJECT_ID: z.string().optional(),
+  SUPABASE_PUBLISHABLE_KEY: z.string().optional(),
+  SUPABASE_SERVICE_ROLE_KEY: z.string().min(1, 'SUPABASE_SERVICE_ROLE_KEY es requerida'),
+  GEMINI_API_KEY: z.string().min(1, 'GEMINI_API_KEY es requerida'),
+  GROQ_API_KEY: z.string().min(1, 'GROQ_API_KEY es requerida'),
+  FRONTEND_URL: z.string().url('FRONTEND_URL debe ser una URL válida').default('http://localhost:5173'),
+  REDIS_URL: z.string().url('REDIS_URL debe ser una URL válida').default('redis://localhost:6379'),
+  ADMIN_SECRET: z.string().optional(),
 
-// Validación para que la app no arranque si faltan variables críticas
-const requiredEnvs = [
-  'SUPABASE_URL',
-  'SUPABASE_SERVICE_ROLE_KEY',
-  'GEMINI_API_KEY',
-  'GROQ_API_KEY',
-  'REDIS_URL'
-];
+  // Observability (LangSmith) — opcional, graceful degradation si no está
+  LANGSMITH_API_KEY: z.string().optional(),
+  LANGSMITH_TRACING: z
+    .string()
+    .optional()
+    .default('true')
+    .transform((v) => v === 'true' || v === '1'),
+  LANGSMITH_PROJECT: z.string().optional().default('ibime-connect'),
+});
 
-for (const key of requiredEnvs) {
-  if (!ENV[key as keyof typeof ENV]) {
-    console.error(`ERROR CRÍTICO: Falta la variable de entorno ${key}. Verifica tu archivo .env.`);
+export type Env = z.infer<typeof envSchema>;
+
+/**
+ * Valida `process.env` contra el schema. Si algo falta o tiene mal formato,
+ * reporta TODOS los problemas a la vez y aborta el arranque (process.exit(1)).
+ */
+function loadEnv(): Env {
+  const parsed = envSchema.safeParse(process.env);
+
+  if (!parsed.success) {
+    console.error('ERROR CRÍTICO: variables de entorno inválidas o ausentes. Verifica tu archivo .env:');
+    for (const issue of parsed.error.issues) {
+      console.error(`  - ${issue.path.join('.')}: ${issue.message}`);
+    }
     process.exit(1);
   }
+
+  return parsed.data;
 }
+
+export const ENV = loadEnv();
