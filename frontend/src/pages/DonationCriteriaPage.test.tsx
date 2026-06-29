@@ -14,16 +14,14 @@ describe('DonationCriteriaPage', () => {
   it('renders the main title', () => {
     renderPage();
     expect(
-      screen.getByText(
-        'Criterios de donación para la aceptación de materiales Bibliohemerográficos en las Bibliotecas públicas'
-      )
+      screen.getByText((content) => content.includes('Dona conocimiento'))
     ).toBeInTheDocument();
   });
 
-  it('renders the key conservation criterion', () => {
+  it('renders the stats section', () => {
     renderPage();
-    const matches = screen.getAllByText('Solo se aceptarán documentos en buen estado de conservación');
-    expect(matches.length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText('5,000+')).toBeInTheDocument();
+    expect(screen.getByText('Libros donados')).toBeInTheDocument();
   });
 
   it('renders Estado de conservación heading', () => {
@@ -32,10 +30,26 @@ describe('DonationCriteriaPage', () => {
     expect(matches.length).toBeGreaterThanOrEqual(1);
   });
 
-  it('renders without errors', () => {
+  it('renders criteria section', () => {
+    renderPage();
+    expect(screen.getByText('Criterios de aceptación')).toBeInTheDocument();
+    expect(screen.getByText('detallados')).toBeInTheDocument();
+  });
+
+  it('renders timeline process', () => {
+    renderPage();
+    expect(screen.getByText('Así funciona')).toBeInTheDocument();
+    expect(screen.getByText('Evalúa')).toBeInTheDocument();
+    expect(screen.getByText('Entrega')).toBeInTheDocument();
+  });
+
+  it('renders CTA section', () => {
     renderPage();
     expect(
-      screen.getByText(/Criterios de donación/)
+      screen.getByText('¿Listo para donar?')
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('¡Tu donación importa!')
     ).toBeInTheDocument();
   });
 });
