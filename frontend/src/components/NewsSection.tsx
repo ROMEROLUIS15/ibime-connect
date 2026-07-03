@@ -2,7 +2,7 @@ import { Calendar, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import libraryActivity from '@/assets/library-activity.jpg';
-import communityEvent from '@/assets/community-event.jpg';
+import communityEvent from '@/assets/community-event.jpeg';
 
 const news = [
   {

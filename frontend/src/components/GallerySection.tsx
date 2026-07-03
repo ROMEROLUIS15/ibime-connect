@@ -1,6 +1,6 @@
 import libraryBuilding from '@/assets/library-building.jpg';
 import libraryActivity from '@/assets/library-activity.jpg';
-import communityEvent from '@/assets/community-event.jpg';
+import communityEvent from '@/assets/community-event.jpeg';
 
 const galleries = [
   {

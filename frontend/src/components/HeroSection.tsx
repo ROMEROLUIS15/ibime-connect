@@ -3,7 +3,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 import fachadaIbime from '@/assets/fachada-ibime.jpeg';
 import libraryActivity from '@/assets/library-activity.jpg';
-import communityEvent from '@/assets/community-event.jpg';
+import communityEvent from '@/assets/cultura-para-todos.jpeg';
 
 // Unified institutional accent from new color palette (Light Blue)
 const IBIME_ACCENT = '#5AA5CC';
