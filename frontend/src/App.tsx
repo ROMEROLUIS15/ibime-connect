@@ -8,6 +8,7 @@ import NotFound from "./pages/NotFound";
 import KohaPage from "./pages/KohaPage";
 import LibroHabladoPage from "./pages/LibroHabladoPage";
 import FondoEditorialPage from "./pages/FondoEditorialPage";
+import DonationCriteriaPage from "./pages/DonationCriteriaPage";
 import { IBIMEAssistant } from "./components/IBIMEAssistant"; // 1. Importación
 
 const queryClient = new QueryClient();
@@ -23,6 +24,7 @@ const App = () => (
           <Route path="/koha" element={<KohaPage />} />
           <Route path="/libro-hablado" element={<LibroHabladoPage />} />
           <Route path="/fondo-editorial" element={<FondoEditorialPage />} />
+          <Route path="/donation-criteria" element={<DonationCriteriaPage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
         {/* 2. El asistente se coloca aquí para que flote sobre todas las rutas */}

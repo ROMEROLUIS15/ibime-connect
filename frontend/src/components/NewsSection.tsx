@@ -1,19 +1,11 @@
 import { Calendar, ArrowRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import libraryActivity from '@/assets/library-activity.jpg';
-import communityEvent from '@/assets/community-event.jpg';
+import communityEvent from '@/assets/community-event.jpeg';
+import donaciones from '@/assets/donaciones.jpeg';
 
 const news = [
-  {
-    id: 1,
-    image: communityEvent,
-    date: '14 Noviembre 2025',
-    category: 'Institucional',
-    title: 'Conformación del Congreso Nacional Constituyente Obrero',
-    excerpt:
-      'Cumpliendo con el llamado a la patria con la clase obrera, se llevó a cabo la convocatoria para la Conformación del Congreso Nacional Constituyente Obrero dentro del Instituto Autónomo de Servicios de Bibliotecas e Información del Estado Bolivariano de Mérida, trabajadores y trabajadoras unidos participaron activamente y sin dilaciones en el proceso eleccionario de los Voceros y Voceras.',
-    featured: true,
-  },
   {
     id: 2,
     image: libraryActivity,
@@ -44,9 +36,6 @@ const news = [
 ];
 
 export const NewsSection = () => {
-  const featuredNews = news.find(n => n.featured);
-  const regularNews = news.filter(n => !n.featured);
-
   return (
     <section id="cartelera" className="py-20 bg-muted/30">
       <div className="container mx-auto px-4">
@@ -64,52 +53,50 @@ export const NewsSection = () => {
           </Button>
         </div>
 
-        {/* Featured News */}
-        {featuredNews && (
-          <article className="card-institutional mb-8 overflow-hidden p-0">
-            <div className="grid md:grid-cols-2 gap-0">
-              <div className="relative overflow-hidden aspect-video md:aspect-auto">
-                <img
-                  src={featuredNews.image}
-                  alt={featuredNews.title}
-                  className="w-full h-full object-cover"
-                />
-                <span className="absolute top-4 left-4 px-4 py-2 text-sm font-medium rounded-full bg-ebime-red text-primary-foreground">
-                  Destacado
+        {/* Destacado */}
+        <article className="card-institutional mb-8 overflow-hidden p-0">
+          <div className="grid lg:grid-cols-12 gap-0 bg-background">
+            <div className="relative overflow-hidden lg:col-span-4 flex items-center justify-center">
+              <img
+                src={donaciones}
+                alt="Donación de materiales bibliográficos"
+                className="w-full h-full lg:max-h-[350px] object-contain"
+              />
+            </div>
+            <div className="p-6 lg:p-10 flex flex-col justify-center lg:col-span-8">
+              <div className="flex items-center gap-2 text-muted-foreground text-sm mb-3">
+                <Calendar className="w-4 h-4" />
+                <time dateTime="2025-11-14">14 Noviembre 2025</time>
+                <span className="px-2 py-0.5 rounded-full bg-secondary/10 text-secondary text-xs font-medium">
+                  Institucional
                 </span>
               </div>
-              <div className="p-6 md:p-8 flex flex-col justify-center">
-                <div className="flex items-center gap-2 text-muted-foreground text-sm mb-3">
-                  <Calendar className="w-4 h-4" />
-                  {featuredNews.date}
-                  <span className="px-2 py-0.5 rounded-full bg-secondary/10 text-secondary text-xs">
-                    {featuredNews.category}
-                  </span>
-                </div>
-                <h3 className="text-2xl md:text-3xl font-display font-bold text-foreground mb-4">
-                  {featuredNews.title}
-                </h3>
-                <p className="text-muted-foreground leading-relaxed mb-6">
-                  {featuredNews.excerpt}
-                </p>
-                <p className="text-sm text-muted-foreground italic mb-4">
-                  Este es un llamado a la renovación profunda de nuestras estructuras, basado en las 7 grandes transformaciones impulsadas por nuestro Presidente Obrero Nicolás Maduro y el Gobernador Arnaldo Sánchez.
-                </p>
-                <a
-                  href="#"
-                  className="inline-flex items-center text-sm font-medium text-secondary hover:text-secondary/80 transition-colors"
-                >
-                  Leer más
-                  <ArrowRight className="ml-1 w-4 h-4" />
-                </a>
-              </div>
+              <h3 className="text-2xl md:text-3xl font-display font-bold text-foreground mb-4">
+                Criterios de donación de materiales bibliográficos
+              </h3>
+              <p className="text-muted-foreground leading-relaxed mb-4">
+                Conoce los requisitos y condiciones para donar materiales bibliográficos 
+                a nuestra red de bibliotecas públicas. Aceptamos libros, revistas y otros 
+                materiales documentales en buen estado de conservación.
+              </p>
+              <p className="text-muted-foreground leading-relaxed mb-6 italic">
+                Todos los materiales donados serán evaluados por nuestro equipo técnico 
+                para determinar su inclusión en el acervo bibliográfico.
+              </p>
+              <Link
+                to="/donation-criteria"
+                className="inline-flex items-center text-sm font-medium text-secondary hover:text-secondary/80 transition-colors"
+              >
+                Leer más
+                <ArrowRight className="ml-1 w-4 h-4" />
+              </Link>
             </div>
-          </article>
-        )}
+          </div>
+        </article>
 
         {/* News Grid */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {regularNews.map((item, index) => (
+          {news.map((item, index) => (
             <article
               key={item.id}
               className="card-institutional group overflow-hidden p-0"
