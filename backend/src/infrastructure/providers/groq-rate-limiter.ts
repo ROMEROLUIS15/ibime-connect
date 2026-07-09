@@ -12,9 +12,9 @@
  * the full quota — a 24h window has no burst to absorb, so backing off there would
  * only forfeit requests. Uses Redis INCR + EXPIRE for atomic counters.
  *
- * The per-day windows matter: on the free tier the daily request cap (1,000) is
- * far tighter than the per-minute one, so a steady trickle of traffic exhausts
- * the day long before it ever trips TPM/RPM.
+ * The per-day windows matter: on the free tier the binding limit is TPD, not RPD.
+ * A RAG answer costs ~1,500 tokens (measured), so the 200,000 token/day quota runs
+ * out after ~132 answers — long before the 1,000 request/day cap is ever reached.
  *
  * Fail-open: if Redis is unavailable, all requests proceed normally
  * (consistent with the project's graceful degradation pattern).

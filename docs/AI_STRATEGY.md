@@ -352,7 +352,7 @@ Si Redis no está disponible, `CacheService` entra en **graceful degradation** a
 
 Los cuatro límites reales viven en el entorno (`GROQ_TPM_LIMIT`, `GROQ_RPM_LIMIT`, `GROQ_RPD_LIMIT`, `GROQ_TPD_LIMIT`) y el margen —que solo afecta a los dos primeros— en `GROQ_SAFETY_MARGIN`. Cambiar de plan o de modelo no requiere tocar código.
 
-> **Atención al cupo diario**: 1,000 requests/día es el límite más estrecho del free tier — se agota mucho antes que el TPM bajo tráfico sostenido. Al alcanzarlo, el asistente responde 429 hasta la medianoche UTC.
+> **Atención al cupo diario**: el límite más estrecho del free tier son los **200,000 tokens/día**, no las 1,000 requests. A ~1,512 tokens por respuesta RAG (medido), el TPD se agota en **~132 respuestas** — muy por debajo del cupo de peticiones, que en la práctica nunca se alcanza. Al agotarlo, el asistente responde 429 hasta la medianoche UTC.
 
 ---
 
@@ -373,7 +373,7 @@ Request del usuario
   → Asegura que cada llamada LLM sea predecible y acotada
   ↓
 [Capa 2] GroqRateLimiter.canProceed() (groq-rate-limiter.ts)
-  → Sliding window Redis: TPM ≤ 4,800 | RPM ≤ 24
+  → Sliding window Redis: TPM ≤ 6,400 | RPM ≤ 24 | RPD ≤ 1,000 | TPD ≤ 200,000
   → Si está saturado → respuesta friendly "intenta en N segundos"
   ↓
 [GroqProvider] generateAnswer()
@@ -397,19 +397,25 @@ Request del usuario
 | `general` (RAG miss / fallback) | `0.3` | **300** | ↓ de 500 |
 | `general` (saludo) | — | `0` | Sin cambio |
 
-### Cálculo de capacidad con 10 usuarios simultáneos
+### Cálculo de capacidad (medido en producción, 2026-07-09)
 
-| Escenario | Tokens/request (prom.) | 10 usuarios | ¿Dentro del umbral? |
+Los `Max Tokens` de la tabla anterior acotan **solo la salida**. Lo que Groq cobra contra el TPM/TPD es el total: system prompt + contexto RAG + historial + salida. Tres peticiones reales a `POST /api/v1/chat` dieron `tokensUsed` de **1,473 / 1,512 / 1,523** — mediana **~1,512 tokens por respuesta RAG**, unas 5× la salida.
+
+| Escenario | Tokens/request (total) | 10 usuarios/min | ¿Dentro del umbral? |
 |:---|:---:|:---:|:---:|
-| **Antes** (v2.2.0) | ~550 | ~5,500 TPM | ❌ Supera límite (115%) |
-| **Después** (v2.3.0) | ~300 | ~3,000 TPM | ✅ 63% del límite |
+| Respuesta RAG (medido) | ~1,512 | ~15,120 TPM | ❌ 236% del umbral operativo (6,400) |
+| Saludo (sin LLM) | `0` | `0` | ✅ No consume cuota |
+
+Con 6,400 TPM operativos, el techo real es de **~4 respuestas RAG por minuto**, no 10 usuarios simultáneos. Y con 200,000 tokens/día, de **~132 respuestas diarias**.
+
+> **El corpus mueve este número.** Los ~1,512 tokens corresponden a un contexto RAG de **un solo chunk**: el `MIN_VALID_THRESHOLD = 0.65` de `rag.service.ts` descarta el resto, pese a que `matchCount` es 5. Si se puebla la base de conocimientos y pasan los cinco, el coste por respuesta sube hacia los ~3,100 tokens y el techo diario cae hacia ~64. Mejorar el RAG y ampliar la cuota son el mismo presupuesto.
 
 ### Comportamiento ante saturación
 
 | Situación | Respuesta al usuario |
 |:---|:---|
-| TPM/RPM al 80% (GroqRateLimiter) | HTTP 429 + `"El asistente está muy ocupado. Intenta en N segundos."` |
-| RPD/TPD al 80% (cuota diaria agotada) | HTTP 429 + `"El asistente alcanzó su cuota de consultas por hoy... intenta mañana."` |
+| TPM/RPM al 80% del límite real (GroqRateLimiter) | HTTP 429 + `"El asistente está muy ocupado. Intenta en N segundos."` |
+| RPD/TPD al 100% (cuota diaria íntegra, sin margen) | HTTP 429 + `"El asistente alcanzó su cuota de consultas por hoy... intenta mañana."` |
 | Groq devuelve 429 directamente | Espera `Retry-After` → reintento → si falla: mensaje friendly |
 | IP supera 6 msg/min (chatLimiter) | HTTP 429 + `"Demasiados mensajes. Por favor espera un momento."` |
 | Redis no disponible | Fail-open: el sistema opera sin rate limiter (graceful degradation) |
