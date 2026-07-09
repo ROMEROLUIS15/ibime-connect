@@ -109,13 +109,13 @@ export class DocumentProcessorService {
         });
       }
 
-      // Avanzamos el índice de inicio, restando el overlap para crear solapamiento
-      startIndex = endIndex - DocumentProcessorService.CHUNK_OVERLAP;
-      
-      // Si el solapamiento nos lleva hacia atrás sin avanzar realmente, forzamos el avance
-      if (startIndex <= chunks.length * (DocumentProcessorService.CHUNK_SIZE - DocumentProcessorService.CHUNK_OVERLAP)) {
-         startIndex = endIndex; // Fallback de seguridad para evitar loops infinitos
-      }
+      // Retrocedemos el inicio del siguiente chunk para crear el solapamiento.
+      const nextStart = endIndex - DocumentProcessorService.CHUNK_OVERLAP;
+
+      // El solapamiento solo es viable si el corte avanza. Cuando el chunk sale
+      // más corto que el overlap, `nextStart` caería en el chunk anterior (o antes)
+      // y el bucle no terminaría: en ese caso se renuncia al solape y se sigue.
+      startIndex = nextStart > startIndex ? nextStart : endIndex;
     }
 
     logger.info('Texto dividido en chunks exitosamente', { chunksCreated: chunks.length });

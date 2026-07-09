@@ -9,6 +9,7 @@ import { DocumentProcessorService, type PdfTextExtractor } from '../../services/
 // --- Helpers ------------------------------------------------------------------
 
 const CHUNK_SIZE = 1000;
+const CHUNK_OVERLAP = 200;
 
 /**
  * PDF mínimo válido con una línea de texto. Se construye a mano para no depender
@@ -119,28 +120,29 @@ describe('DocumentProcessorService', () => {
   });
 
   describe('chunkText — solapamiento', () => {
-    it('solapa los chunks a partir del segundo, repitiendo el final del anterior', () => {
+    it('solapa TODOS los cortes, incluido el primero', () => {
+      // Regresión: el antiguo "fallback de seguridad" comparaba startIndex contra
+      // chunks.length * (CHUNK_SIZE - CHUNK_OVERLAP) — una condición que no mide
+      // si el índice avanzó — y se disparaba ya en la primera iteración,
+      // descartando el overlap del corte 1→2.
       const chunks = service.chunkText(uniqueWords(500));
 
-      expect(chunks).toHaveLength(3);
-      // La cola del chunk 2 reaparece al principio del chunk 3.
-      expect(chunks[2].content).toContain(lastWord(chunks[1].content));
-      expect(firstWord(chunks[2].content)).not.toBe(firstWord(chunks[1].content));
+      expect(chunks.length).toBeGreaterThan(2);
+      for (let i = 1; i < chunks.length; i++) {
+        expect(chunks[i].content).toContain(lastWord(chunks[i - 1].content));
+        expect(firstWord(chunks[i].content)).not.toBe(firstWord(chunks[i - 1].content));
+      }
     });
 
-    it('DEFECTO CONOCIDO: el primer y el segundo chunk no solapan', () => {
-      // El "fallback de seguridad" de chunkText (startIndex <= chunks.length *
-      // (CHUNK_SIZE - CHUNK_OVERLAP)) se dispara en la primera iteración —
-      // 800 <= 1*800 — y descarta el overlap recién calculado. Resultado: el
-      // corte 1→2 pierde su contexto semántico, justo lo que el overlap existe
-      // para evitar. Los cortes siguientes sí solapan 200 caracteres.
-      //
-      // Este test fija el comportamiento ACTUAL. Al corregir el fallback debe
-      // pasar a afirmar lo contrario (que sí hay solapamiento).
-      const chunks = service.chunkText(uniqueWords(500));
+    it('el solapamiento tiene el tamaño configurado (~200 caracteres)', () => {
+      const texto = uniqueWords(500);
+      const chunks = service.chunkText(texto);
 
-      expect(chunks[1].content).not.toContain(lastWord(chunks[0].content));
-      expect(chunks[1].content).not.toContain(`${lastWord(chunks[0].content)} `);
+      for (let i = 1; i < chunks.length; i++) {
+        const anterior = chunks[i - 1].content;
+        const solape = anterior.slice(-CHUNK_OVERLAP + 1); // -1 por el espacio que come trim()
+        expect(chunks[i].content.startsWith(solape)).toBe(true);
+      }
     });
 
     it('no pierde texto: cada palabra del original aparece en algún chunk', () => {

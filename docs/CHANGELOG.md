@@ -40,6 +40,9 @@ Groq descomisiona `llama-3.1-8b-instant` el **2026-08-16**, único modelo de inf
 - **Ingesta de PDFs rota (`document-processor.service.ts`)**: el código invocaba `pdfParse(buffer)`, la API de `pdf-parse` **v1**. La versión instalada (v2) exporta la clase `PDFParse` y no es invocable, así que **todo `POST /upload-pdf` fallaba** con `Fallo al extraer el texto del PDF`. TypeScript no lo detectaba porque el tipo se anotaba a mano sobre un `require()` sin tipar. Se migra a `new PDFParse({ data }).getText()`.
 - **Marcadores de página en el corpus**: el `text` agregado de pdf-parse intercala `-- 1 of 3 --`. Se concatena `pages[].text` para que esos marcadores no acaben indexados como conocimiento.
 - **Extractor inyectable**: `DocumentProcessorService` recibe el extractor por constructor (con el real por defecto). `createRequire` esquiva los mocks de Vitest, así que sin esto la función no era testeable.
+- **Solapamiento perdido entre el primer y el segundo chunk (`chunkText`)**: el *fallback de seguridad* comparaba `startIndex` contra `chunks.length * (CHUNK_SIZE - CHUNK_OVERLAP)` — una condición que no mide si el índice avanzó — y se disparaba ya en la primera iteración, descartando el overlap del corte 1→2. Ese corte perdía su contexto semántico, justo lo que el solapamiento existe para evitar. Se sustituye por una comprobación de progreso real (`nextStart > startIndex`), que preserva los 200 caracteres en **todos** los cortes y sigue garantizando la terminación cuando un chunk sale más corto que el overlap.
+
+> **Requiere re-ingesta.** El arreglo cambia las fronteras de los chunks: los documentos ya vectorizados conservan el troceado antiguo hasta que se vuelvan a procesar.
 
 #### ✨ Nuevo
 - **+100 tests unitarios y de integración** (backend: 269 → 369). Cubren lo que no tenía red:
@@ -49,9 +52,6 @@ Groq descomisiona `llama-3.1-8b-instant` el **2026-08-16**, único modelo de inf
   - Integración del endpoint de chat: contrato HTTP, formato `messages[]` legacy, y la distinción entre el 429 **por minuto** ("intenta en N segundos") y el de **cuota diaria** ("intenta mañana").
   - Integración de los endpoints administrativos: 401 sin clave, con clave inválida, y el guard corriendo antes de parsear el multipart.
 - **E2E**: página de criterios de donación (incluido desbordamiento horizontal en móvil) y la UX del asistente al agotarse la cuota.
-
-#### 📌 Defecto conocido (documentado en un test)
-- El *fallback de seguridad* de `chunkText` anula el solapamiento entre el **primer y el segundo chunk** (`startIndex <= chunks.length * (CHUNK_SIZE - CHUNK_OVERLAP)` se cumple en la primera iteración). Los cortes siguientes sí solapan 200 caracteres. Un test fija el comportamiento actual y señala qué debe cambiar al arreglarlo.
 
 ---
 
