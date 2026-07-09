@@ -37,6 +37,24 @@ export const envSchema = z.object({
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1, 'SUPABASE_SERVICE_ROLE_KEY es requerida'),
   GEMINI_API_KEY: z.string().min(1, 'GEMINI_API_KEY es requerida'),
   GROQ_API_KEY: z.string().min(1, 'GROQ_API_KEY es requerida'),
+  // Modelo de inferencia en GroqCloud. `llama-3.1-8b-instant` quedó deprecado y
+  // deja de servirse el 2026-08-16; el reemplazo recomendado por Groq es GPT OSS 20B.
+  // Se puede sobreescribir por entorno sin tocar código (p. ej. openai/gpt-oss-120b).
+  GROQ_MODEL: z.string().min(1, 'GROQ_MODEL no puede estar vacío').default('openai/gpt-oss-20b'),
+
+  // Límites REALES del plan de Groq para GROQ_MODEL (no los umbrales operativos).
+  // Defaults = free tier de openai/gpt-oss-20b. Verifica los tuyos en la consola
+  // de Groq (Settings → Limits) si tienes un plan distinto.
+  GROQ_TPM_LIMIT: z.coerce.number().int().positive().default(8_000),
+  GROQ_RPM_LIMIT: z.coerce.number().int().positive().default(30),
+  GROQ_RPD_LIMIT: z.coerce.number().int().positive().default(1_000),
+  GROQ_TPD_LIMIT: z.coerce.number().int().positive().default(200_000),
+  /**
+   * Fracción del límite real a la que opera GroqRateLimiter (0 < x <= 1).
+   * Solo afecta a las ventanas por minuto (TPM/RPM), donde el colchón absorbe
+   * ráfagas. Las cuotas diarias (RPD/TPD) se consumen íntegras.
+   */
+  GROQ_SAFETY_MARGIN: z.coerce.number().positive().max(1).default(0.8),
   FRONTEND_URL: z.string().url('FRONTEND_URL debe ser una URL válida').default('http://localhost:5173'),
   REDIS_URL: z.string().url('REDIS_URL debe ser una URL válida').default('redis://localhost:6379'),
   ADMIN_SECRET: z.string().optional(),

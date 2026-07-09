@@ -201,9 +201,13 @@ Si el modelo de embeddings cambia, todas las claves previas son automáticamente
 - **Dimensiones**: `outputDimensionality: 768` (compatible con `pgvector` en PostgreSQL)
 - **Propósito**: Alta precisión semántica en español institucional
 
-### 2. Groq Cloud (`llama-3.1-8b-instant`)
+### 2. Groq Cloud (`openai/gpt-oss-20b`)
 - **Función**: Motor de inferencia (generación de texto)
 - **Propósito**: Latencia ultra baja, crítica para UX del ciudadano
+- **Configuración**: el id del modelo vive en `GROQ_MODEL` (env), no en el código.
+  Sustituye a `llama-3.1-8b-instant`, deprecado por Groq y fuera de servicio desde
+  el **2026-08-16**. Si se necesita más capacidad, el reemplazo del antiguo
+  `llama-3.3-70b-versatile` es `openai/gpt-oss-120b`.
 
 ### Parámetros reales de inferencia por flow (v2.3.0)
 
@@ -336,14 +340,19 @@ Si Redis no está disponible, `CacheService` entra en **graceful degradation** a
 
 ### Límites reales del Free Tier
 
-| Proveedor | Métrica | Límite real | Umbral operativo (80%) |
+| Proveedor | Métrica | Límite real | Umbral operativo |
 |:---|:---|:---:|:---:|
-| **Groq** (`llama-3.1-8b-instant`) | Tokens / minuto | 6,000 | **4,800** |
+| **Groq** (`openai/gpt-oss-20b`) | Tokens / minuto | 8,000 | **6,400** |
 | **Groq** | Requests / minuto | 30 | **24** |
-| **Groq** | Requests / día | 14,400 | — |
+| **Groq** | Requests / día | 1,000 | **1,000** *(sin margen)* |
+| **Groq** | Tokens / día | 200,000 | **200,000** *(sin margen)* |
 | **Gemini** (`gemini-embedding-001`) | Cobertura | Redis 24h | Cache-first |
 
-> **Filosofía**: operamos al **80% del límite real** para mantener un margen de seguridad ante picos de tráfico. El 20% restante absorbe variaciones sin que Groq emita un HTTP 429.
+> **Filosofía**: las ventanas **por minuto** operan al **80% del límite real**; ese 20% absorbe las ráfagas que caerían dentro de la misma ventana de 60s sin que Groq emita un HTTP 429. Las ventanas **por día** usan la cuota íntegra: en 24h no hay ráfaga que absorber, así que recortarlas solo regalaría peticiones a las que tenemos derecho.
+
+Los cuatro límites reales viven en el entorno (`GROQ_TPM_LIMIT`, `GROQ_RPM_LIMIT`, `GROQ_RPD_LIMIT`, `GROQ_TPD_LIMIT`) y el margen —que solo afecta a los dos primeros— en `GROQ_SAFETY_MARGIN`. Cambiar de plan o de modelo no requiere tocar código.
+
+> **Atención al cupo diario**: 1,000 requests/día es el límite más estrecho del free tier — se agota mucho antes que el TPM bajo tráfico sostenido. Al alcanzarlo, el asistente responde 429 hasta la medianoche UTC.
 
 ---
 
@@ -400,6 +409,7 @@ Request del usuario
 | Situación | Respuesta al usuario |
 |:---|:---|
 | TPM/RPM al 80% (GroqRateLimiter) | HTTP 429 + `"El asistente está muy ocupado. Intenta en N segundos."` |
+| RPD/TPD al 80% (cuota diaria agotada) | HTTP 429 + `"El asistente alcanzó su cuota de consultas por hoy... intenta mañana."` |
 | Groq devuelve 429 directamente | Espera `Retry-After` → reintento → si falla: mensaje friendly |
 | IP supera 6 msg/min (chatLimiter) | HTTP 429 + `"Demasiados mensajes. Por favor espera un momento."` |
 | Redis no disponible | Fail-open: el sistema opera sin rate limiter (graceful degradation) |
@@ -408,7 +418,7 @@ Request del usuario
 
 | Módulo | Responsabilidad |
 |:---|:---|
-| `groq-rate-limiter.ts` | Sliding window Redis (TPM + RPM) — nuevo en v2.3.0 |
+| `groq-rate-limiter.ts` | Sliding window Redis (TPM + RPM por minuto, RPD + TPD por día UTC) |
 | `groq.provider.ts` | Pre-check + post-record + 429 retry handler |
 | `chat-orchestrator.ts` | `trimHistory()` + token budgets por flow |
 | `system-prompt.ts` | Regla `== LONGITUD DE RESPUESTA ==` |

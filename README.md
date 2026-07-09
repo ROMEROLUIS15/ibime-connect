@@ -14,7 +14,7 @@
 [![Express](https://img.shields.io/badge/Express-5.x-000000?style=flat-square&logo=express&logoColor=white)](https://expressjs.com/)
 [![Supabase](https://img.shields.io/badge/Supabase-pgvector-3ECF8E?style=flat-square&logo=supabase&logoColor=white)](https://supabase.com/)
 [![Redis](https://img.shields.io/badge/Redis-Cache_+_Session-DC382D?style=flat-square&logo=redis&logoColor=white)](https://redis.io/)
-[![Groq](https://img.shields.io/badge/Groq-Llama_3.1-F55036?style=flat-square)](https://groq.com/)
+[![Groq](https://img.shields.io/badge/Groq-GPT_OSS_20B-F55036?style=flat-square)](https://groq.com/)
 [![Vitest](https://img.shields.io/badge/Vitest-230%2B_Tests-6E9F18?style=flat-square&logo=vitest&logoColor=white)](https://vitest.dev/)
 [![Playwright](https://img.shields.io/badge/Playwright-E2E-2EAD33?style=flat-square&logo=playwright&logoColor=white)](https://playwright.dev/)
 [![Deployed on Vercel](https://img.shields.io/badge/Frontend-Vercel-000000?style=flat-square&logo=vercel)](https://vercel.com/)
@@ -44,7 +44,7 @@ El motor de chat garantiza **cero alucinaciones en el flujo de inscripciones**: 
 | **Media & CDN** | Cloudinary (Streaming de video y fotogramas automáticos) |
 | **IA — Embeddings** | Google Gemini (`gemini-embedding-001`, 768 dimensiones) |
 | **IA — Ingestion** | `pdf-parse`, `multer` (Procesamiento en memoria y chunking semántico) |
-| **IA — Inferencia** | Groq Cloud (`llama-3.1-8b-instant`) |
+| **IA — Inferencia** | Groq Cloud (`openai/gpt-oss-20b`, configurable vía `GROQ_MODEL`) |
 | **Validación** | Zod (esquemas compartidos frontend ↔ backend, incluyendo `sessionId`) |
 | **Observabilidad** | Pino (logs estructurados JSON + `requestId` por petición) |
 | **Testing** | Vitest (230+ unit tests), Playwright (E2E) |
@@ -407,6 +407,7 @@ npm run dev
 | Variable | Descripción |
 |:---|:---|
 | `GROQ_API_KEY` | API key de Groq Cloud |
+| `GROQ_MODEL` | Opcional. Modelo de inferencia en Groq (default: `openai/gpt-oss-20b`) |
 | `GEMINI_API_KEY` | API key de Google Gemini |
 | `SUPABASE_URL` | URL del proyecto Supabase |
 | `SUPABASE_SERVICE_ROLE_KEY` | Service role key |
