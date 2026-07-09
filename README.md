@@ -15,7 +15,7 @@
 [![Supabase](https://img.shields.io/badge/Supabase-pgvector-3ECF8E?style=flat-square&logo=supabase&logoColor=white)](https://supabase.com/)
 [![Redis](https://img.shields.io/badge/Redis-Cache_+_Session-DC382D?style=flat-square&logo=redis&logoColor=white)](https://redis.io/)
 [![Groq](https://img.shields.io/badge/Groq-GPT_OSS_20B-F55036?style=flat-square)](https://groq.com/)
-[![Vitest](https://img.shields.io/badge/Vitest-300%2B_Tests-6E9F18?style=flat-square&logo=vitest&logoColor=white)](https://vitest.dev/)
+[![Vitest](https://img.shields.io/badge/Vitest-400%2B_Tests-6E9F18?style=flat-square&logo=vitest&logoColor=white)](https://vitest.dev/)
 [![Playwright](https://img.shields.io/badge/Playwright-E2E-2EAD33?style=flat-square&logo=playwright&logoColor=white)](https://playwright.dev/)
 [![Deployed on Vercel](https://img.shields.io/badge/Frontend-Vercel-000000?style=flat-square&logo=vercel)](https://vercel.com/)
 [![Deployed on Render](https://img.shields.io/badge/Backend-Render-46E3B7?style=flat-square&logo=render&logoColor=black)](https://render.com/)
@@ -47,7 +47,7 @@ El motor de chat garantiza **cero alucinaciones en el flujo de inscripciones**: 
 | **IA — Inferencia** | Groq Cloud (`openai/gpt-oss-20b`, configurable vía `GROQ_MODEL`) |
 | **Validación** | Zod (esquemas compartidos frontend ↔ backend, incluyendo `sessionId`) |
 | **Observabilidad** | Pino (logs estructurados JSON + `requestId` por petición) |
-| **Testing** | Vitest (300+ unit tests), Playwright (E2E) |
+| **Testing** | Vitest (400+ unit tests), Playwright (E2E) |
 | **Calidad de Código** | Husky v9 + lint-staged + ESLint (pre-commit & pre-push hooks) + Quality Gate completo |
 | **CI/CD** | GitHub Actions, Vercel CD, Render CD |
 
@@ -219,7 +219,7 @@ Cuando `isFrustrated = true`, el sistema inyecta al inicio del `systemPrompt` en
 ibime-connect/
 │
 ├── 📁 .github/workflows/
-│   ├── ci.yml                      ← CI: Quality Gate (Lint + 300+ Vitest unit tests)
+│   ├── ci.yml                      ← CI: Quality Gate (Lint + 400+ Vitest unit tests)
 │   ├── e2e.yml                     ← E2E: Playwright (Chromium automations)
 │   └── heartbeat.yml               ← Cron: ping Supabase + Render cada 6h
 │
@@ -282,7 +282,7 @@ ibime-connect/
 │   │   │   └── tools/
 │   │   │       └── check_registration.tool.ts
 │   │   │
-│   │   └── 📁 __tests__/            ← 300+ unit tests
+│   │   └── 📁 __tests__/            ← 400+ unit tests
 │   │       ├── setup.ts             ← [NUEVO] Polyfill reflect-metadata para tsyringe/Vitest
 │   │       ├── api.integration.test.ts
 │   │       ├── domain/errors/app-error.test.ts
@@ -350,7 +350,7 @@ ibime-connect/
           ╠══════════════════════╣
           ║  Integration Tests   ║  ← Smoke tests HTTP (supertest)
           ╠══════════════════════╣
-          ║   Unit Tests (300+)   ║  ← Vitest — lógica, servicios, policy layer
+          ║   Unit Tests (400+)   ║  ← Vitest — lógica, servicios, policy layer
           ╚══════════════════════╝
 ```
 
@@ -365,7 +365,7 @@ ibime-connect/
 | RAG Service | `rag.service.test.ts` | 3 | Threshold, cache, error handling |
 | Groq Provider | `groq.provider.test.ts` | 15 | API calls, tokens, error cases |
 | Registration | `registration.service.test.ts` | 10 | DB insert/query |
-| **Total** | | **300+** | **100% passing, 0 errores TypeScript** |
+| **Total** | | **400+** | **100% passing, 0 errores TypeScript** |
 
 ```bash
 # Ejecutar todos los unit tests
@@ -399,7 +399,7 @@ cp backend/.env.example backend/.env
 cp frontend/.env.example frontend/.env
 npm run dev
 #  Frontend: http://localhost:5173
-#  Backend:  http://localhost:3000
+#  Backend:  http://localhost:4000
 ```
 
 ### Variables de entorno requeridas (backend)
@@ -427,11 +427,11 @@ ESLint con auto-fix exclusivamente sobre archivos en staging.
 ```
 [1/3] ESLint       → npm run lint       (max-warnings=0)
 [2/3] TypeScript   → tsc --noEmit
-[3/3] Vitest       → vitest run         (300+ tests deben pasar)
+[3/3] Vitest       → vitest run         (400+ tests deben pasar)
 ```
 
 ### CI/CD (GitHub Actions)
-1. **`ci.yml`**: Quality Gate rápido (~40s) — lint + 300+ tests unitarios.
+1. **`ci.yml`**: Quality Gate rápido (~40s) — lint + 400+ tests unitarios.
 2. **`e2e.yml`**: Playwright E2E con Chromium (~3-4 min).
 
 > 📄 Documentación completa: [`CODE_QUALITY.md`](./docs/CODE_QUALITY.md)
