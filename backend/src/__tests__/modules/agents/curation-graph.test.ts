@@ -48,7 +48,7 @@ describe('CurationGraph', () => {
       vi.mocked(mockLLMProvider.generateAnswer).mockResolvedValue({
         content: JSON.stringify([VALID_ITEM]),
         tokensUsed: 150,
-        model: 'llama-3.1-8b-instant',
+        model: 'openai/gpt-oss-20b',
       });
 
       // Act
@@ -73,7 +73,7 @@ describe('CurationGraph', () => {
         .mockResolvedValueOnce({
           content: JSON.stringify([{ title: 'Taller de Costura', category: 'invalido', content: 'Corto', keyDetails: '' }]),
           tokensUsed: 100,
-          model: 'llama-3.1-8b-instant',
+          model: 'openai/gpt-oss-20b',
         })
         .mockResolvedValueOnce({
           content: JSON.stringify([{
@@ -83,7 +83,7 @@ describe('CurationGraph', () => {
             keyDetails: 'Lunes a Viernes de 2pm a 5pm',
           }]),
           tokensUsed: 120,
-          model: 'llama-3.1-8b-instant',
+          model: 'openai/gpt-oss-20b',
         });
 
       // Act
@@ -103,7 +103,7 @@ describe('CurationGraph', () => {
       vi.mocked(mockLLMProvider.generateAnswer).mockResolvedValue({
         content: JSON.stringify([INVALID_ITEM]),
         tokensUsed: 80,
-        model: 'llama-3.1-8b-instant',
+        model: 'openai/gpt-oss-20b',
       });
 
       // Act

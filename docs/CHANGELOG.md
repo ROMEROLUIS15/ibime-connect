@@ -2,6 +2,49 @@
 
 Todos los cambios notables en este proyecto serán documentados en este archivo.
 
+## [2.4.0] - 2026-07-09
+### 🔄 Migración de Modelo Groq y Vigilancia de Cuota
+
+Groq descomisiona `llama-3.1-8b-instant` el **2026-08-16**, único modelo de inferencia del proyecto. Esta versión migra a `openai/gpt-oss-20b` y convierte los límites del plan en configuración de entorno.
+
+#### ✨ Nuevo
+- **Modelo y límites por entorno**: `GROQ_MODEL`, `GROQ_TPM_LIMIT`, `GROQ_RPM_LIMIT`, `GROQ_RPD_LIMIT`, `GROQ_TPD_LIMIT` y `GROQ_SAFETY_MARGIN`. Una futura deprecación o un cambio de plan se resuelven por variable de entorno, sin desplegar. Escalar a `openai/gpt-oss-120b` es cambiar `GROQ_MODEL` y nada más: comparte los cuatro límites del free tier.
+- **`GroqRateLimiter` con cuatro ventanas** (`groq-rate-limiter.ts`): TPM y RPM por minuto, RPD y TPD por día UTC, sobre contadores atómicos de Redis. Fail-open si Redis no responde.
+- **Margen de seguridad asimétrico**: `GROQ_SAFETY_MARGIN` (0.8) se aplica **solo a las ventanas por minuto**, donde el colchón absorbe ráfagas dentro de la misma ventana de 60s. Las cuotas diarias se consumen íntegras — en 24h no hay ráfaga que absorber y recortar solo regalaría peticiones. Un test bloquea la "corrección por consistencia".
+
+#### 🐛 Corregido
+- **Cifras de capacidad de `AI_STRATEGY.md`**: la tabla contaba solo los tokens de salida. Medido en producción (`tokensUsed` de 1473/1512/1523), una respuesta RAG cuesta **~1.512 tokens totales**, no ~300. En consecuencia: el límite que aprieta es el **TPD** (~132 respuestas/día), no las 1.000 requests/día, que nunca se alcanzan; y 10 usuarios simultáneos son ~15.120 TPM, un **236%** del umbral operativo de 6.400, no el 63% que se afirmaba.
+- **Diagrama de capas**: citaba `TPM ≤ 4.800`, valor obsoleto. Con `GROQ_TPM_LIMIT=8000` y margen 0,8 son **6.400**.
+- **Tabla de saturación**: decía que RPD/TPD cortan al 80%; las ventanas diarias usan la cuota íntegra a propósito.
+- **Comentario de cabecera de `groq-rate-limiter.ts`**: repetía la misma afirmación falsa sobre el RPD como límite más estrecho.
+
+> **El coste depende del corpus.** Los ~1.512 tokens corresponden a un contexto RAG de un solo chunk: `MIN_VALID_THRESHOLD = 0.65` descarta el resto pese a que `matchCount` es 5. Si se puebla la base de conocimientos y pasan los cinco, el coste sube hacia ~3.100 tokens y el techo diario cae hacia ~64 respuestas.
+
+---
+
+### 🔭 Observabilidad, Configuración y Seguridad
+
+#### ✨ Nuevo
+- **Trazas LangSmith (`infrastructure/observability/tracing.ts`)**: instrumentación del pipeline de chat con sanitización de PII antes de emitir. Degradación elegante — si `LANGSMITH_API_KEY` no está, la app funciona igual.
+- **Validación de entorno con Zod (`config/env.config.ts`)**: schema como única fuente de verdad; validación y tipos no pueden divergir. Si falta o está mal formada cualquier variable, se reportan **todos** los problemas a la vez y el arranque aborta.
+
+#### 🔒 Seguridad
+- **PII de inscripciones**: `check_registration.tool.ts` es auto-protegida — exige `email` + `phone` y verifica propiedad sin importar el llamador, cerrando el vector de tool-use inseguro del agente.
+- **Dependabot**: resueltas las vulnerabilidades reportadas (solo lockfiles).
+
+---
+
+### 🎨 Frontend — Criterios de Donación
+
+#### ✨ Nuevo
+- **`DonationCriteriaPage.tsx`**: página completa de criterios de donación, con tests.
+- **`InstitutionalInfoDisplay.tsx`**: componente de noticia institucional para la cartelera, con tests.
+
+#### 🔧 Mejoras de Interfaz (UI)
+- Contraste visual de la página de criterios de donación; actualización del hero y de los assets de la cartelera.
+
+---
+
 ## [2.3.0] - 2026-04-24
 ### 🧠 Pipeline Empresarial de Ingesta RAG (Conocimiento Institucional)
 

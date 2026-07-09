@@ -9,7 +9,7 @@ import { ToolRegistry } from '../../../services/tools.service.js';
 const LLM_RESPONSE = {
   content: 'Respuesta del LLM',
   tokensUsed: 50,
-  model: 'llama-3.1-8b-instant',
+  model: 'openai/gpt-oss-20b',
 };
 
 const RAG_HIT = {
