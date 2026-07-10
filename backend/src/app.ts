@@ -1,14 +1,25 @@
 import 'reflect-metadata';
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import apiRoutes from './routes/api.routes.js';
 import { supabaseClient } from './config/supabase.config.js';
 import { errorHandler } from './middlewares/error.middleware.js';
 import { ENV } from './config/env.config.js';
-import { requestLoggerMiddleware } from './infrastructure/logger/index.js';
+import { logger, requestLoggerMiddleware } from './infrastructure/logger/index.js';
 
 const app = express();
+
+// El backend corre detrás del proxy de Render (1 salto). Sin esto, `req.ip`
+// sería la IP del proxy —no la del cliente— y el rate-limiting por IP dejaría de
+// funcionar (todos compartirían un mismo cubo) o sería evadible vía X-Forwarded-For.
+// Si en el futuro se añade otro proxy delante (p. ej. Cloudflare), súbelo a 2.
+app.set('trust proxy', 1);
+
+// Cabeceras de seguridad. API JSON-only, así que la config por defecto de helmet
+// (nosniff, frameguard, HSTS, sin CSP de documento) es la adecuada.
+app.use(helmet());
 
 // Middlewares globales
 // CORS: en producción solo se permite el frontend oficial. Los orígenes de
@@ -66,11 +77,13 @@ app.get('/health', async (req, res) => {
       timestamp: new Date().toISOString() 
     });
   } catch (error) {
-    res.status(500).json({ 
-      status: 'ERROR', 
+    // El detalle del error se registra server-side; nunca se expone al cliente
+    // (podría filtrar internals de la conexión a la base de datos).
+    logger.error({ error: error instanceof Error ? error.message : 'Unknown error' }, 'Health check: base de datos inaccesible');
+    res.status(500).json({
+      status: 'ERROR',
       database: 'disconnected',
-      error: error instanceof Error ? error.message : 'Unknown error',
-      timestamp: new Date().toISOString() 
+      timestamp: new Date().toISOString()
     });
   }
 });

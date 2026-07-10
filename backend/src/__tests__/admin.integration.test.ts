@@ -46,16 +46,16 @@ describe('Endpoints administrativos (integración)', () => {
     mockRedisClient.isOpen = false;
   });
 
-  describe('GET /api/admin/flush-cache', () => {
+  describe('POST /api/admin/flush-cache', () => {
     it('responde 401 sin el header x-admin-key', async () => {
-      const res = await request(app).get('/api/admin/flush-cache');
+      const res = await request(app).post('/api/admin/flush-cache');
 
       expect(res.status).toBe(401);
       expect(res.body).toEqual({ error: 'Unauthorized' });
     });
 
     it('responde 401 con una clave incorrecta', async () => {
-      const res = await request(app).get('/api/admin/flush-cache').set('x-admin-key', 'clave-mala');
+      const res = await request(app).post('/api/admin/flush-cache').set('x-admin-key', 'clave-mala');
 
       expect(res.status).toBe(401);
     });
@@ -63,11 +63,17 @@ describe('Endpoints administrativos (integración)', () => {
     it('vacía la caché con la clave correcta', async () => {
       mockRedisClient.isOpen = true;
 
-      const res = await request(app).get('/api/admin/flush-cache').set('x-admin-key', CLAVE_VALIDA);
+      const res = await request(app).post('/api/admin/flush-cache').set('x-admin-key', CLAVE_VALIDA);
 
       expect(res.status).toBe(200);
       expect(res.body).toEqual({ success: true, message: 'Cache flushed' });
       expect(mockRedisClient.flushDb).toHaveBeenCalledOnce();
+    });
+
+    it('el GET ya no está expuesto (405/404)', async () => {
+      const res = await request(app).get('/api/admin/flush-cache').set('x-admin-key', CLAVE_VALIDA);
+
+      expect(res.status).not.toBe(200);
     });
   });
 
