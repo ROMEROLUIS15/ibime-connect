@@ -1,7 +1,7 @@
 ﻿import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
-  mockInsert: vi.fn(),
+  mockUpsert: vi.fn(),
   mockEq: vi.fn(),
   mockSelect: vi.fn().mockReturnValue({ eq: vi.fn() }),
 }));
@@ -9,7 +9,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock('../../config/supabase.config.js', () => ({
   supabaseClient: {
     from: vi.fn().mockReturnValue({
-      insert: mocks.mockInsert,
+      upsert: mocks.mockUpsert,
       select: mocks.mockSelect,
     }),
   },
@@ -35,25 +35,28 @@ describe('RegistrationService', () => {
   });
 
   describe('register', () => {
-    it('should map camelCase courseName to snake_case course_name before inserting', async () => {
+    it('should map camelCase courseName to snake_case course_name and upsert on (email, course_name)', async () => {
       // Arrange
-      mocks.mockInsert.mockResolvedValueOnce({ error: null });
+      mocks.mockUpsert.mockResolvedValueOnce({ error: null });
 
       // Act
       await RegistrationService.register(REGISTRANT);
 
-      // Assert — field mapping is part of the service contract
-      expect(mocks.mockInsert).toHaveBeenCalledWith({
-        name: REGISTRANT.name,
-        email: REGISTRANT.email,
-        phone: REGISTRANT.phone,
-        course_name: REGISTRANT.courseName,
-      });
+      // Assert — field mapping + idempotencia son parte del contrato del servicio
+      expect(mocks.mockUpsert).toHaveBeenCalledWith(
+        {
+          name: REGISTRANT.name,
+          email: REGISTRANT.email,
+          phone: REGISTRANT.phone,
+          course_name: REGISTRANT.courseName,
+        },
+        { onConflict: 'email,course_name', ignoreDuplicates: true }
+      );
     });
 
-    it('should return { success: true } when Supabase insert succeeds', async () => {
+    it('should return { success: true } when Supabase upsert succeeds', async () => {
       // Arrange
-      mocks.mockInsert.mockResolvedValueOnce({ error: null });
+      mocks.mockUpsert.mockResolvedValueOnce({ error: null });
 
       // Act
       const result = await RegistrationService.register(REGISTRANT);
@@ -62,9 +65,17 @@ describe('RegistrationService', () => {
       expect(result).toEqual({ success: true });
     });
 
-    it('should throw InternalServerError when Supabase insert returns an error', async () => {
+    it('should be idempotent: a duplicate registration resolves as success without erroring', async () => {
+      // ignoreDuplicates → ON CONFLICT DO NOTHING: Supabase no devuelve error,
+      // simplemente no crea la fila repetida. El servicio debe reportar éxito.
+      mocks.mockUpsert.mockResolvedValueOnce({ error: null });
+
+      await expect(RegistrationService.register(REGISTRANT)).resolves.toEqual({ success: true });
+    });
+
+    it('should throw InternalServerError when Supabase upsert returns an error', async () => {
       // Arrange
-      mocks.mockInsert.mockResolvedValueOnce({ error: { message: 'Constraint failed' } });
+      mocks.mockUpsert.mockResolvedValueOnce({ error: { message: 'Constraint failed' } });
 
       // Act & Assert
       await expect(RegistrationService.register(REGISTRANT)).rejects.toThrow(
@@ -74,7 +85,7 @@ describe('RegistrationService', () => {
 
     it('should resolve successfully when an optional requestId is provided', async () => {
       // Arrange
-      mocks.mockInsert.mockResolvedValueOnce({ error: null });
+      mocks.mockUpsert.mockResolvedValueOnce({ error: null });
 
       // Act & Assert
       await expect(
