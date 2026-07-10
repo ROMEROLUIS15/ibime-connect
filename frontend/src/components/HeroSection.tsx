@@ -80,10 +80,11 @@ export const HeroSection = () => {
                 src={slide.image}
                 alt={slide.title}
                 className={`w-full h-full object-cover ${slide.objectPositionClass || 'object-center'}`}
+                style={{ filter: 'contrast(1.06) saturate(1.08) brightness(1.02)' }}
               />
-              {/* Capa oscura uniforme para mantener legibilidad sin crear sombras fuertes en la parte inferior */}
-              <div className="absolute inset-0 pointer-events-none bg-black/20 mix-blend-multiply" />
-              <div className="absolute inset-0 pointer-events-none bg-black/20" />
+              {/* Velo ligero: gradiente sutil arriba/abajo para legibilidad de texto y navegación,
+                  dejando el centro de la imagen más limpio y nítido (antes eran dos capas negras apiladas ~35%). */}
+              <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-black/30 via-black/10 to-black/35" />
             </div>
 
             {/* Standardized content vertical alignment */}
