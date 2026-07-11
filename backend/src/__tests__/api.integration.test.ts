@@ -24,6 +24,14 @@ describe('API Integration', () => {
       expect(response.status).toBe(200);
       expect(response.body).toEqual({ status: 'OK', message: 'ibime-backend is running' });
     });
+
+    it('should apply helmet security headers to responses', async () => {
+      const response = await request(app).get('/');
+
+      // helmet activo: nosniff siempre presente; X-Powered-By eliminado.
+      expect(response.headers['x-content-type-options']).toBe('nosniff');
+      expect(response.headers['x-powered-by']).toBeUndefined();
+    });
   });
 
   describe('health check endpoint', () => {
@@ -38,6 +46,14 @@ describe('API Integration', () => {
         database: 'connected',
         timestamp: expect.any(String),
       });
+    });
+  });
+
+  describe('proxy configuration', () => {
+    it('should trust the Render proxy so req.ip is the real client IP (rate-limiting depends on it)', () => {
+      // Guard contra que alguien quite app.set('trust proxy'): sin esto el
+      // rate-limiting por IP se rompe detrás del proxy de Render.
+      expect(app.get('trust proxy')).toBe(1);
     });
   });
 
