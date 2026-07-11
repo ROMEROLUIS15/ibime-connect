@@ -30,6 +30,24 @@ services:
         sync: false
       - key: GROQ_API_KEY
         sync: false
+      # Modelo de inferencia (no es secreto). Reemplaza a llama-3.1-8b-instant,
+      # deprecado por Groq y sin servicio desde 2026-08-16.
+      - key: GROQ_MODEL
+        value: openai/gpt-oss-20b
+
+      # Límites reales del plan de Groq. GROQ_SAFETY_MARGIN se aplica solo a las
+      # ventanas por minuto; las cuotas diarias se usan íntegras.
+      # Ajústalos si cambias de plan o de modelo.
+      - key: GROQ_TPM_LIMIT
+        value: 8000
+      - key: GROQ_RPM_LIMIT
+        value: 30
+      - key: GROQ_RPD_LIMIT
+        value: 1000
+      - key: GROQ_TPD_LIMIT
+        value: 200000
+      - key: GROQ_SAFETY_MARGIN
+        value: 0.8
 
       # 2. Las que faltaban para ser un espejo de tu .env
       - key: SUPABASE_PROJECT_ID

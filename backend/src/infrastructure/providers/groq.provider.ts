@@ -15,7 +15,8 @@ import { wrapLLM } from '../observability/tracing.js';
  */
 export class GroqProvider implements ILLMProvider {
   private static readonly GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
-  private static readonly DEFAULT_MODEL = 'llama-3.1-8b-instant';
+  /** Model id — configurable via GROQ_MODEL (see env.config.ts for the current default). */
+  private static readonly MODEL = ENV.GROQ_MODEL;
   private static readonly DEFAULT_TIMEOUT_MS = 25000;
   /** Maximum wait time for a Retry-After backoff (capped to avoid blocking too long) */
   private static readonly MAX_RETRY_WAIT_MS = 5_000;
@@ -29,7 +30,7 @@ export class GroqProvider implements ILLMProvider {
       return this._generateAnswer(messages, options, requestId);
     },
     'GroqProvider.generateAnswer',
-    { model: GroqProvider.DEFAULT_MODEL }
+    { model: GroqProvider.MODEL }
   );
 
   private async _generateAnswer(
@@ -57,9 +58,16 @@ export class GroqProvider implements ILLMProvider {
         'GroqProvider: rate limit reached — rejecting request',
         { reason: rlCheck.reason, waitMs: rlCheck.waitMs }
       );
-      throw new Error(
-        `RATE_LIMIT_EXCEEDED:${waitSec}:El asistente está muy ocupado en este momento. Por favor intenta de nuevo en ${waitSec} segundos.`
-      );
+
+      // Las cuotas diarias no se recuperan en segundos: pedirle al usuario que
+      // reintente "en 40000 segundos" sería absurdo. El waitSec real igual viaja
+      // en el error para que el cliente pueda poblar Retry-After.
+      const isDailyQuota = rlCheck.reason === 'rpd' || rlCheck.reason === 'tpd';
+      const friendlyMessage = isDailyQuota
+        ? 'El asistente alcanzó su cuota de consultas por hoy. Por favor intenta de nuevo mañana.'
+        : `El asistente está muy ocupado en este momento. Por favor intenta de nuevo en ${waitSec} segundos.`;
+
+      throw new Error(`RATE_LIMIT_EXCEEDED:${waitSec}:${friendlyMessage}`);
     }
 
     // Remap local format to OpenAI/Groq format
@@ -74,7 +82,7 @@ export class GroqProvider implements ILLMProvider {
     const hasTools = options?.tools && options.tools.length > 0;
 
     const payload: any = {
-      model: GroqProvider.DEFAULT_MODEL,
+      model: GroqProvider.MODEL,
       messages: formattedMessages,
       temperature: options?.temperature ?? 0.6,
       max_tokens: options?.maxTokens ?? 350,
@@ -202,7 +210,7 @@ export class GroqProvider implements ILLMProvider {
     return {
       content,
       tokensUsed,
-      model: GroqProvider.DEFAULT_MODEL,
+      model: GroqProvider.MODEL,
       toolCalls,
     };
   }

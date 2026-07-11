@@ -23,7 +23,44 @@ describe('envSchema', () => {
       expect(parsed.data.PORT).toBe(3000);
       expect(parsed.data.FRONTEND_URL).toBe('http://localhost:5173');
       expect(parsed.data.REDIS_URL).toBe('redis://localhost:6379');
+      expect(parsed.data.GROQ_MODEL).toBe('openai/gpt-oss-20b');
+      expect(parsed.data.GROQ_TPM_LIMIT).toBe(8_000);
+      expect(parsed.data.GROQ_RPM_LIMIT).toBe(30);
+      expect(parsed.data.GROQ_RPD_LIMIT).toBe(1_000);
+      expect(parsed.data.GROQ_TPD_LIMIT).toBe(200_000);
+      expect(parsed.data.GROQ_SAFETY_MARGIN).toBe(0.8);
       expect(parsed.data.ADMIN_SECRET).toBeUndefined();
+    }
+  });
+
+  it('should coerce the Groq limits from strings, as they arrive from the environment', () => {
+    const parsed = envSchema.safeParse({
+      ...validEnv,
+      GROQ_TPM_LIMIT: '30000',
+      GROQ_SAFETY_MARGIN: '0.5',
+    });
+    expect(parsed.success).toBe(true);
+    if (parsed.success) {
+      expect(parsed.data.GROQ_TPM_LIMIT).toBe(30_000);
+      expect(parsed.data.GROQ_SAFETY_MARGIN).toBe(0.5);
+    }
+  });
+
+  it('should reject a GROQ_SAFETY_MARGIN above 1 (would exceed the real plan limit)', () => {
+    const parsed = envSchema.safeParse({ ...validEnv, GROQ_SAFETY_MARGIN: '1.5' });
+    expect(parsed.success).toBe(false);
+  });
+
+  it('should reject a non-positive Groq limit', () => {
+    const parsed = envSchema.safeParse({ ...validEnv, GROQ_RPD_LIMIT: '0' });
+    expect(parsed.success).toBe(false);
+  });
+
+  it('should allow overriding GROQ_MODEL from the environment', () => {
+    const parsed = envSchema.safeParse({ ...validEnv, GROQ_MODEL: 'openai/gpt-oss-120b' });
+    expect(parsed.success).toBe(true);
+    if (parsed.success) {
+      expect(parsed.data.GROQ_MODEL).toBe('openai/gpt-oss-120b');
     }
   });
 

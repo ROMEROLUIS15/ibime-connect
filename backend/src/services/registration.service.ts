@@ -13,14 +13,21 @@ export class RegistrationService {
   static async register(data: CourseRegistration, requestId?: string) {
     const log = requestId ? contextLogger(requestId) : logger;
 
+    // upsert idempotente: si la persona ya está inscrita en ese curso (mismo
+    // email + course_name), no crea un duplicado (ON CONFLICT DO NOTHING) y
+    // devuelve éxito igualmente. Evita inflar `cantidad_cursos` con repetidos.
+    // Requiere la constraint UNIQUE(email, course_name).
     const { error } = await supabaseClient
       .from('course_registrations')
-      .insert({
-        name: data.name,
-        email: data.email,
-        phone: data.phone,
-        course_name: data.courseName
-      });
+      .upsert(
+        {
+          name: data.name,
+          email: data.email,
+          phone: data.phone,
+          course_name: data.courseName
+        },
+        { onConflict: 'email,course_name', ignoreDuplicates: true }
+      );
 
     if (error) {
       handleSupabaseError(log as any, error, data, 'registering for course');

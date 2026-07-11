@@ -2,7 +2,8 @@ import { Calendar, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import libraryActivity from '@/assets/library-activity.jpg';
-import communityEvent from '@/assets/community-event.jpg';
+import communityEvent from '@/assets/community-event.jpeg';
+import donaciones from '@/assets/donaciones.jpeg';
 
 const news = [
   {
@@ -54,18 +55,15 @@ export const NewsSection = () => {
 
         {/* Destacado */}
         <article className="card-institutional mb-8 overflow-hidden p-0">
-          <div className="grid md:grid-cols-2 gap-0">
-            <div className="relative overflow-hidden aspect-video md:aspect-auto">
+          <div className="grid lg:grid-cols-12 gap-0 bg-background">
+            <div className="relative overflow-hidden lg:col-span-4 flex items-center justify-center">
               <img
-                src={libraryActivity}
+                src={donaciones}
                 alt="Donación de materiales bibliográficos"
-                className="w-full h-full object-cover"
+                className="w-full h-full lg:max-h-[350px] object-contain"
               />
-              <span className="absolute top-4 left-4 px-4 py-2 text-sm font-medium rounded-full bg-ebime-red text-primary-foreground">
-                Donaciones
-              </span>
             </div>
-            <div className="p-6 md:p-8 flex flex-col justify-center">
+            <div className="p-6 lg:p-10 flex flex-col justify-center lg:col-span-8">
               <div className="flex items-center gap-2 text-muted-foreground text-sm mb-3">
                 <Calendar className="w-4 h-4" />
                 <time dateTime="2025-11-14">14 Noviembre 2025</time>
