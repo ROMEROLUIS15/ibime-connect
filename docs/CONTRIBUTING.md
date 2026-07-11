@@ -4,6 +4,8 @@
 
 ## 🛠️ Configuración del Entorno
 
+> **Requisito: Node.js 22+.** El backend depende de `@supabase/supabase-js` 2.110+, que requiere el `WebSocket` nativo disponible desde Node 22. En versiones anteriores el backend no arranca. El CI y Render usan Node 22.
+
 1.  **Clonar el repositorio**:
     ```bash
     git clone <url-del-repo>

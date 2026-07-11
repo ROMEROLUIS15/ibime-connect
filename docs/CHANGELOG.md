@@ -2,6 +2,57 @@
 
 Todos los cambios notables en este proyecto serán documentados en este archivo.
 
+## [2.5.0] - 2026-07-11
+### 🛡️ Auditoría de Seguridad, Observabilidad con Sentry y Migración a Node 22
+
+Auditoría integral del proyecto de punta a punta. Cierra defensas que el diseño asumía pero no tenía, añade visibilidad operativa, sanea la cadena de suministro y alinea el runtime con los requisitos del ecosistema.
+
+#### 🔒 Endurecimiento de Seguridad
+- **`trust proxy`** (`app.ts`): detrás del proxy de Render, `req.ip` era la IP del proxy, no la del cliente — el rate-limiting por IP quedaba inutilizado (todos en un mismo cubo) o era evadible vía `X-Forwarded-For`. Con `app.set('trust proxy', 1)` vuelve a ser fiable.
+- **`helmet`**: cabeceras de seguridad (nosniff, frameguard, HSTS, sin `X-Powered-By`).
+- **`/health` sin fuga**: dejó de exponer `error.message` de la base de datos al cliente (se registra server-side).
+- **`/admin/flush-cache` `GET` → `POST`**: limpiar la caché es una operación con efecto secundario, no debe ser cacheable ni disparable por prefetch. Reutiliza el middleware `requireAdminKey` en vez de duplicar la lógica timing-safe.
+- **RLS — escrituras anónimas revocadas** (`20260710225726_revoke_anon_writes.sql`, aplicada en producción): la `anon` key viaja en el bundle del frontend (es pública); la política `anon INSERT` permitía escribir directo en `course_registrations`/`contact_messages` saltándose la validación Zod y el rate-limit. El frontend ya escribe solo vía backend (`service_role`, que bypassa RLS), así que revocar `anon` no rompe nada legítimo.
+
+#### 🗄️ Integridad de Datos
+- **`UNIQUE(email, course_name)`** (`20260710225735_...`, aplicada en producción) + **`upsert` idempotente** en `RegistrationService.register` (`onConflict: 'email,course_name'`, `ignoreDuplicates`). Sin esto, un usuario podía inscribirse N veces al mismo curso y `cantidad_cursos` se inflaba con duplicados.
+- **Reconciliación de migraciones repo ↔ producción** (`supabase/migrations/README.md`): se detectó que la DB había derivado por ediciones de dashboard fuera de banda. Se recuperó la migración huérfana `20260320_ibime_knowledge_setup.sql` (aplicada en prod pero ausente del repo), se renombraron las migraciones nuevas a las versiones registradas, y se documentó la deuda (dos tablas de conocimiento: `knowledge_base`/768 en uso vs `ibime_knowledge`/1536 legado).
+
+#### 🔭 Observabilidad — Sentry
+- **Captura de errores y alertas** (`infrastructure/observability/sentry.ts`), *gated* por `SENTRY_DSN`: sin DSN es no-op y el backend funciona idéntico (mismo patrón que Redis/LangSmith). Captura **solo los 500 reales** (los 4xx y 429 no son incidentes), `sendDefaultPii: false`, contexto sin PII.
+- **Alerta de cuota diaria de Groq** (`tpd`/`rpd`) con dedup en Redis: una sola alerta por día y tipo, no una por request.
+
+#### ⬆️ Node 20 → 22
+- `@supabase/supabase-js` 2.110+ (su `realtime-js`) exige **WebSocket nativo**, disponible desde Node 22. En Node 20, `createClient()` lanzaba `"native WebSocket not found"` al cargar `supabase.config.ts` — rompía el CI y **habría tumbado el backend en Render al arrancar**. Detectado al bisectar el grupo de dependabot que subía supabase-js.
+- Actualizado `node-version` en `ci.yml`/`e2e.yml` a 22, `NODE_VERSION` en `render.yaml` a 22.11.0 y `engines` del backend a `>=22`.
+
+#### 🧰 Cadena de Suministro y Calidad
+- **`.github/dependabot.yml`**: PRs semanales agrupados (minor/patch) para raíz, backend, frontend y github-actions.
+- **`npm audit --audit-level=high`** en CI (backend y frontend), no-bloqueante de momento.
+- **Umbrales de cobertura** en `backend/vitest.config.ts` (stmts 82 / branch 74 / funcs 78 / lines 82).
+- **`@openrouter/sdk`** eliminado del `package.json` raíz (dependencia muerta, 0 imports).
+- **Zod unificado en v3**: el schema compartido lo consumían frontend (v3) y backend (v4) a la vez; entre v3/v4 cambia el regex de `.email()` y el formato de errores. El backend baja a la misma versión del frontend para que valide idéntico en ambos lados.
+
+#### 🔐 Gobernanza de PII
+- **`docs/DATA_RETENTION.md`**: inventario de datos personales y encargados del tratamiento (Supabase, Groq, Gemini, Cloudinary, Redis, Render/Vercel), plazos propuestos, mecanismo de purga/respaldo y decisiones que requieren ratificación (aviso de privacidad, derechos ARCO, backup).
+- **Funciones de purga inertes** (`20260711120000_data_retention_functions.sql`, **no aplicadas**): `purge_old_contact_messages(dias)` y `purge_person_data(email)` (derecho de supresión). `EXECUTE` revocado para `anon`/`public`; solo `service_role`.
+
+#### 🎨 Frontend
+- **Fechas dinámicas** en `NewsSection` e `InstitutionalInfoDisplay`: la fecha de la nota institucional se calcula al render (hoy) en vez de estar hardcodeada.
+- **Imagen de donaciones optimizada**: `donaciones.png` (foto 1200×900, **1.13 MB**) → `donaciones.webp` (**~92 KB**, −92%), misma calidad visual.
+- **`ScrollToTop`** (con test): al cambiar de ruta desplaza al inicio, evitando que una página nueva abra a media altura.
+- **`Navbar`**: hover/activo en azul sólido para mejor contraste; los items de ancla (`#`) ya no quedan marcados como activos de forma permanente.
+
+#### 🧪 Testing
+- **Backend: 369 → 378 tests** (nuevos: módulo Sentry, captura de 500/no-captura de 4xx-429, idempotencia de registro, trust proxy, cabeceras helmet, flush-cache por POST).
+- **Frontend: +`ScrollToTop.test.tsx`** (35 tests). Total del proyecto: **~413**.
+
+#### 📝 Documentación
+- Actualizados `README.md`, `CODE_QUALITY.md`, `CONTRIBUTING.md`, `ARCHITECTURE.md` y `backend/.env.example` (nueva variable `SENTRY_DSN`).
+- Nuevos: `docs/DATA_RETENTION.md` y `supabase/migrations/README.md`.
+
+---
+
 ## [2.4.0] - 2026-07-09
 ### 🔄 Migración de Modelo Groq y Vigilancia de Cuota
 

@@ -24,10 +24,11 @@ El sistema actúa en tres fases de defensa. Garantiza que el código defectuoso 
 │          └─► [3/3] Vitest (Test suites completas)                       │
 │                                                                         │
 │ 3️⃣ GitHub Pull Request / Push (Defensa Nube Nivel 3)                    │
-│    ├─► .github/workflows/ci.yml (Rápido: ~40s)                          │
+│    ├─► .github/workflows/ci.yml (Rápido: ~1m — Node 22)                 │
 │    │     ├─► Instalación con --legacy-peer-deps                         │
+│    │     ├─► npm audit --audit-level=high (back + front, no bloqueante) │
 │    │     ├─► Simulación de Entorno (Dummy Env Vars)                     │
-│    │     └─► Quality Gate Remoto (235 Vitests)                          │
+│    │     └─► Quality Gate Remoto (413 tests: 378 back + 35 front)       │
 │    │                                                                    │
 │    └─► .github/workflows/e2e.yml (Pesado: ~3m)                          │
 │          ├─► Configuración Node + Dependencias                          │
@@ -89,9 +90,11 @@ Este script previene pushes que rompan compilaciones asíncronas. Ejecuta:
 
 El archivo en `.github/workflows/ci.yml` asegura que los Pull Requests y merges tengan el sello de garantía (el Check Verde en la interfaz de GitHub).
 
+### Runtime: Node.js 22
+El CI corre sobre **Node 22** (`actions/setup-node` con `node-version: '22'`), igual que Render (`NODE_VERSION=22.11.0`) y el `engines` del backend (`>=22`). El motivo: `@supabase/supabase-js` 2.110+ requiere el `WebSocket` nativo disponible desde Node 22; con Node 20 el backend no arranca.
+
 ### Dependencias Paralelas (Conflictos Peer)
-El frontend y backend poseen instalaciones independientes con requerimientos cruzados para ESLint y TS. Por esto, instalar limpiamente a veces rompe los *lockfiles* por `ERESOLVE`. 
-En todo flujo automatizado, se utiliza el parámetro `>=v20`:
+El frontend y backend poseen instalaciones independientes con requerimientos cruzados para ESLint y TS. Por esto, instalar limpiamente a veces rompe los *lockfiles* por `ERESOLVE`. En todo flujo automatizado se usa:
 `npm ci --legacy-peer-deps`
 
 ### Dummy Variables de Entorno (Evitando Crashes del Backend)
@@ -120,6 +123,14 @@ Tanto el backend como el frontend ya migraron a **ESLint Flat Config** (por cons
 - Permite directivas centralizadas `ignores: ["dist"]`.
 - Soporte agnóstico a Node (para el backend) y a Browser/React (para el frontend).
 - Uso obligatorio explícito del parámetro `cause: error` al enrutar instancias `new Error()` en el backend (Throw errors need causes).
+
+---
+
+## 🤖 Dependabot, `npm audit` y Cobertura
+
+- **`.github/dependabot.yml`**: abre PRs semanales de actualización para la raíz, `backend/`, `frontend/` y `github-actions`. Los *minor/patch* se agrupan para no inundar de PRs; los *majors* llegan sueltos para revisarse uno a uno. **Los bumps de major (Node, TypeScript, redis, etc.) no se auto-mergean** — cada uno puede romper y debe probarse en su rama.
+- **`npm audit --audit-level=high`** corre en CI (backend y frontend). Hoy es **no-bloqueante** (`continue-on-error`) mientras se saneia el árbol; endurecer a bloqueante cuando esté limpio.
+- **Umbrales de cobertura** (`backend/vitest.config.ts`): `statements 82 / branches 74 / functions 78 / lines 82`, unos puntos por debajo del actual (~85/79/83/87) para gatear regresiones sin ser frágiles ante el flake ocasional del worker. Se miden con `npm run test:coverage --prefix backend`.
 
 ---
 
