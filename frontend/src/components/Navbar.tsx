@@ -64,21 +64,17 @@ const useActiveNav = () => {
   const location = useLocation();
   return (href: string) => {
     if (href.startsWith('/')) return location.pathname === href;
-    if (href.startsWith('#')) return location.hash === href;
+    // Hash-based items: no active state permanente
     return false;
   };
 };
 
 // Paleta de estilos — sutil mint, nunca verde sólido
 const NAV_STYLES = {
-  // Estado normal
-  default:  { color: '#374151', bg: 'transparent' },
-  // Hover — mint muy claro, texto verde oscuro (como imagen 2)
-  hover:    { color: '#0B1930', bg: 'rgba(11,25,48,0.08)' },
-  // Activo — mismo mint pero con borde sutil
-  active:   { color: '#0B1930', bg: 'rgba(11,25,48,0.10)', fontWeight: 600 },
-  // Dropdown children hover
-  childHover: { color: '#0B1930', bg: 'rgba(11,25,48,0.06)' },
+  default:    { color: '#374151', bg: 'transparent' },
+  hover:      { color: '#ffffff', bg: 'rgba(11,25,48,0.82)' },
+  active:     { color: '#ffffff', bg: 'rgba(11,25,48,0.82)', fontWeight: 600 },
+  childHover: { color: '#ffffff', bg: 'rgba(11,25,48,0.82)' },
 };
 
 const DropdownMenu = ({ item, depth = 0 }: { item: MenuItem; depth?: number }) => {
