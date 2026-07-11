@@ -23,6 +23,7 @@
 import { redisClient } from '../cache/redis.js';
 import { logger } from '../logger/index.js';
 import { ENV } from '../../config/env.config.js';
+import { captureAlert } from '../observability/sentry.js';
 
 /** Which window rejected the request. Per-day reasons need a different UX message. */
 export type RateLimitReason = 'tpm' | 'rpm' | 'rpd' | 'tpd';
@@ -74,6 +75,26 @@ export class GroqRateLimiter {
    */
   private static currentDay(): string {
     return String(Math.floor(Date.now() / MS_PER_DAY));
+  }
+
+  /**
+   * Emite UNA alerta a Sentry por día y por tipo de cuota, cuando la cuota diaria
+   * se agota. Dedup vía Redis SET NX: sin esto, cada request rechazado durante el
+   * resto del día generaría una alerta (ruido). No-op si Sentry está deshabilitado.
+   */
+  private static async alertDailyExhaustionOnce(
+    reason: 'tpd' | 'rpd',
+    context: Record<string, unknown>
+  ): Promise<void> {
+    try {
+      const key = `${GroqRateLimiter.NS}:alerted:${reason}:${GroqRateLimiter.currentDay()}`;
+      const firstToday = await redisClient.set(key, '1', { NX: true, EX: GroqRateLimiter.DAY_TTL_SEC });
+      if (firstToday === 'OK') {
+        captureAlert(`Groq: cuota diaria agotada (${reason})`, { reason, ...context });
+      }
+    } catch {
+      // Nunca romper el flujo de rate-limit por una alerta fallida.
+    }
   }
 
   private static keys() {
@@ -137,6 +158,7 @@ export class GroqRateLimiter {
           { currentTpd, estimatedTokens, limit: GroqRateLimiter.TPD_LIMIT, waitMs: dayWaitMs },
           'GroqRateLimiter: daily token quota exhausted — request rejected'
         );
+        await GroqRateLimiter.alertDailyExhaustionOnce('tpd', { currentTpd, limit: GroqRateLimiter.TPD_LIMIT });
         return { ok: false, waitMs: dayWaitMs, reason: 'tpd' };
       }
 
@@ -145,6 +167,7 @@ export class GroqRateLimiter {
           { currentRpd, limit: GroqRateLimiter.RPD_LIMIT, waitMs: dayWaitMs },
           'GroqRateLimiter: daily request quota exhausted — request rejected'
         );
+        await GroqRateLimiter.alertDailyExhaustionOnce('rpd', { currentRpd, limit: GroqRateLimiter.RPD_LIMIT });
         return { ok: false, waitMs: dayWaitMs, reason: 'rpd' };
       }
 
