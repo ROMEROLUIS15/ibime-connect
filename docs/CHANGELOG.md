@@ -2,6 +2,22 @@
 
 Todos los cambios notables en este proyecto serán documentados en este archivo.
 
+## [2.5.1] - 2026-07-11
+### 🔐 Redis a Render Key Value (red interna) y saneamiento de dependencias
+
+Continuación de la auditoría: cierra el cifrado de la conexión de Redis y limpia deuda de dependencias.
+
+#### 🔒 Seguridad — Redis
+- **Migración a Render Key Value** (Redis/Valkey gestionado por Render): el backend y el store viven en la **red privada de Render**, así que el tráfico de Redis (credenciales, email de sesión, contadores de rate-limit) **ya no viaja sin cifrar por internet público**. El plan free de Redis Cloud no ofrecía TLS bajo ninguna circunstancia; esta vía resuelve el cifrado por red interna en vez de por certificados. Solo cambió `REDIS_URL`.
+- **Soporte de TLS con CA** (`redis.ts`, `REDIS_CA_CERT`): capacidad opcional para conectar por `rediss://` con validación de certificado (`rejectUnauthorized: true`) contra el CA de un proveedor externo (p. ej. Upstash). Función pura `buildRedisTlsOptions()` con test (6 casos). Inerte con Render Key Value.
+
+#### 🧹 Dependencias
+- **`@openrouter/sdk`, `cors`, `@types/express`** eliminados del `package.json` raíz (dependencias muertas).
+- **`zod` restaurado en el raíz** tras detectarse que **no** era muerto: la resolución de tipos de `shared/validators/schemas.ts` (que importa `zod`) sube desde `shared/` a `root/node_modules/zod` durante el typecheck; quitarlo rompía el CI en instalaciones limpias. Se restauró en v3 (consistente con la unificación front/back).
+- **Dependabot — majors triados**: `redis` 5→6 (mergeado, verificado en prod) y `@types/node` 25→26 (mergeado). Cerrados por incompatibilidad: TypeScript 7 (rompe `typescript-eslint`), React 19 (migración mayor del ecosistema), lucide-react v1 (exports).
+
+---
+
 ## [2.5.0] - 2026-07-11
 ### 🛡️ Auditoría de Seguridad, Observabilidad con Sentry y Migración a Node 22
 
