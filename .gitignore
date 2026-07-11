@@ -41,8 +41,19 @@ test-ingest.mjs
 TECHNICAL_DOCUMENTATION.md
 DEPLOYMENT.md
 
+# Guía local para Claude Code (no versionar)
+CLAUDE.md
+
 # Memoria de trabajo local del agente (no versionar)
 memory/
+
+# Configuración local de Claude Code. Hasta ahora solo la ignoraba la config
+# personal de git (~/.config/git/ignore), que no viaja con el repo: en un clon
+# nuevo estos archivos aparecían sin seguimiento, listos para un `git add .`.
+# settings.json (compartido) sí puede versionarse.
+.claude/settings.local.json
+.claude.json
+.mcp.json
 
 # Generated reports (don't count towards GitHub language stats)
 playwright-report/

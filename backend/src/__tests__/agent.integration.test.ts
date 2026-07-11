@@ -37,7 +37,7 @@ describe('Agent HTTP API Integration', () => {
       generateAnswer: vi.fn().mockResolvedValue({
         content: JSON.stringify([CURATED_ITEM]),
         tokensUsed: 120,
-        model: 'llama-3.1-8b-instant',
+        model: 'openai/gpt-oss-20b',
       }),
     };
 

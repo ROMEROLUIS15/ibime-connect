@@ -7,7 +7,7 @@ const mockFetch = vi.fn();
 global.fetch = mockFetch as unknown as typeof fetch;
 
 vi.mock('../../../config/env.config.js', () => ({
-  ENV: { GROQ_API_KEY: 'test-groq-key' },
+  ENV: { GROQ_API_KEY: 'test-groq-key', GROQ_MODEL: 'openai/gpt-oss-20b' },
 }));
 
 vi.mock('../../../infrastructure/providers/groq-rate-limiter.js', () => ({
@@ -18,6 +18,7 @@ vi.mock('../../../infrastructure/providers/groq-rate-limiter.js', () => ({
 }));
 
 import { GroqProvider } from '../../../infrastructure/providers/groq.provider.js';
+import { groqRateLimiter } from '../../../infrastructure/providers/groq-rate-limiter.js';
 
 // --- Fixtures -----------------------------------------------------------------
 
@@ -37,7 +38,7 @@ function buildGroqResponse(messageOverrides: Partial<Record<string, unknown>> = 
       },
     }],
     usage: { total_tokens: 50 },
-    model: 'llama-3.1-8b-instant',
+    model: 'openai/gpt-oss-20b',
   };
 }
 
@@ -62,7 +63,7 @@ describe('GroqProvider', () => {
       // Assert
       expect(result.content).toBe('Hello! How can I help you?');
       expect(result.tokensUsed).toBe(50);
-      expect(result.model).toBe('llama-3.1-8b-instant');
+      expect(result.model).toBe('openai/gpt-oss-20b');
       expect(result.toolCalls).toBeNull();
     });
 
@@ -122,6 +123,18 @@ describe('GroqProvider', () => {
       // Assert
       const callHeaders = mockFetch.mock.calls[0][1].headers;
       expect(callHeaders['Authorization']).toBe('Bearer test-groq-key');
+    });
+
+    it('should send the model configured in GROQ_MODEL', async () => {
+      // Arrange
+      mockFetch.mockResolvedValueOnce({ ok: true, json: async () => buildGroqResponse() });
+
+      // Act
+      await provider.generateAnswer(SAMPLE_MESSAGES);
+
+      // Assert
+      const payload = JSON.parse(mockFetch.mock.calls[0][1].body);
+      expect(payload.model).toBe('openai/gpt-oss-20b');
     });
 
     it('should use default temperature=0.6 and maxTokens=350 when no options are passed', async () => {
@@ -238,6 +251,30 @@ describe('GroqProvider', () => {
 
       // Act & Assert
       await expect(provider.generateAnswer(SAMPLE_MESSAGES)).rejects.toThrow('Groq API Error (400)');
+    });
+
+    it('should tell the user to retry in N seconds when a per-minute window is saturated', async () => {
+      // Arrange
+      vi.mocked(groqRateLimiter.canProceed).mockResolvedValueOnce({
+        ok: false, waitMs: 30_000, reason: 'rpm',
+      });
+
+      // Act & Assert
+      await expect(provider.generateAnswer(SAMPLE_MESSAGES))
+        .rejects.toThrow('RATE_LIMIT_EXCEEDED:30:El asistente está muy ocupado en este momento. Por favor intenta de nuevo en 30 segundos.');
+      expect(mockFetch).not.toHaveBeenCalled();
+    });
+
+    it('should tell the user to come back tomorrow when the daily quota is exhausted', async () => {
+      // Arrange — 10h hasta el reset: "intenta en 36000 segundos" sería inservible
+      vi.mocked(groqRateLimiter.canProceed).mockResolvedValueOnce({
+        ok: false, waitMs: 36_000_000, reason: 'rpd',
+      });
+
+      // Act & Assert
+      await expect(provider.generateAnswer(SAMPLE_MESSAGES))
+        .rejects.toThrow('RATE_LIMIT_EXCEEDED:36000:El asistente alcanzó su cuota de consultas por hoy. Por favor intenta de nuevo mañana.');
+      expect(mockFetch).not.toHaveBeenCalled();
     });
 
     it('should throw "Groq request timeout (25s)" when fetch is aborted', async () => {
