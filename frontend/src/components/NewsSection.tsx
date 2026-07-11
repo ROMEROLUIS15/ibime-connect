@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import libraryActivity from '@/assets/library-activity.jpg';
 import communityEvent from '@/assets/community-event.jpeg';
-import donaciones from '@/assets/donaciones.png';
+import donaciones from '@/assets/donaciones.webp';
 
 const news = [
   {
