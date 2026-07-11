@@ -40,7 +40,7 @@ El motor de chat garantiza **cero alucinaciones en el flujo de inscripciones**: 
 |:---|:---|
 | **Frontend** | React 18, Vite, TypeScript, Tailwind CSS, shadcn/ui |
 | **Backend** | Node.js 22, Express 5 (+ `helmet`, `trust proxy`), TypeScript, tsyringe (DI) |
-| **Base de Datos** | Supabase (PostgreSQL + pgvector), Redis Cloud |
+| **Base de Datos** | Supabase (PostgreSQL + pgvector), Render Key Value (Redis/Valkey, red interna) |
 | **Media & CDN** | Cloudinary (Streaming de video y fotogramas automáticos) |
 | **IA — Embeddings** | Google Gemini (`gemini-embedding-001`, 768 dimensiones) |
 | **IA — Ingestion** | `pdf-parse`, `multer` (Procesamiento en memoria y chunking semántico) |
@@ -394,7 +394,7 @@ npx playwright test
 
 ### Prerrequisitos
 - **Node.js 22+** (obligatorio: `@supabase/supabase-js` 2.110+ requiere el `WebSocket` nativo de Node 22)
-- Redis (local o Redis Cloud)
+- Redis (local, o gestionado — en producción: **Render Key Value**, red interna de Render)
 - Supabase con pgvector habilitado
 - API keys: Groq, Google Gemini
 
@@ -469,7 +469,7 @@ ESLint con auto-fix exclusivamente sobre archivos en staging.
 ├──────────────┼──────────────────────────────────────┤
 │ Render       │ UptimeRobot HTTP monitor cada 14 min  │
 ├──────────────┼──────────────────────────────────────┤
-│ Redis Cloud  │ Render activo → socket TCP permanente │
+│ Render KV    │ Red interna de Render → siempre activo │
 └──────────────┴──────────────────────────────────────┘
 ```
 

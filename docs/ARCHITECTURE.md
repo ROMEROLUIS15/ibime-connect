@@ -212,7 +212,9 @@ Redis cumple **dos roles** en el sistema:
 | **Resultados RAG** | `rag:{hash}` | 1h | `CacheService` |
 | **Contexto de sesión** | `ibime:session:{id}` | 30 min | `SessionMemoryService` |
 
-**Resiliencia**: conexión TLS detectada automáticamente (`rediss://` vs `redis://`). Reconexión con backoff exponencial (máx 5 reintentos). Timeout agresivo → el backend continúa sin caché.
+**Proveedor**: en producción se usa **Render Key Value** (Redis/Valkey gestionado por Render). El backend y el Key Value viven en la **red privada de Render**, así que el tráfico de Redis **no sale a internet público** (no requiere TLS).
+
+**Resiliencia**: el cliente detecta TLS automáticamente si la URL usa `rediss://` (útil si algún día se migra a un proveedor externo con TLS, p. ej. Upstash — soporta CA vía `REDIS_CA_CERT`). Reconexión con backoff exponencial (máx 5 reintentos). Timeout agresivo + degradación elegante → el backend continúa sin caché.
 
 ---
 

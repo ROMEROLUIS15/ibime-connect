@@ -4,14 +4,16 @@ import { logger } from '../logger/index.js';
 
 const redisUrl = ENV.REDIS_URL || 'redis://localhost:6379';
 
-// Redis Cloud requiere TLS (rediss://). Lo detectamos automáticamente.
+// TLS se activa automáticamente si la URL usa rediss:// (p. ej. un proveedor
+// externo como Upstash). En producción usamos Render Key Value por su red interna
+// privada (redis://), donde el tráfico no sale a internet y no requiere TLS.
 const isTLS = redisUrl.startsWith('rediss://');
 
 export interface RedisTlsInput {
   url: string;
   /** process.env.NODE_ENV */
   nodeEnv?: string;
-  /** PEM del certificado CA de Redis Cloud (env REDIS_CA_CERT). Opcional. */
+  /** PEM del certificado CA del proveedor de Redis (env REDIS_CA_CERT). Opcional. */
   caCert?: string;
 }
 
@@ -23,7 +25,7 @@ export interface RedisTlsInput {
  *     - `rejectUnauthorized: true` SIEMPRE en producción (previene MITM). Solo se
  *       desactiva en desarrollo local (localhost), por conveniencia.
  *     - Si se provee `caCert` (REDIS_CA_CERT), se pasa como `ca` para validar el
- *       certificado de Redis Cloud contra su CA propia. Soporta PEM con saltos de
+ *       certificado del proveedor contra su CA propia. Soporta PEM con saltos de
  *       línea reales o escapados (`\n`), como suelen quedar en una env var.
  */
 export function buildRedisTlsOptions(
