@@ -22,9 +22,10 @@ qué datos se guardan, propone plazos y describe el mecanismo de purga y respald
 | `knowledge_base` / `ibime_knowledge` | — | N/A (no PII) | RAG | — |
 
 **Encargados del tratamiento (terceros a los que se envían datos):** Supabase
-(base de datos), Redis Cloud (sesión/cuota), Groq (mensajes del chat para
-inferencia), Google Gemini (texto para *embeddings*), Cloudinary (media), Render
-y Vercel (hosting). ⚠️ Deben declararse en el aviso de privacidad (§4).
+(base de datos), Groq (mensajes del chat para inferencia), Google Gemini (texto
+para *embeddings*), Cloudinary (media), Render (hosting + **Render Key Value**
+para sesión/cuota, en su red interna) y Vercel (hosting). ⚠️ Deben declararse en
+el aviso de privacidad (§4).
 
 ## 2. Plazos de retención (propuesta)
 
