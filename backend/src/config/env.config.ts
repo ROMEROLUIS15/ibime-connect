@@ -57,6 +57,10 @@ export const envSchema = z.object({
   GROQ_SAFETY_MARGIN: z.coerce.number().positive().max(1).default(0.8),
   FRONTEND_URL: z.string().url('FRONTEND_URL debe ser una URL válida').default('http://localhost:5173'),
   REDIS_URL: z.string().url('REDIS_URL debe ser una URL válida').default('redis://localhost:6379'),
+  // Certificado CA de Redis Cloud (PEM). Opcional. Necesario solo si se usa
+  // `rediss://` y el CA de Redis Cloud no está en el bundle del sistema, para que
+  // la validación TLS (rejectUnauthorized: true) funcione sin desactivarse.
+  REDIS_CA_CERT: z.string().optional(),
   ADMIN_SECRET: z.string().optional(),
 
   // Observability (Sentry) — opcional, graceful degradation si no está.

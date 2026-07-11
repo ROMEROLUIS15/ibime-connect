@@ -59,6 +59,9 @@ services:
         sync: false
       - key: REDIS_URL
         sync: false
+      # CA de Redis Cloud (PEM) para validar TLS con rediss://. Opcional.
+      - key: REDIS_CA_CERT
+        sync: false
       - key: ADMIN_SECRET
         sync: false
 
