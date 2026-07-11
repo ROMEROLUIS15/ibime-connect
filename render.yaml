@@ -14,8 +14,11 @@ services:
     autoDeploy: true
 
     envVars:
+      # Node 22 LTS: @supabase/supabase-js 2.110+ (realtime-js) requiere WebSocket
+      # nativo, disponible desde Node 22. Con Node 20 el backend fallaba al arrancar
+      # (createClient lanza "native WebSocket not found").
       - key: NODE_VERSION
-        value: 20.11.0
+        value: 22.11.0
       - key: PORT
         value: 10000
       - key: FRONTEND_URL
