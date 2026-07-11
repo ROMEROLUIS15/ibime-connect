@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { contextLogger } from '../infrastructure/logger/index.js';
 import { AppError, InternalServerError } from '../domain/errors/app-error.js';
+import { captureError } from '../infrastructure/observability/sentry.js';
 
 export const errorHandler = (err: Error, req: Request, res: Response, next: NextFunction) => {
   const requestId = (req as any).requestId || 'unknown';
@@ -35,6 +36,13 @@ export const errorHandler = (err: Error, req: Request, res: Response, next: Next
   // Determine if this is a known operational error
   const isOperational = err instanceof AppError;
   const statusCode = isOperational ? (err as AppError).statusCode : 500;
+
+  // Reportar a Sentry SOLO los errores no operativos (500 reales). Los 4xx
+  // esperados (validación, not found) y los 429 de rate-limit (return arriba)
+  // no son incidentes. No-op si Sentry está deshabilitado.
+  if (!isOperational) {
+    captureError(err, { requestId, method: req.method, path: req.path });
+  }
 
   // Client response: never expose internal error messages in production
   const clientError = isOperational

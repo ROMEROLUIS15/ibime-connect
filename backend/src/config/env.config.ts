@@ -59,6 +59,10 @@ export const envSchema = z.object({
   REDIS_URL: z.string().url('REDIS_URL debe ser una URL válida').default('redis://localhost:6379'),
   ADMIN_SECRET: z.string().optional(),
 
+  // Observability (Sentry) — opcional, graceful degradation si no está.
+  // Sin DSN, la captura de errores es no-op y el backend funciona idéntico.
+  SENTRY_DSN: z.string().url('SENTRY_DSN debe ser una URL válida').optional(),
+
   // Observability (LangSmith) — opcional, graceful degradation si no está
   LANGSMITH_API_KEY: z.string().optional(),
   LANGSMITH_TRACING: z

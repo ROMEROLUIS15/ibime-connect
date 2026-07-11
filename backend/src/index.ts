@@ -1,10 +1,14 @@
 import app from './app.js';
 import { ENV } from './config/env.config.js';
 import { connectRedis } from './infrastructure/cache/redis.js';
+import { initSentry } from './infrastructure/observability/sentry.js';
 
 const PORT = Number(ENV.PORT);
 
 async function startServer() {
+  // Inicializar Sentry lo antes posible (no-op si no hay SENTRY_DSN)
+  initSentry();
+
   // Conectar a Redis antes de arrancar
   await connectRedis();
 

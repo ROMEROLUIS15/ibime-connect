@@ -1,6 +1,8 @@
 ﻿import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Request, Response } from 'express';
 import { errorHandler } from '../../middlewares/error.middleware.js';
+import { BadRequestError } from '../../domain/errors/app-error.js';
+import { captureError } from '../../infrastructure/observability/sentry.js';
 
 vi.mock('../../infrastructure/logger/index.js', () => ({
   logger: {
@@ -15,6 +17,10 @@ vi.mock('../../infrastructure/logger/index.js', () => ({
     warn: vi.fn(),
     debug: vi.fn(),
   }),
+}));
+
+vi.mock('../../infrastructure/observability/sentry.js', () => ({
+  captureError: vi.fn(),
 }));
 
 // --- Helpers ------------------------------------------------------------------
@@ -95,6 +101,40 @@ describe('ErrorMiddleware', () => {
           requestId: 'unknown',
         })
       );
+    });
+  });
+
+  describe('Sentry error reporting', () => {
+    it('should report non-operational 500 errors to Sentry with safe context only', () => {
+      const req = makeReq({ requestId: 'req-500', method: 'POST', path: '/api/v1/chat' });
+      const { mock: res } = makeRes();
+      const err = new Error('boom');
+
+      errorHandler(err, req, res, vi.fn());
+
+      expect(captureError).toHaveBeenCalledWith(err, {
+        requestId: 'req-500',
+        method: 'POST',
+        path: '/api/v1/chat',
+      });
+    });
+
+    it('should NOT report operational AppError (4xx) to Sentry — no es un incidente', () => {
+      const req = makeReq();
+      const { mock: res } = makeRes();
+
+      errorHandler(new BadRequestError('dato inválido'), req, res, vi.fn());
+
+      expect(captureError).not.toHaveBeenCalled();
+    });
+
+    it('should NOT report RATE_LIMIT_EXCEEDED (429) to Sentry', () => {
+      const req = makeReq({ path: '/api/v1/chat' });
+      const { mock: res } = makeRes();
+
+      errorHandler(new Error('RATE_LIMIT_EXCEEDED:30:espera'), req, res, vi.fn());
+
+      expect(captureError).not.toHaveBeenCalled();
     });
   });
 
