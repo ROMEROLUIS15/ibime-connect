@@ -8,7 +8,7 @@
 
 ---
 
-[![Node.js](https://img.shields.io/badge/Node.js-18+_LTS-339933?style=flat-square&logo=node.js&logoColor=white)](https://nodejs.org)
+[![Node.js](https://img.shields.io/badge/Node.js-22+-339933?style=flat-square&logo=node.js&logoColor=white)](https://nodejs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-007ACC?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![React](https://img.shields.io/badge/React-18-61DAFB?style=flat-square&logo=react&logoColor=black)](https://react.dev/)
 [![Express](https://img.shields.io/badge/Express-5.x-000000?style=flat-square&logo=express&logoColor=white)](https://expressjs.com/)
@@ -39,17 +39,17 @@ El motor de chat garantiza **cero alucinaciones en el flujo de inscripciones**: 
 | Capa | Tecnologías |
 |:---|:---|
 | **Frontend** | React 18, Vite, TypeScript, Tailwind CSS, shadcn/ui |
-| **Backend** | Node.js 18 LTS, Express 5, TypeScript, tsyringe (DI) |
+| **Backend** | Node.js 22, Express 5 (+ `helmet`, `trust proxy`), TypeScript, tsyringe (DI) |
 | **Base de Datos** | Supabase (PostgreSQL + pgvector), Redis Cloud |
 | **Media & CDN** | Cloudinary (Streaming de video y fotogramas automáticos) |
 | **IA — Embeddings** | Google Gemini (`gemini-embedding-001`, 768 dimensiones) |
 | **IA — Ingestion** | `pdf-parse`, `multer` (Procesamiento en memoria y chunking semántico) |
 | **IA — Inferencia** | Groq Cloud (`openai/gpt-oss-20b`, configurable vía `GROQ_MODEL`) |
 | **Validación** | Zod (esquemas compartidos frontend ↔ backend, incluyendo `sessionId`) |
-| **Observabilidad** | Pino (logs estructurados JSON + `requestId` por petición) |
+| **Observabilidad** | Pino (logs JSON + `requestId`), Sentry (errores 500 + alerta de cuota Groq), LangSmith (trazas del chat) |
 | **Testing** | Vitest (400+ unit tests), Playwright (E2E) |
 | **Calidad de Código** | Husky v9 + lint-staged + ESLint (pre-commit & pre-push hooks) + Quality Gate completo |
-| **CI/CD** | GitHub Actions, Vercel CD, Render CD |
+| **CI/CD** | GitHub Actions (+ `npm audit`), Dependabot, Vercel CD, Render CD |
 
 ---
 
@@ -218,10 +218,12 @@ Cuando `isFrustrated = true`, el sistema inyecta al inicio del `systemPrompt` en
 ```
 ibime-connect/
 │
-├── 📁 .github/workflows/
-│   ├── ci.yml                      ← CI: Quality Gate (Lint + 400+ Vitest unit tests)
-│   ├── e2e.yml                     ← E2E: Playwright (Chromium automations)
-│   └── heartbeat.yml               ← Cron: ping Supabase + Render cada 6h
+├── 📁 .github/
+│   ├── dependabot.yml              ← Actualizaciones semanales agrupadas (raíz, back, front, actions)
+│   └── workflows/
+│       ├── ci.yml                  ← CI (Node 22): npm audit + Lint + Typecheck + 378 Vitest
+│       ├── e2e.yml                 ← E2E: Playwright (Chromium automations)
+│       └── heartbeat.yml           ← Cron: ping Supabase + Render cada 6h
 │
 ├── 📁 backend/
 │   ├── src/
@@ -249,7 +251,12 @@ ibime-connect/
 │   │   │   ├── di/
 │   │   │   │   └── container.ts     ← tsyringe: LLM, RAG, SessionMemory, SentimentAnalyzer
 │   │   │   ├── logger/index.ts      ← Pino + contextLogger(requestId)
-│   │   │   ├── providers/groq.provider.ts
+│   │   │   ├── observability/
+│   │   │   │   ├── sentry.ts         ← Captura de 500 + alerta de cuota Groq (no-op sin SENTRY_DSN)
+│   │   │   │   └── tracing.ts        ← Trazas LangSmith con sanitización de PII
+│   │   │   ├── providers/
+│   │   │   │   ├── groq.provider.ts
+│   │   │   │   └── groq-rate-limiter.ts  ← 4 ventanas (TPM/RPM/RPD/TPD) sobre Redis
 │   │   │   └── repositories/knowledge.repository.ts
 │   │   │
 │   │   ├── 📁 middlewares/
@@ -326,14 +333,17 @@ ibime-connect/
 │   ├── validators/schemas.ts       ← chatRequestSchema con sessionId?: UUID
 │   └── package.json               ← "type": "module" (resolución ESM Node v24)
 │
-├── 📁 supabase/migrations/
 ├── 📁 e2e/
 ├── 📁 docs/
 │   ├── AI_STRATEGY.md
-│   ├── ARCHITECTURE.md             ← Actualizado: arquitectura híbrida Fase 1+2
+│   ├── ARCHITECTURE.md             ← Arquitectura híbrida + seguridad HTTP + observabilidad
 │   ├── CHANGELOG.md
 │   ├── CODE_QUALITY.md
-│   └── CONTRIBUTING.md
+│   ├── CONTRIBUTING.md
+│   └── DATA_RETENTION.md           ← Política de retención/respaldo de PII (propuesta)
+│
+├── 📁 supabase/migrations/
+│   └── README.md                   ← Estado real del esquema y reconciliación repo↔prod
 │
 ├── render.yaml
 ├── playwright.config.ts
@@ -383,7 +393,7 @@ npx playwright test
 ## 🚀 Instalación y Ejecución Local
 
 ### Prerrequisitos
-- Node.js 18+ LTS
+- **Node.js 22+** (obligatorio: `@supabase/supabase-js` 2.110+ requiere el `WebSocket` nativo de Node 22)
 - Redis (local o Redis Cloud)
 - Supabase con pgvector habilitado
 - API keys: Groq, Google Gemini
@@ -412,7 +422,8 @@ npm run dev
 | `SUPABASE_URL` | URL del proyecto Supabase |
 | `SUPABASE_SERVICE_ROLE_KEY` | Service role key |
 | `REDIS_URL` | URL Redis (`redis://` o `rediss://` para TLS) |
-| `ADMIN_SECRET` | Secret para `/admin/flush-cache` |
+| `ADMIN_SECRET` | Secret para `/admin/flush-cache` (POST) y endpoints de ingesta |
+| `SENTRY_DSN` | Opcional. Si se define, activa la captura de errores y alertas de cuota (no-op sin él) |
 
 ---
 
@@ -468,9 +479,12 @@ ESLint con auto-fix exclusivamente sobre archivos en staging.
 
 | Mecanismo | Implementación |
 |:---|:---|
+| **Cabeceras HTTP** | `helmet` (nosniff, frameguard, HSTS, sin `X-Powered-By`) |
+| **IP real tras proxy** | `trust proxy` → el rate-limiting por IP es fiable y no evadible vía `X-Forwarded-For` |
 | **Validación de entrada** | Zod `chatRequestSchema` (incluye `sessionId?: UUID`) |
 | **Privacy Gate** | Redis como fuente autoritativa del email de sesión |
 | **Rate Limiting** | `express-rate-limit` por endpoint |
+| **RLS de PII** | `anon` sin escritura; solo `service_role` (backend) muta `course_registrations`/`contact_messages` |
 | **Admin auth** | `crypto.timingSafeEqual` SHA-256 |
 | **Prompt hardening** | System prompt sin lógica de negocio |
 | **Guardrail post-LLM** | Regex bloquea alucinaciones de user-state |
@@ -487,7 +501,9 @@ ESLint con auto-fix exclusivamente sobre archivos en staging.
 | [`AI_STRATEGY.md`](./docs/AI_STRATEGY.md) | RAG, parámetros de inferencia, anti-alucinación |
 | [`CODE_QUALITY.md`](./docs/CODE_QUALITY.md) | Husky, lint-staged, ESLint, Quality Gate |
 | [`CHANGELOG.md`](./docs/CHANGELOG.md) | Historial de versiones |
-| [`CONTRIBUTING.md`](./docs/CONTRIBUTING.md) | Guía para contribuidores |
+| [`CONTRIBUTING.md`](./docs/CONTRIBUTING.md) | Guía para contribuidores (requiere Node 22+) |
+| [`DATA_RETENTION.md`](./docs/DATA_RETENTION.md) | Política de retención y respaldo de PII (propuesta) |
+| [`supabase/migrations/README.md`](./supabase/migrations/README.md) | Estado del esquema y reconciliación repo↔producción |
 
 ---
 

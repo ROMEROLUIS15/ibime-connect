@@ -216,6 +216,21 @@ Redis cumple **dos roles** en el sistema:
 
 ---
 
+## 🔐 Seguridad HTTP / Transporte
+
+Complementa las 5 capas anti-alucinación con defensas a nivel de petición:
+
+| Mecanismo | Módulo | Rol |
+|:---|:---|:---|
+| **`helmet`** | `app.ts` | Cabeceras de seguridad (nosniff, frameguard, HSTS, sin `X-Powered-By`). |
+| **`trust proxy`** | `app.ts` | `req.ip` real detrás del proxy de Render → el rate-limiting por IP funciona y no es evadible vía `X-Forwarded-For`. |
+| **Rate limiting** | `app.ts`, `api.routes.ts` | Límites por endpoint (chat, api, admin) con `express-rate-limit`. |
+| **`requireAdminKey`** | `admin-auth.middleware.ts` | Guard timing-safe (SHA-256 + `timingSafeEqual`) para endpoints administrativos e ingesta. |
+| **RLS (Supabase)** | `supabase/migrations/` | `anon` sin escritura; solo `service_role` (backend) muta las tablas de PII. `SELECT` restringido a `authenticated`. |
+| **Verificación de propiedad** | `check_registration.tool.ts` | Exige `email` + `phone` coincidente antes de revelar inscripciones; respuesta genérica anti-enumeración. |
+
+---
+
 ## 📊 Observabilidad
 
 Cada petición genera un `requestId` único propagado a todos los logs (Pino JSON). El Privacy Gate emite logs diferenciados:
@@ -227,6 +242,11 @@ Cada petición genera un `requestId` único propagado a todos los logs (Pino JSO
 { "level": 30, "msg": "BRANCH A — direct tool call, LLM bypassed entirely", "email": "..." }
 { "level": 30, "msg": "Sentiment: user appears frustrated", "sentimentScore": 4 }
 ```
+
+### Trazas y alertas
+
+- **LangSmith** (`observability/tracing.ts`): instrumenta el pipeline de chat con sanitización de PII. No-op sin `LANGSMITH_API_KEY`.
+- **Sentry** (`observability/sentry.ts`): captura los errores 500 reales (nunca 4xx/429) y **alerta cuando se agota la cuota diaria de Groq** (`tpd`/`rpd`, con dedup en Redis: una alerta por día). No-op sin `SENTRY_DSN`, `sendDefaultPii: false`. Ambos siguen el patrón de degradación elegante: sin la clave, la app funciona idéntica.
 
 ---
 
