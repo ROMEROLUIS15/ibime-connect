@@ -59,7 +59,11 @@ services:
       - key: ADMIN_SECRET
         sync: false
 
-      # 3. Observability (LangSmith)
+      # 3. Observability (Sentry) — opcional; sin DSN la captura es no-op
+      - key: SENTRY_DSN
+        sync: false
+
+      # 4. Observability (LangSmith)
       - key: LANGSMITH_API_KEY
         sync: false
       - key: LANGSMITH_TRACING
