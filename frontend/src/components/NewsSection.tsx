@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import libraryActivity from '@/assets/library-activity.jpg';
 import communityEvent from '@/assets/community-event.jpeg';
-import donaciones from '@/assets/donaciones.jpeg';
+import donaciones from '@/assets/donaciones.png';
 
 const news = [
   {
@@ -36,6 +36,9 @@ const news = [
 ];
 
 export const NewsSection = () => {
+  const today = new Date();
+  const fechaFormateada = today.toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
+  const fechaISO = today.toISOString().split('T')[0];
   return (
     <section id="cartelera" className="py-20 bg-muted/30">
       <div className="container mx-auto px-4">
@@ -66,7 +69,7 @@ export const NewsSection = () => {
             <div className="p-6 lg:p-10 flex flex-col justify-center lg:col-span-8">
               <div className="flex items-center gap-2 text-muted-foreground text-sm mb-3">
                 <Calendar className="w-4 h-4" />
-                <time dateTime="2025-11-14">14 Noviembre 2025</time>
+                <time dateTime={fechaISO}>{fechaFormateada}</time>
                 <span className="px-2 py-0.5 rounded-full bg-secondary/10 text-secondary text-xs font-medium">
                   Institucional
                 </span>

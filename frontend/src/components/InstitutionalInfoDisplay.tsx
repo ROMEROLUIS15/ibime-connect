@@ -7,7 +7,7 @@ interface InstitutionalInfoDisplayProps {
 }
 
 const content = {
-  date: '14 Noviembre 2025',
+  date: '',
   category: 'Institucional',
   title: 'Conformación del Congreso Nacional Constituyente Obrero',
   description: `Cumpliendo con el llamado a la patria con la clase obrera, se llevó a cabo la convocatoria para la Conformación del Congreso Nacional Constituyente Obrero dentro del Instituto Autónomo de Servicios de Bibliotecas e Información del Estado Bolivariano de Mérida, trabajadores y trabajadoras unidos participaron activamente y sin dilaciones en el proceso eleccionario de los Voceros y Voceras.
@@ -17,6 +17,9 @@ const content = {
 };
 
 export const InstitutionalInfoDisplay = ({ className }: InstitutionalInfoDisplayProps) => {
+  const today = new Date();
+  const fechaFormateada = today.toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
+  const fechaISO = today.toISOString().split('T')[0];
   return (
     <article className={`card-institutional overflow-hidden p-0 ${className ?? ''}`}>
       <div className="grid md:grid-cols-2 gap-0">
@@ -33,7 +36,7 @@ export const InstitutionalInfoDisplay = ({ className }: InstitutionalInfoDisplay
         <div className="p-6 md:p-8 flex flex-col justify-center">
           <div className="flex items-center gap-2 text-muted-foreground text-sm mb-3">
             <Calendar className="w-4 h-4" />
-            <time dateTime="2025-11-14">{content.date}</time>
+            <time dateTime={fechaISO}>{fechaFormateada}</time>
             <span className="px-2 py-0.5 rounded-full bg-secondary/10 text-secondary text-xs font-medium">
               {content.category}
             </span>
