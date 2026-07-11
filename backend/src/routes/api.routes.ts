@@ -1,11 +1,10 @@
 import { Router } from 'express';
 import rateLimit from 'express-rate-limit';
-import { createHash, timingSafeEqual } from 'crypto';
 import { ChatController } from '../controllers/chat.controller.js';
 import { ContactController } from '../controllers/contact.controller.js';
 import { RegistrationController } from '../controllers/registration.controller.js';
 import { CacheService } from '../infrastructure/cache/cache.service.js';
-import { ENV } from '../config/env.config.js';
+import { requireAdminKey } from '../middlewares/admin-auth.middleware.js';
 import { logger } from '../infrastructure/logger/index.js';
 import knowledgeRoutes from './knowledge.routes.js';
 import agentRoutes from './agent.routes.js';
@@ -66,24 +65,11 @@ const adminLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-// Admin endpoint: flush cache (secure)
-router.get('/admin/flush-cache', adminLimiter, async (req, res) => {
-  const adminKey = req.headers['x-admin-key'];
-
-  if (!adminKey || !ENV.ADMIN_SECRET) {
-    logger.warn({ hasAdminKey: !!adminKey, hasAdminSecret: !!ENV.ADMIN_SECRET }, 'Intento de acceso al flush cache sin credenciales válidas');
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
-
-  // Timing-safe comparison usando hashes SHA-256
-  const providedHash = createHash('sha256').update(String(adminKey)).digest();
-  const expectedHash = createHash('sha256').update(ENV.ADMIN_SECRET).digest();
-
-  if (!timingSafeEqual(providedHash, expectedHash)) {
-    logger.warn({ ip: req.ip }, 'Intento no autorizado de flush cache');
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
-
+// Admin endpoint: flush cache (secure).
+// POST (no GET): limpiar la caché es una operación con efecto secundario, no debe
+// ser cacheable ni disparable por prefetch/crawlers. La autenticación se delega en
+// requireAdminKey (misma lógica timing-safe que el resto de rutas protegidas).
+router.post('/admin/flush-cache', adminLimiter, requireAdminKey, async (req, res) => {
   try {
     const cache = new CacheService();
     await cache.clear();
