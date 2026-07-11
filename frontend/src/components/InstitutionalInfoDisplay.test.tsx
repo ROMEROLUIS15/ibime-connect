@@ -11,9 +11,16 @@ const renderComponent = () =>
   );
 
 describe('InstitutionalInfoDisplay', () => {
-  it('renders the date', () => {
+  it('renders today\'s date dynamically', () => {
     renderComponent();
-    expect(screen.getByText('14 Noviembre 2025')).toBeInTheDocument();
+    // La fecha ya no está hardcodeada: se calcula al render (misma lógica que el
+    // componente), así que el test la deriva igual en vez de fijar una fecha.
+    const today = new Date();
+    const fechaFormateada = today.toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
+    const fechaISO = today.toISOString().split('T')[0];
+    const timeEl = screen.getByText(fechaFormateada);
+    expect(timeEl).toBeInTheDocument();
+    expect(timeEl).toHaveAttribute('dateTime', fechaISO);
   });
 
   it('renders the category', () => {
