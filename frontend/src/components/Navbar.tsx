@@ -281,7 +281,13 @@ export const Navbar = () => {
 
   return (
     <>
-      <nav className="fixed top-0 left-0 right-0 z-40 bg-white border-b border-border">
+      <nav
+        className="fixed top-0 left-0 right-0 z-40 bg-white"
+        style={{
+          borderBottom: '1.5px solid hsl(210 20% 82%)',
+          boxShadow: '0 2px 10px 0 rgba(11, 25, 48, 0.07)',
+        }}
+      >
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between py-2 gap-4">
 
