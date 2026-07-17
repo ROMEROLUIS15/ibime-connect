@@ -38,7 +38,7 @@
     --input: 210 25% 92%;
     --ring: 207 55% 40%; /* Usar el Acero para anillos de focus */
 
-    --radius: 0.75rem;
+    --radius: 0.5rem;
 
     /* Colores exactos extraídos del logo */
     --ebime-navy: 217 63% 12%;       /* #0B1930 */
@@ -182,10 +182,9 @@
 
   .badge-institutional {
     @apply inline-flex items-center px-3 py-1 rounded-full text-sm font-medium;
-    background: hsla(0, 0%, 100%, 0.09);
-    color: hsl(var(--ebime-lightblue));
-    border: 1px solid hsla(0, 0%, 100%, 0.22);
-    backdrop-filter: blur(8px);
+    background: hsl(var(--accent) / 0.10);
+    color: hsl(var(--accent));
+    border: 1px solid hsl(var(--accent) / 0.25);
   }
 
   .animate-fade-in {
