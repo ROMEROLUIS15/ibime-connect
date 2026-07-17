@@ -105,10 +105,6 @@ export const DonationCriteriaPage = () => {
       <main className="pt-20">
         {/* Hero */}
         <section className="relative py-24 bg-gradient-institutional text-primary-foreground overflow-hidden">
-          <div className="absolute top-0 right-0 w-96 h-96 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/3" />
-          <div className="absolute bottom-0 left-0 w-80 h-80 bg-white/5 rounded-full translate-y-1/3 -translate-x-1/4" />
-          <div className="absolute top-1/2 left-1/4 w-64 h-64 bg-white/[0.03] rounded-full" />
-
           <div className="container mx-auto px-4 relative z-10">
             <div className="max-w-4xl mx-auto text-center">
               <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium text-white bg-white/10 border border-white/25 backdrop-blur-sm animate-fade-in">
@@ -274,9 +270,6 @@ export const DonationCriteriaPage = () => {
           <div className="container mx-auto px-4">
             <div className="max-w-5xl mx-auto">
               <div className="card-institutional relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-ebime-blue/10 to-transparent rounded-full -translate-y-1/2 translate-x-1/2" />
-                <div className="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-ebime-green/10 to-transparent rounded-full translate-y-1/2 -translate-x-1/2" />
-
                 <div className="relative z-10 grid md:grid-cols-2 gap-8">
                   <div>
                     <span className="badge-institutional mb-4 inline-flex">Información adicional</span>
