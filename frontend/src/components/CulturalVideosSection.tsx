@@ -55,9 +55,6 @@ export const CulturalVideosSection = () => {
             
             return (
               <div key={video.id} className="card-institutional relative overflow-hidden group flex flex-col h-full">
-                {/* Decorative Glow */}
-                <div className={`absolute top-0 right-0 w-32 h-32 ${video.classes.glow} rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl`} />
-                
                 <div className="relative z-10 flex flex-col flex-1">
                   {/* Card Header */}
                   <div className="flex items-center gap-3 mb-4">

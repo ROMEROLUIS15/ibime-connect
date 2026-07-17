@@ -68,11 +68,11 @@ const FondoEditorialPage = () => {
         {/* Hero */}
         <section className="py-20 bg-gradient-institutional text-primary-foreground">
           <div className="container mx-auto px-4 text-center">
-            <span className="inline-block px-4 py-2 mb-6 text-sm font-medium rounded-full bg-accent/20 text-accent border border-accent/30">
+            <span className="inline-block px-4 py-2 mb-6 text-sm font-medium rounded-full bg-white/10 text-white border border-white/30 backdrop-blur-sm">
               Publicaciones
             </span>
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-display font-bold mb-6">
-              Fondo <span className="text-accent">Editorial</span>
+              Fondo <span style={{ color: '#FFFFFF' }}>Editorial</span>
             </h1>
             <p className="text-lg md:text-xl text-primary-foreground/80 max-w-2xl mx-auto mb-8">
               El Fondo Editorial del IBIME se dedica a la publicación y difusión de obras 
