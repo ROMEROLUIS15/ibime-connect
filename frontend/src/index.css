@@ -138,14 +138,14 @@
 @layer components {
   .btn-hero {
     @apply px-8 py-4 rounded-lg font-bold text-lg transition-all duration-300;
-    background: hsl(var(--accent));
+    background: hsl(var(--accent)) !important; /* gana a bg-primary de shadcn Button */
     color: #FFFFFF;
     box-shadow: 0 10px 25px rgba(46, 107, 158, 0.3); /* Acero glow */
   }
-  
+
   .btn-hero:hover {
     transform: translateY(-2px) scale(1.05);
-    background: hsl(200 53% 50%); /* Darker light blue on hover */
+    background: hsl(207 55% 34%) !important; /* Acero mas oscuro en hover */
     box-shadow: 0 16px 40px rgba(46, 107, 158, 0.4);
   }
 
