@@ -1,5 +1,5 @@
 /* ─── @import SIEMPRE PRIMERO — antes de cualquier otra regla ─── */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:wght@500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Libre+Franklin:wght@500;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -22,13 +22,13 @@
     --primary: 217 63% 12%; /* Navy Blue #0B1930 */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 200 53% 58%; /* Light Blue #5AA5CC */
+    --secondary: 207 55% 40%; /* Steel Blue "Acero" #2E6B9E */
     --secondary-foreground: 0 0% 100%;
 
     --muted: 210 30% 96%;
     --muted-foreground: 215 20% 40%;
 
-    --accent: 200 53% 58%; /* Light Blue #5AA5CC */
+    --accent: 207 55% 40%; /* Steel Blue "Acero" #2E6B9E */
     --accent-foreground: 0 0% 100%;
 
     --destructive: 358 98% 52%;
@@ -36,26 +36,26 @@
 
     --border: 210 20% 88%;
     --input: 210 25% 92%;
-    --ring: 200 53% 58%; /* Usar el Light Blue para anillos de focus */
+    --ring: 207 55% 40%; /* Usar el Acero para anillos de focus */
 
-    --radius: 0.75rem;
+    --radius: 0.5rem;
 
     /* Colores exactos extraídos del logo */
     --ebime-navy: 217 63% 12%;       /* #0B1930 */
-    --ebime-red: 200 53% 58%;        /* Mapeado al Celeste para eliminar el rojo */
-    --ebime-lightblue: 200 53% 58%;  /* #5AA5CC */
+    --ebime-red: 207 55% 40%;        /* Mapeado al Acero para eliminar el rojo */
+    --ebime-lightblue: 207 55% 40%;  /* Steel Blue "Acero" #2E6B9E */
     --ebime-darkred: 217 63% 12%;    /* Mapeado al Navy para eliminar el rojo oscuro */
     --ebime-midnight: 222 81% 11%;   /* #051231 */
 
     /* Retrocompatibilidad mapeada a la nueva paleta */
-    --ebime-yellow: 200 53% 58%;
+    --ebime-yellow: 207 55% 40%;
     --ebime-purple: 217 63% 12%;
-    --ebime-blue: 200 53% 58%;
-    --ebime-green: 200 53% 58%;
-    --ebime-light-green: 200 53% 90%;
+    --ebime-blue: 207 55% 40%;
+    --ebime-green: 207 55% 40%;
+    --ebime-light-green: 207 53% 90%;
 
     --gradient-primary: linear-gradient(135deg, hsl(217, 63%, 16%) 0%, hsl(217, 63%, 12%) 35%, hsl(222, 81%, 11%) 100%);
-    --gradient-accent: linear-gradient(135deg, hsl(200, 53%, 62%) 0%, hsl(200, 53%, 58%) 100%);
+    --gradient-accent: linear-gradient(135deg, hsl(207, 55%, 44%) 0%, hsl(207, 55%, 38%) 100%);
     --gradient-hero: linear-gradient(135deg, hsl(217, 63%, 18%) 0%, hsl(217, 63%, 12%) 35%, hsl(222, 81%, 11%) 70%, hsl(217, 63%, 14%) 100%);
     --gradient-card: linear-gradient(180deg, hsl(0, 0%, 100%) 0%, hsl(210, 40%, 98%) 100%);
     
@@ -70,10 +70,10 @@
     --sidebar-foreground: 217 63% 12%;
     --sidebar-primary: 217 63% 12%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 200 53% 90%; /* Light blue muted */
+    --sidebar-accent: 207 53% 90%; /* Acero muted */
     --sidebar-accent-foreground: 217 63% 12%;
     --sidebar-border: 210 20% 88%;
-    --sidebar-ring: 200 53% 58%;
+    --sidebar-ring: 207 55% 40%;
   }
 
   .dark {
@@ -89,13 +89,13 @@
     --primary: 217 63% 65%; /* Navy Blue lighten for dark mode */
     --primary-foreground: 217 40% 10%;
 
-    --secondary: 200 53% 58%; /* Light blue looks good on dark */
+    --secondary: 207 55% 45%; /* Acero, algo más claro para dark */
     --secondary-foreground: 217 40% 10%;
 
     --muted: 217 30% 14%;
     --muted-foreground: 210 20% 70%;
 
-    --accent: 200 53% 58%; /* Light blue for dark mode accent */
+    --accent: 207 55% 45%; /* Acero for dark mode accent */
     --accent-foreground: 0 0% 100%;
 
     --destructive: 358 98% 52%;
@@ -103,16 +103,16 @@
 
     --border: 217 30% 18%;
     --input: 217 30% 18%;
-    --ring: 200 53% 58%;
+    --ring: 207 55% 45%;
 
     --sidebar-background: 217 40% 6%;
     --sidebar-foreground: 210 40% 96%;
     --sidebar-primary: 217 63% 65%;
     --sidebar-primary-foreground: 217 40% 10%;
-    --sidebar-accent: 200 45% 24%;
-    --sidebar-accent-foreground: 200 53% 75%;
+    --sidebar-accent: 207 45% 24%;
+    --sidebar-accent-foreground: 207 53% 75%;
     --sidebar-border: 217 30% 18%;
-    --sidebar-ring: 200 53% 58%;
+    --sidebar-ring: 207 55% 45%;
   }
 }
 
@@ -131,22 +131,22 @@
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Playfair Display', Georgia, serif;
+    font-family: 'Libre Franklin', system-ui, sans-serif;
   }
 }
 
 @layer components {
   .btn-hero {
     @apply px-8 py-4 rounded-lg font-bold text-lg transition-all duration-300;
-    background: hsl(var(--accent));
+    background: hsl(var(--accent)) !important; /* gana a bg-primary de shadcn Button */
     color: #FFFFFF;
-    box-shadow: 0 10px 25px rgba(90, 165, 204, 0.3); /* Light blue glow */
+    box-shadow: 0 10px 25px rgba(46, 107, 158, 0.3); /* Acero glow */
   }
-  
+
   .btn-hero:hover {
     transform: translateY(-2px) scale(1.05);
-    background: hsl(200 53% 50%); /* Darker light blue on hover */
-    box-shadow: 0 16px 40px rgba(90, 165, 204, 0.4);
+    background: hsl(207 55% 34%) !important; /* Acero mas oscuro en hover */
+    box-shadow: 0 16px 40px rgba(46, 107, 158, 0.4);
   }
 
   .card-institutional {
@@ -182,10 +182,9 @@
 
   .badge-institutional {
     @apply inline-flex items-center px-3 py-1 rounded-full text-sm font-medium;
-    background: hsla(0, 0%, 100%, 0.09);
-    color: hsl(var(--ebime-lightblue));
-    border: 1px solid hsla(0, 0%, 100%, 0.22);
-    backdrop-filter: blur(8px);
+    background: hsl(var(--accent) / 0.10);
+    color: hsl(var(--accent));
+    border: 1px solid hsl(var(--accent) / 0.25);
   }
 
   .animate-fade-in {

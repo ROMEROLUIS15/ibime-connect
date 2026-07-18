@@ -15,10 +15,6 @@ export const AboutIBIMESection = () => {
         {/* Main Content */}
         <div className="max-w-5xl mx-auto">
           <div className="card-institutional relative overflow-hidden">
-            {/* Decorative elements */}
-            <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-ebime-purple/10 to-transparent rounded-full -translate-y-1/2 translate-x-1/2" />
-            <div className="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-ebime-blue/10 to-transparent rounded-full translate-y-1/2 -translate-x-1/2" />
-            
             <div className="relative z-10">
               {/* Icon Grid */}
               <div className="flex justify-center gap-4 mb-8">
