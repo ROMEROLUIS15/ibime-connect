@@ -95,11 +95,22 @@ export const ServicesSection = () => {
             >
               {/* Map representation: mapa real del eje si existe; si no, el degradado de siempre */}
               {district.image ? (
-                <div className="h-64 rounded-xl bg-muted/40 mb-6 relative overflow-hidden flex items-center justify-center p-3">
+                <div className="h-56 rounded-xl mb-5 relative overflow-hidden flex items-center justify-center p-4">
+                  {/* Fondo con el color del eje, muy suave, para que el vacio no se vea blanco/generico */}
+                  <div className={`absolute inset-0 bg-gradient-to-br ${district.color} opacity-[0.08]`} />
+                  {/* Patron de rejilla, igual que las tarjetas de abajo, para dar textura */}
+                  <div className="absolute inset-0 opacity-[0.12]">
+                    <svg viewBox="0 0 100 100" className="w-full h-full" preserveAspectRatio="none">
+                      <pattern id={`grid-map-${district.id}`} width="10" height="10" patternUnits="userSpaceOnUse">
+                        <path d="M 10 0 L 0 0 0 10" fill="none" stroke="currentColor" strokeWidth="0.5" className="text-foreground" />
+                      </pattern>
+                      <rect width="100" height="100" fill={`url(#grid-map-${district.id})`} />
+                    </svg>
+                  </div>
                   <img
                     src={district.image}
                     alt={`Mapa del ${district.name}`}
-                    className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform"
+                    className="relative max-h-full max-w-full object-contain drop-shadow-md group-hover:scale-105 transition-transform"
                     loading="lazy"
                   />
                 </div>
