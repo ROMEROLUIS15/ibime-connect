@@ -23,18 +23,20 @@ import {
   type JSX,
   type KeyboardEvent,
   type ChangeEvent,
-  type TouchEvent,
 } from 'react';
-import { useFloatingButtonsTheme } from '@/hooks/useFloatingButtonsTheme';
 import { useFocusTrap, useEscapeKey } from '@/hooks/use-focus-trap';
 import { AskAssistantUseCase, type AskAssistantInput } from '@/application/use-cases/AskAssistantUseCase';
 import { BackendAssistantAdapter } from '@/infrastructure/adapters/BackendAssistantAdapter';
+import { AssistantLauncher } from '@/components/assistant/AssistantLauncher';
 import { createSessionId } from '@/lib/session-id';
 import type { ChatMessage, KnowledgeMatch } from '@shared/types/domain';
+import owlMascot from '@/assets/buho_8-removebg-preview.png';
 
 // ─── Assets ───────────────────────────────────────────────────────────────────
 
-const OWL_AVATAR = '/buho-robot.jpeg';
+// Búho institucional (símbolo del IBIME). Ilustración de cuerpo completo con
+// fondo transparente: se usa como avatar en el chat y como mascota flotante.
+const OWL_AVATAR = owlMascot;
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -231,74 +233,15 @@ export function IBIMEAssistant(): JSX.Element {
   // desde un cliente modificado.
   const [sessionId] = useState<string>(() => createSessionId());
 
-  // Drag logic for mobile
-  const [dragOffset, setDragOffset] = useState<number>(0);
-  const [isDraggingActive, setIsDraggingActive] = useState<boolean>(false);
-  const dragStartY = useRef<number | null>(null);
-  const initialOffset = useRef<number>(0);
-  const isDragging = useRef<boolean>(false);
-
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
-  const { isDark } = useFloatingButtonsTheme();
 
   // Focus trap + Escape key handler
   useFocusTrap(dialogRef, isOpen);
   useEscapeKey(() => setIsOpen(false), isOpen);
 
-  // Resetear posición de arrastre al volver a la versión de escritorio
-  useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth > 768) {
-        setDragOffset(0);
-      }
-    };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  const handleTouchStart = (e: TouchEvent<HTMLButtonElement>) => {
-    if (window.innerWidth > 768) return;
-    if (isOpen) return; // No mover si está abierto
-    dragStartY.current = e.touches[0].clientY;
-    initialOffset.current = dragOffset;
-    isDragging.current = false;
-    setIsDraggingActive(true);
-  };
-
-  const handleTouchMove = (e: TouchEvent<HTMLButtonElement>) => {
-    if (dragStartY.current === null || window.innerWidth > 768) return;
-    
-    const currentY = e.touches[0].clientY;
-    const deltaY = dragStartY.current - currentY; // positivo hacia arriba
-
-    if (Math.abs(deltaY) > 5) {
-      isDragging.current = true;
-    }
-
-    let newOffset = initialOffset.current + deltaY;
-    
-    // Límites de movimiento
-    const maxOffset = window.innerHeight - 150; 
-    if (newOffset < -10) newOffset = -10;
-    if (newOffset > maxOffset) newOffset = maxOffset;
-
-    setDragOffset(newOffset);
-  };
-
-  const handleTouchEnd = () => {
-    dragStartY.current = null;
-    setIsDraggingActive(false);
-  };
-
-  const toggleOpen = () => {
-    if (isDragging.current) {
-      isDragging.current = false;
-      return;
-    }
-    setIsOpen((prev) => !prev);
-  };
+  const toggleOpen = (): void => setIsOpen((prev) => !prev);
 
   // ── Dependency Injection via useMemo ─────────────────────────────────────
   const askAssistant = useMemo<AskAssistantUseCase>(() => {
@@ -390,25 +333,19 @@ export function IBIMEAssistant(): JSX.Element {
   };
 
   // ── Dynamic styles ──────────────────────────────────────────────────────
-  const ringColor = isDark ? 'rgba(255,255,255,0.4)' : 'rgba(21,128,61,0.4)';
   const canSend = inputValue.trim() !== '' && !isTyping;
 
   return (
     <>
+      {/* ── Ventana de Chat: contenedor propio, sin acoplarse a la mascota ── */}
       <div
         style={{
           position: 'fixed',
-          bottom: `calc(24px + ${dragOffset}px)`,
+          bottom: '24px',
           right: '24px',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'flex-end',
-          gap: '12px',
           zIndex: 9999,
-          transition: isDraggingActive ? 'none' : 'bottom 0.3s ease',
         }}
       >
-        {/* ── Ventana de Chat ── */}
         {isOpen && (
           <div
             ref={dialogRef}
@@ -649,128 +586,15 @@ export function IBIMEAssistant(): JSX.Element {
             </div>
           </div>
         )}
-
-        {/* ── Botón trigger con anillo pulsante y búho ── */}
-        <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          {/* Anillo pulsante exterior */}
-          {!isOpen && (
-            <div
-              style={{
-                position: 'absolute',
-                width: 45,
-                height: 45,
-                borderRadius: '50%',
-                background: ringColor,
-                animation: 'ibime-ring-pulse 2s ease-out infinite',
-                pointerEvents: 'none',
-              }}
-            />
-          )}
-
-          {/* Etiqueta flotante */}
-          {!isOpen && (
-            <div
-              className="ibime-floating-label"
-              style={{
-                background: isDark ? '#ffffff' : '#0B1930',
-                color: isDark ? '#1e293b' : '#ffffff',
-                border: isDark ? '2px solid #e2e8f0' : '2px solid #051231',
-              }}
-            >
-              Asistente IA
-            </div>
-          )}
-
-          <button
-            onClick={toggleOpen}
-            onTouchStart={handleTouchStart}
-            onTouchMove={handleTouchMove}
-            onTouchEnd={handleTouchEnd}
-            aria-label={isOpen ? 'Cerrar asistente virtual IBIME' : 'Abrir Asistente IA del IBIME'}
-            aria-expanded={isOpen}
-            style={{
-              width: 60,
-              height: 60,
-              borderRadius: '50%',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              transition: 'all 500ms ease, transform 200ms ease',
-              background: 'white',
-              border: '3px solid #0B1930',
-              boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
-              position: 'relative',
-              zIndex: 1,
-              overflow: isOpen ? 'hidden' : 'visible',
-              touchAction: 'none', // Evitar scroll al arrastrar
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'translateY(-4px) scale(1.04)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'translateY(0) scale(1)';
-            }}
-          >
-            {isOpen ? (
-              <span style={{ color: '#0B1930', fontSize: 20, fontWeight: 700, lineHeight: 1 }}>✕</span>
-            ) : (
-              <img
-                src={OWL_AVATAR}
-                alt="Asistente IA"
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  objectFit: 'cover',
-                  borderRadius: '50%',
-                  transform: 'scale(1.15) translateY(-4px)',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                }}
-              />
-            )}
-          </button>
-        </div>
       </div>
 
+      {/* ── Mascota flotante (búho institucional): componente independiente ── */}
+      <AssistantLauncher isOpen={isOpen} onToggle={toggleOpen} />
+
       <style>{`
-        .ibime-floating-label {
-          position: absolute;
-          top: -42px;
-          left: 50%;
-          white-space: nowrap;
-          background: #ffffff;
-          color: #1e293b;
-          font-size: 10px;
-          font-weight: 700;
-          padding: 3px 8px;
-          border-radius: 8px;
-          box-shadow: 0 4px 14px rgba(0,0,0,0.18);
-          border: 1px solid #e2e8f0;
-          animation: ibime-bounce 2.5s ease-in-out infinite;
-          pointer-events: none;
-          z-index: 10;
-        }
-
-        @media (max-width: 640px) {
-          .ibime-floating-label {
-            font-size: 9px;
-            padding: 2.5px 6px;
-            top: -36px;
-          }
-        }
-
         @keyframes ibime-dot {
           0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }
           30% { transform: translateY(-5px); opacity: 1; }
-        }
-        @keyframes ibime-bounce {
-          0%, 100% { transform: translateX(-50%) translateY(0); }
-          50% { transform: translateX(-50%) translateY(-5px); }
-        }
-        @keyframes ibime-ring-pulse {
-          0% { transform: scale(1); opacity: 0.7; }
-          70% { transform: scale(1.4); opacity: 0; }
-          100% { transform: scale(1.4); opacity: 0; }
         }
         @keyframes ibime-pulse {
           0%, 100% { opacity: 1; box-shadow: 0 0 6px #4ade80; }
@@ -779,10 +603,6 @@ export function IBIMEAssistant(): JSX.Element {
         @keyframes ibime-slide-up {
           from { opacity: 0; transform: translateY(16px) scale(0.97); }
           to   { opacity: 1; transform: translateY(0) scale(1); }
-        }
-        @keyframes ibime-label-fade {
-          from { opacity: 0; transform: translateX(6px); }
-          to   { opacity: 1; transform: translateX(0); }
         }
       `}</style>
     </>
