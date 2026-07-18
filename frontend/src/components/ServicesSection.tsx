@@ -1,29 +1,47 @@
 import { MapPin, Library, BookOpen } from 'lucide-react';
+import ejeMetropolitano from '@/assets/eje-metropolitano.png';
+import ejeMocoties from '@/assets/eje-mocoties.png';
+import ejePanamericano from '@/assets/eje-panamericano.png';
 
-const districts = [
+type District = {
+  id: number;
+  name: string;
+  library: string;
+  color: string;
+  /** Estadísticas reales del eje; se omiten cuando el dato no está impreso en el mapa. */
+  libraries?: number;
+  readingPoints?: number;
+  /** Mapa del eje. Cuando existe, se muestra dentro del recuadro en lugar del degradado. */
+  image?: string;
+};
+
+const districts: District[] = [
   {
     id: 1,
-    name: 'Distrito Norte',
-    library: 'Biblioteca Metropolitana Norte',
-    libraries: 8,
-    readingPoints: 12,
+    name: 'Eje Metropolitano',
+    library: 'Red bibliotecaria · Mérida',
+    libraries: 17,
+    readingPoints: 1,
     color: 'from-ebime-blue to-ebime-purple',
+    image: ejeMetropolitano,
   },
   {
     id: 2,
-    name: 'Distrito Sur',
-    library: 'Biblioteca Metropolitana Sur',
-    libraries: 6,
-    readingPoints: 15,
+    name: 'Eje Mocotíes',
+    library: 'Red bibliotecaria · Mérida',
+    libraries: 11,
+    readingPoints: 1,
     color: 'from-ebime-purple to-ebime-red',
+    image: ejeMocoties,
   },
   {
     id: 3,
-    name: 'Distrito Este',
-    library: 'Biblioteca Metropolitana Este',
-    libraries: 5,
-    readingPoints: 8,
+    name: 'Eje Panamericano',
+    library: 'Red bibliotecaria · Mérida',
+    libraries: 12,
+    readingPoints: 1,
     color: 'from-ebime-red to-ebime-yellow',
+    image: ejePanamericano,
   },
   {
     id: 4,
@@ -75,20 +93,31 @@ export const ServicesSection = () => {
               className="card-institutional group overflow-hidden"
               style={{ animationDelay: `${index * 100}ms` }}
             >
-              {/* Map representation */}
-              <div className={`h-40 rounded-xl bg-gradient-to-br ${district.color} mb-6 relative overflow-hidden`}>
-                <div className="absolute inset-0 opacity-20">
-                  <svg viewBox="0 0 100 100" className="w-full h-full">
-                    <pattern id={`grid-${district.id}`} width="10" height="10" patternUnits="userSpaceOnUse">
-                      <path d="M 10 0 L 0 0 0 10" fill="none" stroke="currentColor" strokeWidth="0.5" className="text-primary-foreground" />
-                    </pattern>
-                    <rect width="100" height="100" fill={`url(#grid-${district.id})`} />
-                  </svg>
+              {/* Map representation: mapa real del eje si existe; si no, el degradado de siempre */}
+              {district.image ? (
+                <div className="h-64 rounded-xl bg-muted/40 mb-6 relative overflow-hidden flex items-center justify-center p-3">
+                  <img
+                    src={district.image}
+                    alt={`Mapa del ${district.name}`}
+                    className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform"
+                    loading="lazy"
+                  />
                 </div>
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <MapPin className="w-16 h-16 text-primary-foreground opacity-80 group-hover:scale-110 transition-transform" />
+              ) : (
+                <div className={`h-40 rounded-xl bg-gradient-to-br ${district.color} mb-6 relative overflow-hidden`}>
+                  <div className="absolute inset-0 opacity-20">
+                    <svg viewBox="0 0 100 100" className="w-full h-full">
+                      <pattern id={`grid-${district.id}`} width="10" height="10" patternUnits="userSpaceOnUse">
+                        <path d="M 10 0 L 0 0 0 10" fill="none" stroke="currentColor" strokeWidth="0.5" className="text-primary-foreground" />
+                      </pattern>
+                      <rect width="100" height="100" fill={`url(#grid-${district.id})`} />
+                    </svg>
+                  </div>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <MapPin className="w-16 h-16 text-primary-foreground opacity-80 group-hover:scale-110 transition-transform" />
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Content */}
               <h3 className="text-xl font-display font-bold text-foreground mb-2">
@@ -98,27 +127,33 @@ export const ServicesSection = () => {
                 {district.library}
               </p>
 
-              {/* Stats */}
-              <div className="flex gap-6">
-                <div className="flex items-center gap-2">
-                  <div className="w-10 h-10 rounded-lg bg-secondary/10 flex items-center justify-center">
-                    <Library className="w-5 h-5 text-secondary" />
-                  </div>
-                  <div>
-                    <p className="text-lg font-bold text-foreground">{district.libraries}</p>
-                    <p className="text-xs text-muted-foreground">Bibliotecas</p>
-                  </div>
+              {/* Stats: solo se muestran los datos reales disponibles */}
+              {(district.libraries != null || district.readingPoints != null) && (
+                <div className="flex gap-6">
+                  {district.libraries != null && (
+                    <div className="flex items-center gap-2">
+                      <div className="w-10 h-10 rounded-lg bg-secondary/10 flex items-center justify-center">
+                        <Library className="w-5 h-5 text-secondary" />
+                      </div>
+                      <div>
+                        <p className="text-lg font-bold text-foreground">{district.libraries}</p>
+                        <p className="text-xs text-muted-foreground">Bibliotecas</p>
+                      </div>
+                    </div>
+                  )}
+                  {district.readingPoints != null && (
+                    <div className="flex items-center gap-2">
+                      <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center">
+                        <BookOpen className="w-5 h-5 text-accent" />
+                      </div>
+                      <div>
+                        <p className="text-lg font-bold text-foreground">{district.readingPoints}</p>
+                        <p className="text-xs text-muted-foreground">Puntos de lectura</p>
+                      </div>
+                    </div>
+                  )}
                 </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center">
-                    <BookOpen className="w-5 h-5 text-accent" />
-                  </div>
-                  <div>
-                    <p className="text-lg font-bold text-foreground">{district.readingPoints}</p>
-                    <p className="text-xs text-muted-foreground">Puntos de lectura</p>
-                  </div>
-                </div>
-              </div>
+              )}
             </div>
           ))}
         </div>
