@@ -47,7 +47,7 @@ El motor de chat garantiza **cero alucinaciones en el flujo de inscripciones**: 
 | **IA — Inferencia** | Groq Cloud (`openai/gpt-oss-20b`, configurable vía `GROQ_MODEL`) |
 | **Validación** | Zod (esquemas compartidos frontend ↔ backend, incluyendo `sessionId`) |
 | **Observabilidad** | Pino (logs JSON + `requestId`), Sentry (errores 500 + alerta de cuota Groq), LangSmith (trazas del chat) |
-| **Testing** | Vitest (419 tests: 384 backend + 35 frontend), Playwright (E2E) |
+| **Testing** | Vitest (425 tests: 384 backend + 41 frontend), Playwright (E2E) |
 | **Calidad de Código** | Husky v9 + lint-staged + ESLint (pre-commit & pre-push hooks) + Quality Gate completo |
 | **CI/CD** | GitHub Actions (+ `npm audit`), Dependabot, Vercel CD, Render CD |
 
@@ -356,7 +356,7 @@ ibime-connect/
 
 ```
           ╔══════════════════════╗
-          ║   E2E (Playwright)   ║  ← chat + forms con mock API
+          ║   E2E (Playwright)   ║  ← chat, formularios y Servicios (lightbox de mapas) con mock API
           ╠══════════════════════╣
           ║  Integration Tests   ║  ← Smoke tests HTTP (supertest)
           ╠══════════════════════╣
@@ -438,11 +438,11 @@ ESLint con auto-fix exclusivamente sobre archivos en staging.
 ```
 [1/3] ESLint       → npm run lint       (frontend + backend)
 [2/3] TypeScript   → tsc --noEmit
-[3/3] Vitest       → vitest run         (419 tests: 384 back + 35 front)
+[3/3] Vitest       → vitest run         (425 tests: 384 back + 41 front)
 ```
 
 ### CI/CD (GitHub Actions)
-1. **`ci.yml`**: Quality Gate rápido (~40s) — lint + 419 tests (384 back + 35 front).
+1. **`ci.yml`**: Quality Gate rápido (~40s) — lint + 425 tests (384 back + 41 front).
 2. **`e2e.yml`**: Playwright E2E con Chromium (~3-4 min).
 
 > 📄 Documentación completa: [`CODE_QUALITY.md`](./docs/CODE_QUALITY.md)

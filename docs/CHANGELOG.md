@@ -2,6 +2,33 @@
 
 Todos los cambios notables en este proyecto serán documentados en este archivo.
 
+## [2.6.0] - 2026-07-18
+### 🗺️ Red bibliotecaria por ejes con mapas reales y lightbox
+
+La sección **Servicios** deja de mostrar recuadros genéricos con un pin y pasa a presentar la red por sus **ejes** con los mapas institucionales de IBIME dentro de cada tarjeta.
+
+#### 🗺️ Frontend — Sección Servicios (`ServicesSection.tsx`)
+- **Fila superior = 3 ejes con mapa real**: **Eje Metropolitano** (17 bibliotecas · 1 punto de lectura), **Eje Mocotíes** (11 bibliotecas) y **Eje Panamericano** (12 bibliotecas). El mapa oficial (`assets/eje-*.png`) se muestra **dentro del recuadro** de la tarjeta (`object-contain`, se ve completo sin recortar el texto del mapa).
+- **Fila inferior intacta**: las 3 tarjetas de distrito (Oeste/Central/Periférico) se conservan como **placeholders** reservados para 3 imágenes futuras. Ninguna tarjeta fue eliminada.
+- **Estadísticas por dato real, sin inventar cifras**: los contadores (`libraries`/`readingPoints`) son **opcionales** y solo se renderizan si el número existe. Mocotíes = **11** proviene del conteo de bibliotecas rotuladas en el mapa oficial (no hay total publicado por eje; los portales `ibime.*.gob.ve` estaban caídos al verificar).
+- **Fondo con textura** en el recuadro del mapa: tinte suave del color del eje + patrón de rejilla + sombra en el mapa, para que el `object-contain` no deje espacio en blanco genérico.
+
+#### 🔍 Lightbox del mapa (accesible)
+- El mapa de cada eje es ahora un **botón** que abre un `Dialog` (shadcn/Radix) con el **mapa a tamaño grande y legible**, con animación de apertura tipo zoom. Se cierra con la X, con `Escape` o clic fuera.
+- Pista visual **"Ampliar mapa"** (icono lupa) al hover; el disparador es un `<button>` con `aria-label`, navegable por teclado y usable en móvil.
+- Deja el camino preparado para la función futura (clic → lista de bibliotecas / página del eje): solo cambia el destino del clic.
+- **Solo presentación**: no se toca ninguna lógica de backend ni del pipeline del asistente.
+
+#### 🧪 Testing
+- **+6 unit (frontend)**: `ServicesSection.test.tsx` — render de los 3 ejes, las 3 tarjetas placeholder, 3 imágenes de mapa, 3 botones "Ampliar" accesibles y las estadísticas reales.
+- **+4 E2E (Playwright)**: `servicios.spec.ts` — los 3 ejes visibles, apertura del lightbox con el mapa ampliado, cierre con `Escape` y ausencia de desborde horizontal en móvil.
+- Totales: **425** unit (384 backend + 41 frontend), **15** E2E — 100% en verde.
+
+#### 📝 Documentación
+- `README.md`: conteo de tests actualizado (419 → **425**; frontend 35 → **41**) y descripción del E2E ampliada para incluir la sección de Servicios.
+
+---
+
 ## [2.5.2] - 2026-07-18
 ### 🎨 Ajustes visuales institucionales
 
