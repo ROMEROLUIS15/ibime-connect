@@ -2,6 +2,26 @@
 
 Todos los cambios notables en este proyecto serán documentados en este archivo.
 
+## [2.5.2] - 2026-07-18
+### 🎨 Ajustes visuales institucionales
+
+Refinamiento del sistema visual para un registro más **institucional, moderno y serio**, partiendo de la base existente (navy `#0B1930`) sin sumar colores nuevos ni elementos añadidos.
+
+#### 🎨 Frontend — Diseño
+- **Tipografía de títulos**: Playfair Display (serif editorial) → **Libre Franklin** (`font-display` de Tailwind + regla `h1–h6` + `@import`). Tono institucional en vez de editorial; el cuerpo sigue en Inter.
+- **Celeste → Acero**: `#5AA5CC` (`200 53% 58%`) → **`#2E6B9E`** (`207 55% 40%`) en todos los tokens (claro y oscuro), gradiente de acento, glows de `.btn-hero` y el acento hardcodeado del Hero. El nuevo azul **sí pasa contraste de texto sobre blanco** (el celeste anterior no).
+- **Badges sólidos**: se elimina el glassmorphism lavado de `.badge-institutional` sobre secciones planas; el efecto vidrio se conserva solo en los heroes.
+- **Radio** (`--radius`): `0.75rem` → `0.5rem` (esquinas más formales sin volverse rígidas).
+- **Limpieza de ornamentos**: se eliminan las esferas/blobs decorativos translúcidos de heroes y tarjetas (Donaciones, «¿Qué es IBIME?») y el glow difuso de las tarjetas de video.
+- **Hero de Fondo Editorial** unificado: la palabra resaltada y el badge dejan de usar `text-accent` (azul apagado sobre navy) y pasan a blanco/glass, coherentes con Koha, Libro Hablado y Donaciones.
+- **CTA `btn-hero`**: se fuerza el fondo acero para que gane a `bg-primary` del `<Button>` de shadcn (antes el CTA quedaba navy sobre hero navy, sin contraste) y se corrige el hover (seguía en el celeste anterior).
+- `--destructive` (rojo semántico de error) intacto: no es color de marca.
+
+#### 📝 Documentación
+- Corrección de datos desactualizados en `README.md` y `docs/`: puertos de dev (frontend `4000`, backend `3000`), conteo de tests (**384** backend + **35** frontend = **419**), badge de `lint-staged` (v17), cadencia del heartbeat (cada 6h). `CLAUDE.md` incorporado a la rama principal.
+
+---
+
 ## [2.5.1] - 2026-07-11
 ### 🔐 Redis a Render Key Value (red interna) y saneamiento de dependencias
 
