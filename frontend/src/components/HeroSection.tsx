@@ -5,8 +5,8 @@ import fachadaIbime from '@/assets/fachada-ibime.jpeg';
 import libraryActivity from '@/assets/library-activity.jpg';
 import communityEvent from '@/assets/cultura-para-todos.jpg';
 
-// Unified institutional accent from new color palette (Light Blue)
-const IBIME_ACCENT = '#5AA5CC';
+// Unified institutional accent from new color palette (Steel Blue "Acero")
+const IBIME_ACCENT = '#2E6B9E';
 
 interface Slide {
   image: string;
@@ -135,7 +135,7 @@ export const HeroSection = () => {
                     className="flex items-center justify-center h-14 min-w-[140px] px-8 rounded-lg font-bold text-lg text-white transition-all duration-200 opacity-100"
                     style={{
                       background: IBIME_ACCENT,
-                      boxShadow: '0 8px 24px #5aa5cc44, 0 1.5px 8px #2224',
+                      boxShadow: '0 8px 24px #2e6b9e44, 0 1.5px 8px #2224',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
