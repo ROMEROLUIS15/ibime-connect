@@ -15,12 +15,12 @@
 [![Supabase](https://img.shields.io/badge/Supabase-pgvector-3ECF8E?style=flat-square&logo=supabase&logoColor=white)](https://supabase.com/)
 [![Redis](https://img.shields.io/badge/Redis-Cache_+_Session-DC382D?style=flat-square&logo=redis&logoColor=white)](https://redis.io/)
 [![Groq](https://img.shields.io/badge/Groq-GPT_OSS_20B-F55036?style=flat-square)](https://groq.com/)
-[![Vitest](https://img.shields.io/badge/Vitest-400%2B_Tests-6E9F18?style=flat-square&logo=vitest&logoColor=white)](https://vitest.dev/)
+[![Vitest](https://img.shields.io/badge/Vitest-384_Tests-6E9F18?style=flat-square&logo=vitest&logoColor=white)](https://vitest.dev/)
 [![Playwright](https://img.shields.io/badge/Playwright-E2E-2EAD33?style=flat-square&logo=playwright&logoColor=white)](https://playwright.dev/)
 [![Deployed on Vercel](https://img.shields.io/badge/Frontend-Vercel-000000?style=flat-square&logo=vercel)](https://vercel.com/)
 [![Deployed on Render](https://img.shields.io/badge/Backend-Render-46E3B7?style=flat-square&logo=render&logoColor=black)](https://render.com/)
 [![Husky](https://img.shields.io/badge/Husky-v9-blueviolet?style=flat-square)](https://typicode.github.io/husky/)
-[![lint-staged](https://img.shields.io/badge/lint--staged-v16-ff69b4?style=flat-square)](https://github.com/lint-staged/lint-staged)
+[![lint-staged](https://img.shields.io/badge/lint--staged-v17-ff69b4?style=flat-square)](https://github.com/lint-staged/lint-staged)
 
 </div>
 
@@ -47,7 +47,7 @@ El motor de chat garantiza **cero alucinaciones en el flujo de inscripciones**: 
 | **IA — Inferencia** | Groq Cloud (`openai/gpt-oss-20b`, configurable vía `GROQ_MODEL`) |
 | **Validación** | Zod (esquemas compartidos frontend ↔ backend, incluyendo `sessionId`) |
 | **Observabilidad** | Pino (logs JSON + `requestId`), Sentry (errores 500 + alerta de cuota Groq), LangSmith (trazas del chat) |
-| **Testing** | Vitest (400+ unit tests), Playwright (E2E) |
+| **Testing** | Vitest (419 tests: 384 backend + 35 frontend), Playwright (E2E) |
 | **Calidad de Código** | Husky v9 + lint-staged + ESLint (pre-commit & pre-push hooks) + Quality Gate completo |
 | **CI/CD** | GitHub Actions (+ `npm audit`), Dependabot, Vercel CD, Render CD |
 
@@ -221,7 +221,7 @@ ibime-connect/
 ├── 📁 .github/
 │   ├── dependabot.yml              ← Actualizaciones semanales agrupadas (raíz, back, front, actions)
 │   └── workflows/
-│       ├── ci.yml                  ← CI (Node 22): npm audit + Lint + Typecheck + 378 Vitest
+│       ├── ci.yml                  ← CI (Node 22): npm audit + Lint + Typecheck + 384 Vitest
 │       ├── e2e.yml                 ← E2E: Playwright (Chromium automations)
 │       └── heartbeat.yml           ← Cron: ping Supabase + Render cada 6h
 │
@@ -289,7 +289,7 @@ ibime-connect/
 │   │   │   └── tools/
 │   │   │       └── check_registration.tool.ts
 │   │   │
-│   │   └── 📁 __tests__/            ← 400+ unit tests
+│   │   └── 📁 __tests__/            ← 384 unit tests
 │   │       ├── setup.ts             ← [NUEVO] Polyfill reflect-metadata para tsyringe/Vitest
 │   │       ├── api.integration.test.ts
 │   │       ├── domain/errors/app-error.test.ts
@@ -309,7 +309,7 @@ ibime-connect/
 │   │           ├── embedding.service.test.ts
 │   │           ├── rag.service.test.ts
 │   │           ├── registration.service.test.ts
-│   │           └── sentiment-analyzer.service.test.ts ← [FASE 2] 27 tests
+│   │           └── sentiment-analyzer.service.test.ts ← [FASE 2] 13 tests
 │   │
 │   ├── tsconfig.json
 │   ├── vitest.config.ts            ← setupFiles: ['src/__tests__/setup.ts']
@@ -360,22 +360,22 @@ ibime-connect/
           ╠══════════════════════╣
           ║  Integration Tests   ║  ← Smoke tests HTTP (supertest)
           ╠══════════════════════╣
-          ║   Unit Tests (400+)   ║  ← Vitest — lógica, servicios, policy layer
+          ║   Unit Tests (384)    ║  ← Vitest — lógica, servicios, policy layer
           ╚══════════════════════╝
 ```
 
 | Suite | Archivo | Tests | Cubre |
 |:---|:---|:---:|:---|
-| Intent Classifier | `intent-classifier.test.ts` | 25 | Regex + Prioridad 0 (email en cualquier mensaje) |
+| Intent Classifier | `intent-classifier.test.ts` | 29 | Regex + Prioridad 0 (email en cualquier mensaje) |
 | Email Validator | `email-validator.test.ts` | 17 | RFC format, normalización |
 | Response Guardrail | `response-guardrail.test.ts` | 18 | Hallucination blocking |
 | Response Policy | `response-policy.test.ts` | 25 | Estructural + guardrail + fallbacks |
-| Chat Orchestrator | `chat-orchestrator.test.ts` | ~30 | Branch A/B, Privacy Gate, routing, sentiment |
-| **Sentiment Analyzer** | **`sentiment-analyzer.service.test.ts`** | **27** | **4 reglas heurísticas, combinaciones, falsos positivos** |
+| Chat Orchestrator | `chat-orchestrator.test.ts` | 20 | Branch A/B, Privacy Gate, routing, sentiment |
+| **Sentiment Analyzer** | **`sentiment-analyzer.service.test.ts`** | **13** | **4 reglas heurísticas, combinaciones, falsos positivos** |
 | RAG Service | `rag.service.test.ts` | 3 | Threshold, cache, error handling |
-| Groq Provider | `groq.provider.test.ts` | 15 | API calls, tokens, error cases |
+| Groq Provider | `groq.provider.test.ts` | 18 | API calls, tokens, error cases |
 | Registration | `registration.service.test.ts` | 10 | DB insert/query |
-| **Total** | | **400+** | **100% passing, 0 errores TypeScript** |
+| **Total** | | **384** | **100% passing, 0 errores TypeScript** |
 
 ```bash
 # Ejecutar todos los unit tests
@@ -408,8 +408,8 @@ npm install --prefix frontend
 cp backend/.env.example backend/.env
 cp frontend/.env.example frontend/.env
 npm run dev
-#  Frontend: http://localhost:5173
-#  Backend:  http://localhost:4000
+#  Frontend: http://localhost:4000
+#  Backend:  http://localhost:3000
 ```
 
 ### Variables de entorno requeridas (backend)
@@ -436,13 +436,13 @@ ESLint con auto-fix exclusivamente sobre archivos en staging.
 
 ### `git push` → `pre-push` (3 etapas secuenciales)
 ```
-[1/3] ESLint       → npm run lint       (max-warnings=0)
+[1/3] ESLint       → npm run lint       (frontend + backend)
 [2/3] TypeScript   → tsc --noEmit
-[3/3] Vitest       → vitest run         (400+ tests deben pasar)
+[3/3] Vitest       → vitest run         (419 tests: 384 back + 35 front)
 ```
 
 ### CI/CD (GitHub Actions)
-1. **`ci.yml`**: Quality Gate rápido (~40s) — lint + 400+ tests unitarios.
+1. **`ci.yml`**: Quality Gate rápido (~40s) — lint + 419 tests (384 back + 35 front).
 2. **`e2e.yml`**: Playwright E2E con Chromium (~3-4 min).
 
 > 📄 Documentación completa: [`CODE_QUALITY.md`](./docs/CODE_QUALITY.md)
@@ -465,7 +465,7 @@ ESLint con auto-fix exclusivamente sobre archivos en staging.
 
 ```
 ┌──────────────┬──────────────────────────────────────┐
-│ Supabase     │ GitHub Action heartbeat: ping 24h     │
+│ Supabase     │ GitHub Action heartbeat: ping cada 6h │
 ├──────────────┼──────────────────────────────────────┤
 │ Render       │ UptimeRobot HTTP monitor cada 14 min  │
 ├──────────────┼──────────────────────────────────────┤
