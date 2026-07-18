@@ -307,7 +307,7 @@ export const Navbar = () => {
 
             {/* Logo Gobernación + botón móvil */}
             <div className="flex items-center gap-4">
-              <div className="hidden sm:block flex-shrink-0 pl-4 border-l border-border/50">
+              <div className="hidden sm:block flex-shrink-0 pl-4">
                 <img
                   src={gobernadorLogo}
                   alt="Gobernación de Mérida"
