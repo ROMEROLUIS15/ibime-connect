@@ -144,9 +144,9 @@ export function ContactSection(): JSX.Element {
                 <div className="w-16 h-16 rounded-xl bg-ibime-green flex items-center justify-center flex-shrink-0 shadow-md">
                   <item.icon className="w-7 h-7 text-white" />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <h3 className="font-display font-semibold text-foreground mb-1">{item.title}</h3>
-                  <p className="text-[#374151] whitespace-pre-line">{item.content}</p>
+                  <p className="text-[#374151] whitespace-pre-line [overflow-wrap:anywhere]">{item.content}</p>
                 </div>
               </div>
             ))}
