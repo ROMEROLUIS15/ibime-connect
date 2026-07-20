@@ -151,14 +151,14 @@ export function EventsSection(): JSX.Element {
           <button
             onClick={prevSlide}
             aria-label="Evento anterior"
-            className="hidden md:flex items-center justify-center absolute left-0 top-1/2 -translate-y-1/2 md:-translate-x-16 lg:-translate-x-20 p-3 md:p-3.5 rounded-full bg-ibime-green text-white shadow-lg hover:bg-white hover:text-ibime-green transition-colors"
+            className="hidden md:flex items-center justify-center absolute left-2 xl:left-0 top-1/2 -translate-y-1/2 xl:-translate-x-20 p-3 md:p-3.5 rounded-full bg-ibime-green text-white shadow-lg hover:bg-white hover:text-ibime-green transition-colors"
           >
             <ChevronLeft className="w-6 h-6" />
           </button>
           <button
             onClick={nextSlide}
             aria-label="Siguiente evento"
-            className="hidden md:flex items-center justify-center absolute right-0 top-1/2 -translate-y-1/2 md:translate-x-16 lg:translate-x-20 p-3 md:p-3.5 rounded-full bg-ibime-green text-white shadow-lg hover:bg-white hover:text-ibime-green transition-colors"
+            className="hidden md:flex items-center justify-center absolute right-2 xl:right-0 top-1/2 -translate-y-1/2 xl:translate-x-20 p-3 md:p-3.5 rounded-full bg-ibime-green text-white shadow-lg hover:bg-white hover:text-ibime-green transition-colors"
           >
             <ChevronRight className="w-6 h-6" />
           </button>

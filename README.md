@@ -34,6 +34,22 @@ El motor de chat garantiza **cero alucinaciones en el flujo de inscripciones**: 
 
 ---
 
+## 🗺️ Red bibliotecaria por ejes
+
+La sección **Servicios** presenta la red por los **5 ejes** del estado Mérida, cada uno con su mapa institucional real dentro de la tarjeta (clic → *lightbox* con el mapa ampliado y legible). Los conteos provienen del rótulo del propio mapa oficial (no hay total publicado por eje).
+
+| Eje | Bibliotecas |
+|:---|:---:|
+| **Eje Metropolitano** | 17 (+1 punto de lectura) |
+| **Eje Mocotíes** | 11 |
+| **Eje Panamericano** | 12 |
+| **Eje Páramo** | 11 |
+| **Eje Pueblos del Sur** | 7 |
+
+> Además de los 5 ejes se muestra la tarjeta **Distrito Oeste** (Biblioteca Metropolitana Oeste). Es *solo presentación*: no toca el backend ni el pipeline del asistente.
+
+---
+
 ## ⚡ Stack Tecnológico
 
 | Capa | Tecnologías |
