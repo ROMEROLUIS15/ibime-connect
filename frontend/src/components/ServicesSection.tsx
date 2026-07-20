@@ -10,6 +10,8 @@ import {
 import ejeMetropolitano from '@/assets/eje-metropolitano.png';
 import ejeMocoties from '@/assets/eje-mocoties.png';
 import ejePanamericano from '@/assets/eje-panamericano.png';
+import ejeParamo from '@/assets/eje-paramo.png';
+import ejePueblosSur from '@/assets/eje-pueblos-del-sur.png';
 
 type District = {
   id: number;
@@ -53,27 +55,29 @@ const districts: District[] = [
   },
   {
     id: 4,
+    name: 'Eje Páramo',
+    library: 'Red bibliotecaria · Mérida',
+    libraries: 11,
+    readingPoints: 1,
+    color: 'from-ebime-yellow to-ebime-red',
+    image: ejeParamo,
+  },
+  {
+    id: 5,
+    name: 'Eje Pueblos del Sur',
+    library: 'Red bibliotecaria · Mérida',
+    libraries: 7,
+    readingPoints: 1,
+    color: 'from-ebime-purple to-ebime-blue',
+    image: ejePueblosSur,
+  },
+  {
+    id: 6,
     name: 'Distrito Oeste',
     library: 'Biblioteca Metropolitana Oeste',
     libraries: 7,
     readingPoints: 10,
     color: 'from-ebime-yellow to-ebime-green',
-  },
-  {
-    id: 5,
-    name: 'Distrito Central',
-    library: 'Biblioteca Metropolitana Central',
-    libraries: 10,
-    readingPoints: 20,
-    color: 'from-ebime-green to-ebime-blue',
-  },
-  {
-    id: 6,
-    name: 'Distrito Periférico',
-    library: 'Biblioteca Metropolitana Periférica',
-    libraries: 4,
-    readingPoints: 6,
-    color: 'from-ebime-blue to-ebime-green',
   },
 ];
 

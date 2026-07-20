@@ -2,6 +2,25 @@
 
 Todos los cambios notables en este proyecto serán documentados en este archivo.
 
+## [2.6.1] - 2026-07-19
+### 🗺️ Los 5 ejes de la red, con sus mapas reales
+
+Se completa la sección **Servicios** con los dos ejes que faltaban y se retiran las tarjetas placeholder sobrantes: la red queda representada por sus **5 ejes** más el Distrito Oeste, en una grilla limpia de **6 tarjetas** (2 filas de 3).
+
+#### 🗺️ Frontend — Sección Servicios (`ServicesSection.tsx`)
+- **+2 ejes con mapa real**: **Eje Páramo** (11 bibliotecas) y **Eje Pueblos del Sur** (7 bibliotecas), con el mismo tratamiento que los tres anteriores (mapa `object-contain` dentro del recuadro, fondo con textura y lightbox al hacer clic).
+- **Cifras del conteo del mapa oficial**: Páramo = **11** y Pueblos del Sur = **7** provienen del rótulo del propio mapa institucional (no hay total publicado por eje), igual criterio que Mocotíes.
+- **–2 tarjetas placeholder**: se eliminan **Distrito Central** y **Distrito Periférico**; se conserva **Distrito Oeste**. Antes eran 3 placeholders reservados para imágenes futuras; ya solo restaba una imagen por incorporar.
+- **Assets**: `eje-paramo.png` y `eje-pueblos-del-sur.png` (renombrados a la convención con guiones de los mapas existentes).
+- **Solo presentación**: no se toca backend ni el pipeline del asistente.
+
+#### 🧪 Testing
+- `ServicesSection.test.tsx` actualizado: 5 ejes, 5 mapas, 5 botones "Ampliar" accesibles y solo Distrito Oeste (Central/Periférico ausentes).
+- **+1 E2E (Playwright)** en `servicios.spec.ts`: los 5 ejes visibles y verificación de que Central/Periférico ya no existen.
+- Totales: **425** unit (384 backend + 41 frontend), **16** E2E — 100% en verde.
+
+---
+
 ## [2.6.0] - 2026-07-18
 ### 🗺️ Red bibliotecaria por ejes con mapas reales y lightbox
 

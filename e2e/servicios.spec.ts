@@ -6,10 +6,18 @@ test.describe('Sección Servicios · Red bibliotecaria por ejes', () => {
     await page.locator('#servicios').scrollIntoViewIfNeeded();
   });
 
-  test('muestra los tres ejes con sus mapas', async ({ page }) => {
+  test('muestra los cinco ejes con sus mapas', async ({ page }) => {
     await expect(page.getByRole('heading', { name: 'Eje Metropolitano' })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Eje Mocotíes' })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Eje Panamericano' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Eje Páramo' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Eje Pueblos del Sur' })).toBeVisible();
+  });
+
+  test('conserva solo Distrito Oeste (Central y Periférico eliminados)', async ({ page }) => {
+    await expect(page.getByRole('heading', { name: 'Distrito Oeste' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Distrito Central' })).toHaveCount(0);
+    await expect(page.getByRole('heading', { name: 'Distrito Periférico' })).toHaveCount(0);
   });
 
   test('al hacer clic en un mapa se abre el lightbox con el mapa ampliado', async ({ page }) => {
