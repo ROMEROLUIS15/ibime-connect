@@ -41,9 +41,6 @@ test-ingest.mjs
 TECHNICAL_DOCUMENTATION.md
 DEPLOYMENT.md
 
-# Guía local para Claude Code (no versionar)
-CLAUDE.md
-
 # Memoria de trabajo local del agente (no versionar)
 memory/
 
