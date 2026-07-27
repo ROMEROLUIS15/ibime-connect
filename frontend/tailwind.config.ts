@@ -14,6 +14,9 @@ export default {
       },
     },
     extend: {
+      screens: {
+        nav: "1340px",
+      },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
         display: ['Libre Franklin', 'system-ui', 'sans-serif'],

@@ -238,7 +238,7 @@ const MobileMenu = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void 
   };
 
   return (
-    <div className={`fixed inset-0 z-50 xl:hidden transition-all duration-300 ${isOpen ? 'visible' : 'invisible'}`}>
+    <div className={`fixed inset-0 z-50 nav:hidden transition-all duration-300 ${isOpen ? 'visible' : 'invisible'}`}>
       <div
         className={`absolute inset-0 bg-foreground/40 transition-opacity ${isOpen ? 'opacity-100' : 'opacity-0'}`}
         onClick={onClose}
@@ -297,7 +297,7 @@ export const Navbar = () => {
             </a>
 
             {/* Menú desktop */}
-            <div className="hidden xl:flex items-center justify-center flex-1">
+            <div className="hidden nav:flex items-center justify-center flex-1">
               <div className="flex items-center gap-0.5">
                 {menuItems.map((item, i) => (
                   <DropdownMenu key={i} item={item} />
@@ -315,7 +315,7 @@ export const Navbar = () => {
                 />
               </div>
               <button
-                className="xl:hidden p-2 text-gray-600 transition-colors"
+                className="nav:hidden p-2 text-gray-600 transition-colors"
                 onClick={() => setMobileMenuOpen(true)}
                 aria-label="Abrir menú"
               >

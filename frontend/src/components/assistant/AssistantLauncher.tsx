@@ -25,6 +25,7 @@ interface AssistantLauncherProps {
 }
 
 const MASCOT_SIZE = 104; // px — búho de cuerpo completo
+const MOBILE_MASCOT_SIZE = 80; // px — más pequeño en móvil
 const DRAG_THRESHOLD = 5; // px — a partir de aquí el gesto es arrastre, no clic
 const MOBILE_BREAKPOINT = 768; // px
 
@@ -34,6 +35,7 @@ export function AssistantLauncher({ isOpen, onToggle }: AssistantLauncherProps):
   // Arrastre vertical (solo móvil) para reubicar la mascota sin abrir el chat.
   const [dragOffset, setDragOffset] = useState<number>(0);
   const [isDraggingActive, setIsDraggingActive] = useState<boolean>(false);
+  const [isMobile, setIsMobile] = useState<boolean>(() => window.innerWidth <= MOBILE_BREAKPOINT);
   const dragStartY = useRef<number | null>(null);
   const initialOffset = useRef<number>(0);
   const isDragging = useRef<boolean>(false);
@@ -41,7 +43,9 @@ export function AssistantLauncher({ isOpen, onToggle }: AssistantLauncherProps):
   // Al volver a la versión de escritorio, resetear la posición de arrastre.
   useEffect(() => {
     const handleResize = (): void => {
-      if (window.innerWidth > MOBILE_BREAKPOINT) setDragOffset(0);
+      const mobile = window.innerWidth <= MOBILE_BREAKPOINT;
+      setIsMobile(mobile);
+      if (!mobile) setDragOffset(0);
     };
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
@@ -88,17 +92,21 @@ export function AssistantLauncher({ isOpen, onToggle }: AssistantLauncherProps):
   const bubbleColor = isDark ? '#0B1930' : '#ffffff';
   const bubbleBorder = isDark ? '#e2e8f0' : '#051231';
 
+  const mascotSize = isMobile ? MOBILE_MASCOT_SIZE : MASCOT_SIZE;
+  const inset = isMobile ? 12 : 20;
+  const gap = isMobile ? 6 : 8;
+
   return (
     <div
       style={{
         position: 'fixed',
-        bottom: `calc(20px + ${dragOffset}px)`,
-        right: '20px',
+        bottom: `calc(${inset}px + ${dragOffset}px)`,
+        right: `${inset}px`,
         zIndex: 9999,
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'flex-end',
-        gap: '8px',
+        gap: `${gap}px`,
         transition: isDraggingActive ? 'none' : 'bottom 0.3s ease',
       }}
     >
@@ -125,7 +133,7 @@ export function AssistantLauncher({ isOpen, onToggle }: AssistantLauncherProps):
         onTouchEnd={handleTouchEnd}
         aria-label="Abrir Asistente IA del IBIME"
         className="ibime-launcher-mascot"
-        style={{ width: MASCOT_SIZE, height: MASCOT_SIZE }}
+        style={{ width: mascotSize, height: mascotSize }}
       >
         <img
           src={owlMascot}
@@ -188,8 +196,16 @@ export function AssistantLauncher({ isOpen, onToggle }: AssistantLauncherProps):
           pointer-events: none;
           animation: ibime-launcher-float 3.4s ease-in-out infinite;
         }
-        @media (max-width: 640px) {
-          .ibime-launcher-bubble { max-width: 150px; font-size: 11px; padding: 8px 11px; }
+        @media (max-width: 768px) {
+          .ibime-launcher-bubble { max-width: 140px; font-size: 11px; padding: 6px 10px; }
+          .ibime-launcher-bubble strong { font-size: 11.5px; }
+          .ibime-launcher-bubble-tail { right: 18px; }
+          .ibime-launcher-mascot-img {
+            animation: ibime-launcher-float 2.8s ease-in-out infinite;
+          }
+        }
+        @media (max-width: 480px) {
+          .ibime-launcher-bubble { max-width: 120px; font-size: 10px; padding: 5px 8px; }
         }
         @keyframes ibime-launcher-bubble-in {
           from { opacity: 0; transform: translateY(8px) scale(0.9); }
