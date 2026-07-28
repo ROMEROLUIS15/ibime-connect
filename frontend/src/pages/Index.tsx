@@ -4,6 +4,7 @@ import AboutIBIMESection from '@/components/AboutIBIMESection';
 import CulturalVideosSection from '@/components/CulturalVideosSection';
 import MissionVisionSection from '@/components/MissionVisionSection';
 import NewsSection from '@/components/NewsSection';
+import PlanVacacionalSection from '@/components/PlanVacacionalSection';
 import GallerySection from '@/components/GallerySection';
 import EventsSection from '@/components/EventsSection';
 import ServicesSection from '@/components/ServicesSection';
@@ -22,6 +23,7 @@ const Index = () => {
         <CulturalVideosSection />
         <MissionVisionSection />
         <NewsSection />
+        <PlanVacacionalSection />
         <GallerySection />
         <EventsSection />
         <ServicesSection />
