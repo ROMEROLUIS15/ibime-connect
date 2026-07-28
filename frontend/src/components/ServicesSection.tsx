@@ -1,4 +1,4 @@
-import { MapPin, Library, BookOpen, ZoomIn } from 'lucide-react';
+import { MapPin, Library, BookOpen, ZoomIn, Wrench } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -156,7 +156,7 @@ export const ServicesSection = () => {
                   </DialogContent>
                 </Dialog>
               ) : (
-                <div className={`h-40 rounded-xl bg-gradient-to-br ${district.color} mb-6 relative overflow-hidden`}>
+                <div className={`h-56 rounded-xl bg-gradient-to-br ${district.color} mb-5 relative overflow-hidden`}>
                   <div className="absolute inset-0 opacity-20">
                     <svg viewBox="0 0 100 100" className="w-full h-full">
                       <pattern id={`grid-${district.id}`} width="10" height="10" patternUnits="userSpaceOnUse">
@@ -165,8 +165,11 @@ export const ServicesSection = () => {
                       <rect width="100" height="100" fill={`url(#grid-${district.id})`} />
                     </svg>
                   </div>
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <MapPin className="w-16 h-16 text-primary-foreground opacity-80 group-hover:scale-110 transition-transform" />
+                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
+                    <Wrench className="w-12 h-12 text-primary-foreground opacity-80 group-hover:rotate-12 transition-transform" />
+                    <span className="font-display font-bold text-lg md:text-xl text-primary-foreground/90 uppercase tracking-wider drop-shadow-sm">
+                      En Construcción
+                    </span>
                   </div>
                 </div>
               )}
