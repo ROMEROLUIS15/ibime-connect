@@ -1,10 +1,9 @@
-import { useState, useCallback, type JSX } from "react";
+import { useState, useCallback, useEffect, type JSX } from "react";
 import {
   Carousel,
   CarouselContent,
   CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
+  type CarouselApi,
 } from "@/components/ui/carousel";
 import {
   Dialog,
@@ -12,7 +11,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { Calendar, MapPin, Users } from "lucide-react";
+import { Calendar, MapPin, Users, ArrowLeft, ArrowRight } from "lucide-react";
 
 import plan1 from "@/assets/plan 1.jpeg";
 import plan2 from "@/assets/plan 2.jpeg";
@@ -100,6 +99,28 @@ const PHOTOS: Photo[] = [
 
 export function PlanVacacionalSection(): JSX.Element {
   const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null);
+  const [api, setApi] = useState<CarouselApi>();
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  useEffect(() => {
+    if (!api) {
+      return;
+    }
+
+    setCurrentIndex(api.selectedScrollSnap());
+
+    api.on("select", () => {
+      setCurrentIndex(api.selectedScrollSnap());
+    });
+
+    const intervalId = setInterval(() => {
+      api.scrollNext();
+    }, 4000);
+
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, [api]);
 
   const openDialog = useCallback((photo: Photo) => {
     setSelectedPhoto(photo);
@@ -118,7 +139,7 @@ export function PlanVacacionalSection(): JSX.Element {
             Edición 2026
           </span>
           <h2 
-            className="text-5xl md:text-6xl lg:text-7xl font-bold mb-4 tracking-wide flex justify-center gap-3 md:gap-5 flex-wrap" 
+            className="text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-bold mb-4 tracking-wide flex justify-center gap-3 md:gap-5 flex-wrap" 
             style={{ fontFamily: "'Fredoka', sans-serif" }}
           >
             <div className="flex">
@@ -150,20 +171,24 @@ export function PlanVacacionalSection(): JSX.Element {
         {/* Carousel */}
         <div className="relative max-w-6xl mx-auto px-4 md:px-12 lg:px-24 xl:px-28">
           <Carousel
+            setApi={setApi}
             opts={{
-              align: "start",
+              align: "center",
               loop: true,
             }}
+            className="w-full"
           >
-            <CarouselContent className="-ml-8 md:-ml-12">
-              {PHOTOS.map((photo) => (
+            <CarouselContent className="-ml-4 md:-ml-8 lg:-ml-12 py-8">
+              {PHOTOS.map((photo, index) => {
+                const isActive = currentIndex === index;
+                return (
                 <CarouselItem
                   key={photo.id}
-                  className="md:basis-1/2 lg:basis-1/2 pl-8 md:pl-12"
+                  className="basis-full sm:basis-4/5 md:basis-1/2 lg:basis-1/3 pl-4 md:pl-8 lg:pl-12"
                 >
                   <button
                     onClick={() => openDialog(photo)}
-                    className="w-full text-left group cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FCD116] focus-visible:ring-offset-2 rounded-2xl"
+                    className={`w-full text-left group cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FCD116] focus-visible:ring-offset-2 rounded-2xl transition-all duration-500 ease-out ${isActive ? "scale-100 md:scale-110 opacity-100 z-10 shadow-2xl" : "scale-100 md:scale-90 opacity-60 hover:opacity-80 z-0"}`}
                     aria-label={`Ver detalle: ${photo.title}`}
                   >
                     <div className="relative aspect-[3/4] overflow-hidden rounded-2xl bg-[#E5E7EB]">
@@ -186,10 +211,23 @@ export function PlanVacacionalSection(): JSX.Element {
                     </div>
                   </button>
                 </CarouselItem>
-              ))}
+                );
+              })}
             </CarouselContent>
-            <CarouselPrevious className="hidden lg:flex lg:-left-16 xl:-left-20 h-14 w-14 [&>svg]:w-8 [&>svg]:h-8 bg-white border-transparent text-ebime-blue shadow-xl hover:bg-transparent hover:text-white hover:border-white transition-all" />
-            <CarouselNext className="hidden lg:flex lg:-right-16 xl:-right-20 h-14 w-14 [&>svg]:w-8 [&>svg]:h-8 bg-white border-transparent text-ebime-blue shadow-xl hover:bg-transparent hover:text-white hover:border-white transition-all" />
+            <button
+              onClick={() => api?.scrollNext()}
+              className="hidden lg:flex absolute left-0 lg:-left-16 xl:-left-20 top-1/2 -translate-y-1/2 h-14 w-14 items-center justify-center rounded-full bg-white text-[#0072CE] shadow-xl hover:bg-gray-100 hover:scale-110 transition-all z-20"
+              aria-label="Mover a la izquierda"
+            >
+              <ArrowLeft className="w-8 h-8" />
+            </button>
+            <button
+              onClick={() => api?.scrollPrev()}
+              className="hidden lg:flex absolute right-0 lg:-right-16 xl:-right-20 top-1/2 -translate-y-1/2 h-14 w-14 items-center justify-center rounded-full bg-white text-[#0072CE] shadow-xl hover:bg-gray-100 hover:scale-110 transition-all z-20"
+              aria-label="Mover a la derecha"
+            >
+              <ArrowRight className="w-8 h-8" />
+            </button>
           </Carousel>
         </div>
 
@@ -203,14 +241,14 @@ export function PlanVacacionalSection(): JSX.Element {
 
       {/* Dialog / Modal */}
       <Dialog open={selectedPhoto !== null} onOpenChange={(open) => { if (!open) closeDialog(); }}>
-        <DialogContent className="max-w-4xl p-0 overflow-hidden rounded-2xl gap-0">
+        <DialogContent className="w-[95vw] max-w-5xl p-0 overflow-hidden rounded-2xl gap-0">
           {selectedPhoto && (
             <>
               <div className="relative bg-muted">
                 <img
                   src={selectedPhoto.image}
                   alt={selectedPhoto.title}
-                  className="w-full max-h-[70vh] object-contain"
+                  className="w-full max-h-[75vh] object-contain"
                 />
                 <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-foreground/90 via-foreground/30 to-transparent p-6 pt-16">
                   <DialogTitle className="text-2xl md:text-3xl font-display font-bold text-primary-foreground">
