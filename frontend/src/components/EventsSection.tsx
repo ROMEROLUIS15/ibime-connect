@@ -7,7 +7,7 @@
  * Typed with strict TS throughout
  */
 
-import { useState, useEffect, type JSX } from 'react';
+import { useState, useEffect, useMemo, type JSX } from 'react';
 import { ChevronLeft, ChevronRight, Calendar, MapPin } from 'lucide-react';
 import type { Event } from '@shared/types/domain';
 import { RegistrationModal } from './RegistrationModal';
@@ -15,45 +15,11 @@ import { RegistrationModal } from './RegistrationModal';
 import eventLiterary from '@/assets/event-literary.jpg';
 import eventChildren from '@/assets/event-children.jpg';
 import eventDigital from '@/assets/event-digital.jpg';
+import cursoBraille from '@/assets/Curso Braille.webp';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const EVENTS: readonly Event[] = [
-  {
-    id: 1,
-    image: eventLiterary,
-    title: 'Festival del Libro 2026',
-    date: '15-20 Febrero 2026',
-    location: 'Biblioteca Central',
-    description:
-      'Una semana dedicada a la literatura con autores invitados, talleres de escritura y presentaciones de libros.',
-  },
-  {
-    id: 2,
-    image: eventChildren,
-    title: 'Cuentacuentos Infantil',
-    date: '8 Febrero 2026',
-    location: 'Todas las bibliotecas',
-    description:
-      'Sesiones de narración oral para niños de 3 a 10 años con actividades interactivas y manualidades.',
-  },
-  {
-    id: 3,
-    image: eventDigital,
-    title: 'Taller de Alfabetización Digital',
-    date: '12 Febrero 2026',
-    location: 'Biblioteca Norte',
-    description: 'Aprende a usar computadoras, internet y herramientas digitales básicas. Cupos limitados.',
-  },
-  {
-    id: 4,
-    image: eventLiterary,
-    title: 'Club de Lectura Mensual',
-    date: '25 Febrero 2026',
-    location: 'Biblioteca Sur',
-    description: 'Discusión del libro del mes: "Cien años de soledad" de Gabriel García Márquez.',
-  },
-] as const;
+// La lista de eventos (EVENTS) ahora se genera dinámicamente dentro del componente.
 
 const CAROUSEL_INTERVAL_MS = 5_000;
 
@@ -66,13 +32,57 @@ export function EventsSection(): JSX.Element {
   const [isAutoPlaying, setIsAutoPlaying] = useState<boolean>(true);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
 
+  const EVENTS = useMemo<Event[]>(() => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const monthName = now.toLocaleString('es-ES', { month: 'long' });
+    const capitalizedMonth = monthName.charAt(0).toUpperCase() + monthName.slice(1);
+
+    return [
+      {
+        id: 1,
+        image: eventLiterary,
+        title: `Festival del Libro ${year}`,
+        date: `5-10 ${capitalizedMonth} ${year}`,
+        location: 'Biblioteca Central',
+        description:
+          'Una semana dedicada a la literatura con autores invitados, talleres de escritura y presentaciones de libros.',
+      },
+      {
+        id: 2,
+        image: eventChildren,
+        title: 'Cuentacuentos Infantil',
+        date: `2 ${capitalizedMonth} ${year}`,
+        location: 'Todas las bibliotecas',
+        description:
+          'Sesiones de narración oral para niños de 3 a 10 años con actividades interactivas y manualidades.',
+      },
+      {
+        id: 3,
+        image: eventDigital,
+        title: 'Taller de Alfabetización Digital',
+        date: `8 ${capitalizedMonth} ${year}`,
+        location: 'Biblioteca Norte',
+        description: 'Aprende a usar computadoras, internet y herramientas digitales básicas. Cupos limitados.',
+      },
+      {
+        id: 4,
+        image: cursoBraille,
+        title: 'Curso de Lectoescritura en Braille',
+        date: `15 ${capitalizedMonth} ${year}`,
+        location: 'Sede Principal IBIME',
+        description: 'Aprende el sistema de lectura y escritura táctil para personas con discapacidad visual. Un espacio de inclusión y aprendizaje para todos.',
+      },
+    ];
+  }, []);
+
   useEffect(() => {
     if (!isAutoPlaying || selectedEvent !== null) return;
     const timer = setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % EVENTS.length);
     }, CAROUSEL_INTERVAL_MS);
     return () => clearInterval(timer);
-  }, [isAutoPlaying, selectedEvent]);
+  }, [isAutoPlaying, selectedEvent, EVENTS.length]);
 
   const prevSlide = (): void => {
     setIsAutoPlaying(false);
