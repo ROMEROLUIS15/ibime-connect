@@ -1,4 +1,4 @@
-import { MapPin, Library, BookOpen, ZoomIn, Wrench } from 'lucide-react';
+import { MapPin, Library, BookOpen, ZoomIn, Wrench, Clock, Phone } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -7,6 +7,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import ejeMetropolitano from '@/assets/eje-metropolitano.png';
 import ejeMocoties from '@/assets/eje-mocoties.png';
 import ejePanamericano from '@/assets/eje-panamericano.png';
@@ -81,6 +82,27 @@ const districts: District[] = [
   },
 ];
 
+const metropolitanoPins = [
+  {
+    id: 'b-central',
+    name: 'Biblioteca Central Simón Bolívar',
+    top: '45%',
+    left: '52%',
+    schedule: 'Lun - Vie: 8:00 AM - 4:00 PM',
+    contact: '0274-2521122',
+    address: 'Av. 4 con calle 22, Edificio Central',
+  },
+  {
+    id: 'b-norte',
+    name: 'Biblioteca Norte',
+    top: '30%',
+    left: '60%',
+    schedule: 'Lun - Vie: 8:00 AM - 2:00 PM',
+    contact: '0274-2445566',
+    address: 'Av. Las Américas, sector Santa Bárbara',
+  }
+];
+
 export const ServicesSection = () => {
   return (
     <section id="servicios" className="py-20 section-pattern">
@@ -146,12 +168,50 @@ export const ServicesSection = () => {
                         Mapa de la red bibliotecaria del {district.name} · estado Mérida
                       </DialogDescription>
                     </DialogHeader>
-                    <div className="flex items-center justify-center overflow-auto">
-                      <img
-                        src={district.image}
-                        alt={`Mapa ampliado del ${district.name}`}
-                        className="max-h-[75vh] w-auto max-w-full object-contain"
-                      />
+                    <div className="flex items-center justify-center overflow-auto p-4">
+                      <div className="relative inline-block max-w-full">
+                        <img
+                          src={district.image}
+                          alt={`Mapa ampliado del ${district.name}`}
+                          className="max-h-[70vh] w-auto max-w-full object-contain shadow-sm rounded-lg"
+                        />
+                        {/* Interactive Pins Example for Eje Metropolitano */}
+                        {district.id === 1 && metropolitanoPins.map((pin) => (
+                          <div 
+                            key={pin.id} 
+                            className="absolute" 
+                            style={{ top: pin.top, left: pin.left, transform: 'translate(-50%, -50%)' }}
+                          >
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <button 
+                                  className="w-10 h-10 bg-ibime-red text-white rounded-full flex items-center justify-center shadow-lg hover:bg-red-600 hover:scale-110 transition-all ring-4 ring-white/80 animate-bounce"
+                                  aria-label={`Ver información de ${pin.name}`}
+                                >
+                                  <MapPin className="w-5 h-5" />
+                                </button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-72 p-5 rounded-xl shadow-xl border-ibime-red/20">
+                                <h4 className="font-bold text-lg mb-3 text-foreground leading-tight">{pin.name}</h4>
+                                <div className="space-y-3 text-sm text-muted-foreground">
+                                  <div className="flex items-start gap-2.5">
+                                    <Clock className="w-4 h-4 mt-0.5 text-ibime-green shrink-0" />
+                                    <span>{pin.schedule}</span>
+                                  </div>
+                                  <div className="flex items-start gap-2.5">
+                                    <Phone className="w-4 h-4 mt-0.5 text-ibime-blue shrink-0" />
+                                    <span>{pin.contact}</span>
+                                  </div>
+                                  <div className="flex items-start gap-2.5">
+                                    <MapPin className="w-4 h-4 mt-0.5 text-ibime-red shrink-0" />
+                                    <span>{pin.address}</span>
+                                  </div>
+                                </div>
+                              </PopoverContent>
+                            </Popover>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </DialogContent>
                 </Dialog>
