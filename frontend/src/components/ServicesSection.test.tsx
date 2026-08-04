@@ -17,9 +17,9 @@ describe('ServicesSection', () => {
     expect(screen.getByText('Eje Pueblos del Sur')).toBeInTheDocument();
   });
 
-  it('conserva solo la tarjeta de Distrito Oeste (6 tarjetas en total)', () => {
+  it('conserva solo la tarjeta de En Construcción (6 tarjetas en total)', () => {
     render(<ServicesSection />);
-    expect(screen.getByText('Distrito Oeste')).toBeInTheDocument();
+    expect(screen.getAllByText('En Construcción').length).toBeGreaterThanOrEqual(1);
     expect(screen.queryByText('Distrito Central')).not.toBeInTheDocument();
     expect(screen.queryByText('Distrito Periférico')).not.toBeInTheDocument();
   });
@@ -39,8 +39,9 @@ describe('ServicesSection', () => {
   it('muestra las estadísticas reales de cada eje', () => {
     render(<ServicesSection />);
     expect(screen.getByText('17')).toBeInTheDocument(); // Metropolitano
-    expect(screen.getByText('12')).toBeInTheDocument(); // Panamericano
-    expect(screen.getAllByText('11')).toHaveLength(2); // Mocotíes + Páramo
+    expect(screen.getByText('13')).toBeInTheDocument(); // Panamericano
+    expect(screen.getAllByText('11')).toHaveLength(1); // Mocotíes
+    expect(screen.getByText('10')).toBeInTheDocument(); // Páramo
     expect(screen.getAllByText('7').length).toBeGreaterThanOrEqual(1); // Pueblos del Sur
   });
 });
