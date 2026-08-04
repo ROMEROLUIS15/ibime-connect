@@ -48,7 +48,7 @@ const districts: District[] = [
     id: 3,
     name: 'Eje Panamericano',
     library: 'Red bibliotecaria · Mérida',
-    libraries: 12,
+    libraries: 13,
     readingPoints: 1,
     color: 'from-ebime-red to-ebime-yellow',
     image: ejePanamericano,
@@ -57,7 +57,7 @@ const districts: District[] = [
     id: 4,
     name: 'Eje Páramo',
     library: 'Red bibliotecaria · Mérida',
-    libraries: 11,
+    libraries: 10,
     readingPoints: 1,
     color: 'from-ebime-yellow to-ebime-red',
     image: ejeParamo,
@@ -73,13 +73,98 @@ const districts: District[] = [
   },
   {
     id: 6,
-    name: 'Distrito Oeste',
-    library: 'Biblioteca Metropolitana Oeste',
-    libraries: 7,
-    readingPoints: 10,
+    name: 'En Construcción',
+    library: 'Red bibliotecaria · Mérida',
+    libraries: 0,
+    readingPoints: 0,
     color: 'from-ebime-yellow to-ebime-green',
   },
 ];
+
+const metropolitanoLibrariesData = [
+  { id: 1, name: 'Biblioteca Central Simón Bolívar', address: 'Av. 4 con calle 22, Edificio Central, Mérida.' },
+  { id: 2, name: 'Biblioteca Norte', address: 'Av. Las Américas, sector Santa Bárbara, Mérida.' },
+  { id: 3, name: 'Biblioteca Pública de Ejido', address: 'Ejido, Municipio Campo Elías.' },
+  { id: 4, name: 'Biblioteca Infantil', address: 'Parque La Isla, Mérida.' },
+  { id: 5, name: 'Biblioteca Pública de Tabay', address: 'Plaza Bolívar de Tabay, Municipio Santos Marquina.' },
+  { id: 6, name: 'Biblioteca de Lagunillas', address: 'Lagunillas, Municipio Sucre.' },
+  { id: 7, name: 'Sala de Lectura Los Curos', address: 'Sector Los Curos, parte media.' },
+  { id: 8, name: 'Sala de Lectura La Parroquia', address: 'Plaza Bolívar de La Parroquia.' },
+  { id: 9, name: 'Biblioteca San Juan', address: 'San Juan de Lagunillas.' },
+  { id: 10, name: 'Sala de Lectura Santa Cruz', address: 'Santa Cruz de Mora.' },
+  { id: 11, name: 'Biblioteca Comunitaria El Chama', address: 'Sector El Chama.' },
+  { id: 12, name: 'Sala de Lectura Jacinto Plaza', address: 'Cuenca del Chama.' },
+  { id: 13, name: 'Biblioteca Escolar', address: 'Liceo Libertador, Av. Las Américas.' },
+  { id: 14, name: 'Sala de Literatura', address: 'Centro Cultural Tulio Febres Cordero.' },
+  { id: 15, name: 'Biblioteca de Jají', address: 'Pueblo de Jají, Municipio Campo Elías.' },
+  { id: 16, name: 'Sala de Lectura Chiguará', address: 'Chiguará, Municipio Sucre.' },
+  { id: 17, name: 'Biblioteca Móvil', address: 'Rutas rotativas en el área metropolitana.' },
+];
+
+const getMockLibrariesForDistrict = (district: District) => {
+  if (district.id === 1) return metropolitanoLibrariesData;
+  const count = district.libraries || 0;
+  return Array.from({ length: count }).map((_, i) => ({
+    id: parseInt(`${district.id}${i + 1}`),
+    name: `Biblioteca ${i + 1} (${district.name})`,
+    address: `Dirección de prueba para la biblioteca ${i + 1} del ${district.name}, estado Mérida.`
+  }));
+};
+
+const DistrictLibrariesDialog = ({ district, children }: { district: District; children: JSX.Element }) => {
+  if (district.libraries == null || district.libraries === 0) {
+    return <>{children}</>;
+  }
+
+  const librariesData = getMockLibrariesForDistrict(district);
+
+  return (
+    <Dialog>
+      <DialogTrigger asChild>
+        {children}
+      </DialogTrigger>
+      <DialogContent className="max-w-3xl max-h-[85vh] flex flex-col overflow-hidden">
+        <DialogHeader className="shrink-0 pb-4 border-b border-border/50">
+          <DialogTitle className="text-2xl font-bold flex items-center gap-2">
+            <Library className="w-6 h-6 text-secondary" />
+            Bibliotecas del {district.name}
+          </DialogTitle>
+          <DialogDescription>
+            Conoce las direcciones de nuestras bibliotecas en este eje.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="flex-1 overflow-y-auto pr-4 py-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {librariesData.map((lib) => (
+              <Dialog key={lib.id}>
+                <DialogTrigger asChild>
+                  <button className="flex items-center justify-between text-left p-4 rounded-xl border border-border bg-card hover:border-secondary hover:bg-secondary/5 transition-colors group shadow-sm">
+                    <span className="font-semibold text-foreground group-hover:text-secondary transition-colors">{lib.name}</span>
+                    <MapPin className="w-4 h-4 text-muted-foreground group-hover:text-secondary opacity-50 group-hover:opacity-100 transition-all" />
+                  </button>
+                </DialogTrigger>
+                <DialogContent className="max-w-md bg-card/95 backdrop-blur">
+                  <DialogHeader>
+                    <DialogTitle className="text-xl text-secondary">{lib.name}</DialogTitle>
+                  </DialogHeader>
+                  <div className="flex items-start gap-4 p-5 bg-background rounded-xl border border-border/50 mt-2 shadow-sm">
+                    <div className="w-10 h-10 rounded-full bg-secondary/10 flex items-center justify-center shrink-0">
+                      <MapPin className="w-5 h-5 text-secondary" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-muted-foreground mb-1 uppercase tracking-wider">Dirección</p>
+                      <p className="text-foreground font-medium leading-relaxed">{lib.address}</p>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            ))}
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
 
 export const ServicesSection = () => {
   return (
@@ -92,7 +177,7 @@ export const ServicesSection = () => {
             Servicios <span className="text-gradient">Bibliotecarios</span>
           </h2>
           <p className="text-muted-foreground max-w-2xl mx-auto text-lg">
-            Nuestra red metropolitana de bibliotecas cubre todos los distritos de la ciudad, 
+            Nuestra red metropolitana de bibliotecas cubre todos los distritos de la ciudad,
             acercando el conocimiento a cada rincón de la comunidad.
           </p>
         </div>
@@ -146,12 +231,26 @@ export const ServicesSection = () => {
                         Mapa de la red bibliotecaria del {district.name} · estado Mérida
                       </DialogDescription>
                     </DialogHeader>
-                    <div className="flex items-center justify-center overflow-auto">
+                    <div className="flex items-center justify-center overflow-hidden relative rounded-lg p-2">
                       <img
                         src={district.image}
                         alt={`Mapa ampliado del ${district.name}`}
                         className="max-h-[75vh] w-auto max-w-full object-contain"
                       />
+                      {/* Small modal/card indicating library count */}
+                      {district.libraries != null && district.libraries > 0 && (
+                        <DistrictLibrariesDialog district={district}>
+                          <button className="absolute bottom-6 right-6 bg-background/95 backdrop-blur p-4 rounded-2xl shadow-2xl border border-border flex items-center gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500 hover:scale-105 hover:border-secondary transition-all text-left">
+                            <div className="w-12 h-12 rounded-xl bg-secondary/10 flex items-center justify-center shrink-0">
+                              <Library className="w-6 h-6 text-secondary" />
+                            </div>
+                            <div>
+                              <p className="text-3xl font-display font-bold text-foreground leading-none">{district.libraries}</p>
+                              <p className="text-sm font-medium text-muted-foreground mt-1">Bibliotecas</p>
+                            </div>
+                          </button>
+                        </DistrictLibrariesDialog>
+                      )}
                     </div>
                   </DialogContent>
                 </Dialog>
@@ -184,17 +283,19 @@ export const ServicesSection = () => {
 
               {/* Stats: solo se muestran los datos reales disponibles */}
               {(district.libraries != null || district.readingPoints != null) && (
-                <div className="flex gap-6">
+                <div className="flex gap-6 mt-auto">
                   {district.libraries != null && (
-                    <div className="flex items-center gap-2">
-                      <div className="w-10 h-10 rounded-lg bg-secondary/10 flex items-center justify-center">
-                        <Library className="w-5 h-5 text-secondary" />
-                      </div>
-                      <div>
-                        <p className="text-lg font-bold text-foreground">{district.libraries}</p>
-                        <p className="text-xs text-muted-foreground">Bibliotecas</p>
-                      </div>
-                    </div>
+                    <DistrictLibrariesDialog district={district}>
+                      <button className="flex items-center gap-2 hover:opacity-80 transition-opacity text-left group outline-none rounded-lg focus-visible:ring-2 focus-visible:ring-secondary">
+                        <div className="w-10 h-10 rounded-lg bg-secondary/10 group-hover:bg-secondary/20 transition-colors flex items-center justify-center">
+                          <Library className="w-5 h-5 text-secondary" />
+                        </div>
+                        <div>
+                          <p className="text-lg font-bold text-foreground group-hover:text-secondary transition-colors">{district.libraries}</p>
+                          <p className="text-xs text-muted-foreground">Bibliotecas</p>
+                        </div>
+                      </button>
+                    </DistrictLibrariesDialog>
                   )}
                   {district.readingPoints != null && (
                     <div className="flex items-center gap-2">
