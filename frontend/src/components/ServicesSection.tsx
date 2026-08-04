@@ -194,35 +194,33 @@ export const ServicesSection = () => {
               {district.image ? (
                 <Dialog>
                   <DialogTrigger asChild>
-                    <button
-                      type="button"
-                      aria-label={`Ampliar el mapa del ${district.name}`}
-                      className="h-56 w-full rounded-xl mb-5 relative overflow-hidden flex items-center justify-center p-4 cursor-zoom-in focus:outline-none focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2"
-                    >
-                      {/* Fondo con el color del eje, muy suave, para que el vacio no se vea blanco/generico */}
-                      <div className={`absolute inset-0 bg-gradient-to-br ${district.color} opacity-[0.08]`} />
-                      {/* Patron de rejilla, igual que las tarjetas de abajo, para dar textura */}
-                      <div className="absolute inset-0 opacity-[0.12]">
-                        <svg viewBox="0 0 100 100" className="w-full h-full" preserveAspectRatio="none">
-                          <pattern id={`grid-map-${district.id}`} width="10" height="10" patternUnits="userSpaceOnUse">
-                            <path d="M 10 0 L 0 0 0 10" fill="none" stroke="currentColor" strokeWidth="0.5" className="text-foreground" />
-                          </pattern>
-                          <rect width="100" height="100" fill={`url(#grid-map-${district.id})`} />
-                        </svg>
-                      </div>
-                      <img
-                        src={district.image}
-                        alt={`Mapa del ${district.name}`}
-                        className="relative max-h-full max-w-full object-contain drop-shadow-md transition-transform duration-300 group-hover:scale-105"
-                        loading="lazy"
-                      />
-                      {/* Pista visual de que el mapa se puede ampliar */}
-                      <div className="absolute inset-0 flex items-center justify-center bg-foreground/0 group-hover:bg-foreground/10 transition-colors">
-                        <span className="flex items-center gap-1.5 rounded-full bg-background/90 px-3 py-1.5 text-sm font-medium text-foreground opacity-0 shadow-md group-hover:opacity-100 transition-opacity">
-                          <ZoomIn className="w-4 h-4" /> Ampliar mapa
-                        </span>
-                      </div>
-                    </button>
+                      <button
+                        type="button"
+                        aria-label={`Ampliar el mapa del ${district.name}`}
+                        className={`h-56 w-full rounded-xl mb-5 relative overflow-hidden flex items-center justify-center p-4 cursor-zoom-in focus:outline-none focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2 bg-gradient-to-br ${district.color}`}
+                      >
+                        {/* Patron de rejilla institucional (blanca), igual que las tarjetas de la red */}
+                        <div className="absolute inset-0 opacity-20">
+                          <svg viewBox="0 0 100 100" className="w-full h-full" preserveAspectRatio="none">
+                            <pattern id={`grid-map-${district.id}`} width="10" height="10" patternUnits="userSpaceOnUse">
+                              <path d="M 10 0 L 0 0 0 10" fill="none" stroke="currentColor" strokeWidth="0.5" className="text-primary-foreground" />
+                            </pattern>
+                            <rect width="100" height="100" fill={`url(#grid-map-${district.id})`} />
+                          </svg>
+                        </div>
+                        <img
+                          src={district.image}
+                          alt={`Mapa del ${district.name}`}
+                          className="relative max-h-full max-w-full object-contain drop-shadow-md transition-transform duration-300 group-hover:scale-105"
+                          loading="lazy"
+                        />
+                        {/* Pista visual de que el mapa se puede ampliar */}
+                        <div className="absolute inset-0 flex items-center justify-center bg-foreground/0 group-hover:bg-foreground/20 transition-colors">
+                          <span className="flex items-center gap-1.5 rounded-full bg-background/90 px-3 py-1.5 text-sm font-medium text-foreground opacity-0 shadow-md group-hover:opacity-100 transition-opacity">
+                            <ZoomIn className="w-4 h-4" /> Ampliar mapa
+                          </span>
+                        </div>
+                      </button>
                   </DialogTrigger>
                   <DialogContent className="max-w-4xl">
                     <DialogHeader>
