@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { ServicesSection } from './ServicesSection';
+import { AXES, TOTAL_LIBRARIES } from '@/data/library-network';
 
 describe('ServicesSection', () => {
   it('renderiza el encabezado de la sección', () => {
@@ -10,11 +11,11 @@ describe('ServicesSection', () => {
 
   it('muestra los 5 ejes de la red bibliotecaria', () => {
     render(<ServicesSection />);
-    expect(screen.getByText('Eje Metropolitano')).toBeInTheDocument();
-    expect(screen.getByText('Eje Mocotíes')).toBeInTheDocument();
-    expect(screen.getByText('Eje Panamericano')).toBeInTheDocument();
-    expect(screen.getByText('Eje Páramo')).toBeInTheDocument();
-    expect(screen.getByText('Eje Pueblos del Sur')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Eje Metropolitano' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Eje Mocotíes' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Eje Panamericano' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Eje Páramo' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Eje Pueblo del Sur' })).toBeInTheDocument();
   });
 
   it('conserva solo la tarjeta de En Construcción (6 tarjetas en total)', () => {
@@ -36,12 +37,47 @@ describe('ServicesSection', () => {
     expect(botones).toHaveLength(5);
   });
 
-  it('muestra las estadísticas reales de cada eje', () => {
+  it('el conteo mostrado por eje coincide con el directorio transcrito del mapa', () => {
     render(<ServicesSection />);
-    expect(screen.getByText('17')).toBeInTheDocument(); // Metropolitano
-    expect(screen.getByText('13')).toBeInTheDocument(); // Panamericano
-    expect(screen.getAllByText('11')).toHaveLength(1); // Mocotíes
-    expect(screen.getByText('10')).toBeInTheDocument(); // Páramo
-    expect(screen.getAllByText('7').length).toBeGreaterThanOrEqual(1); // Pueblos del Sur
+
+    // Los totales impresos en los mapas: 17 / 11 / 12 / 11 / 07.
+    const esperados = [17, 11, 12, 11, 7];
+    expect(AXES.map((axis) => axis.libraries.length)).toEqual(esperados);
+
+    // Cada cifra aparece al menos una vez en las tarjetas de la sección.
+    for (const total of new Set(esperados)) {
+      expect(screen.getAllByText(String(total)).length).toBeGreaterThanOrEqual(1);
+    }
+  });
+
+  it('solo el Eje Metropolitano declara punto de lectura (el único rotulado)', () => {
+    render(<ServicesSection />);
+    const conPuntos = AXES.filter((axis) => axis.readingPoints != null);
+    expect(conPuntos).toHaveLength(1);
+    expect(conPuntos[0].name).toBe('Eje Metropolitano');
+    expect(screen.getAllByText('Puntos de lectura')).toHaveLength(1);
+  });
+
+  it('cada biblioteca del directorio tiene nombre y municipio para su ficha', () => {
+    // La ficha individual muestra nombre + ubicación (localidad opcional y
+    // municipio): sin municipio el modal abriría con la ubicación vacía.
+    for (const axis of AXES) {
+      for (const lib of axis.libraries) {
+        expect(lib.name.trim().length).toBeGreaterThan(0);
+        expect(lib.municipality.trim().length).toBeGreaterThan(0);
+        expect(axis.municipalities).toContain(lib.municipality);
+      }
+    }
+  });
+
+  it('no publica direcciones de prueba ni bibliotecas numeradas de relleno', () => {
+    for (const axis of AXES) {
+      for (const lib of axis.libraries) {
+        expect(lib.name).not.toMatch(/prueba|Biblioteca \d+/i);
+        expect(lib.locality ?? '').not.toMatch(/prueba/i);
+        expect(lib.municipality).not.toMatch(/prueba/i);
+      }
+    }
+    expect(TOTAL_LIBRARIES).toBe(58);
   });
 });

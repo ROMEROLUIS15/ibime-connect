@@ -7,164 +7,110 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import { AXES, type Axis, type Library as LibraryEntry } from '@/data/library-network';
 import ejeMetropolitano from '@/assets/eje-metropolitano.png';
 import ejeMocoties from '@/assets/eje-mocoties.png';
 import ejePanamericano from '@/assets/eje-panamericano.png';
 import ejeParamo from '@/assets/eje-paramo.png';
 import ejePueblosSur from '@/assets/eje-pueblos-del-sur.png';
 
-type District = {
-  id: number;
-  name: string;
-  library: string;
-  color: string;
-  /** Estadísticas reales del eje; se omiten cuando el dato no está impreso en el mapa. */
-  libraries?: number;
-  readingPoints?: number;
-  /** Mapa del eje. Cuando existe, se muestra dentro del recuadro en lugar del degradado. */
-  image?: string;
+/** Presentación de cada eje: mapa y degradado institucional del recuadro. */
+const axisPresentation: Record<number, { image: string; color: string }> = {
+  1: { image: ejeMetropolitano, color: 'from-ebime-blue to-ebime-purple' },
+  2: { image: ejeMocoties, color: 'from-ebime-purple to-ebime-red' },
+  3: { image: ejePanamericano, color: 'from-ebime-red to-ebime-yellow' },
+  4: { image: ejeParamo, color: 'from-ebime-yellow to-ebime-red' },
+  5: { image: ejePueblosSur, color: 'from-ebime-purple to-ebime-blue' },
 };
 
-const districts: District[] = [
-  {
-    id: 1,
-    name: 'Eje Metropolitano',
-    library: 'Red bibliotecaria · Mérida',
-    libraries: 17,
-    readingPoints: 1,
-    color: 'from-ebime-blue to-ebime-purple',
-    image: ejeMetropolitano,
-  },
-  {
-    id: 2,
-    name: 'Eje Mocotíes',
-    library: 'Red bibliotecaria · Mérida',
-    libraries: 11,
-    readingPoints: 1,
-    color: 'from-ebime-purple to-ebime-red',
-    image: ejeMocoties,
-  },
-  {
-    id: 3,
-    name: 'Eje Panamericano',
-    library: 'Red bibliotecaria · Mérida',
-    libraries: 13,
-    readingPoints: 1,
-    color: 'from-ebime-red to-ebime-yellow',
-    image: ejePanamericano,
-  },
-  {
-    id: 4,
-    name: 'Eje Páramo',
-    library: 'Red bibliotecaria · Mérida',
-    libraries: 10,
-    readingPoints: 1,
-    color: 'from-ebime-yellow to-ebime-red',
-    image: ejeParamo,
-  },
-  {
-    id: 5,
-    name: 'Eje Pueblos del Sur',
-    library: 'Red bibliotecaria · Mérida',
-    libraries: 7,
-    readingPoints: 1,
-    color: 'from-ebime-purple to-ebime-blue',
-    image: ejePueblosSur,
-  },
-  {
-    id: 6,
-    name: 'En Construcción',
-    library: 'Red bibliotecaria · Mérida',
-    libraries: 0,
-    readingPoints: 0,
-    color: 'from-ebime-yellow to-ebime-green',
-  },
-];
+const UNDER_CONSTRUCTION_COLOR = 'from-ebime-yellow to-ebime-green';
 
-const metropolitanoLibrariesData = [
-  { id: 1, name: 'Biblioteca Central Simón Bolívar', address: 'Av. 4 con calle 22, Edificio Central, Mérida.' },
-  { id: 2, name: 'Biblioteca Norte', address: 'Av. Las Américas, sector Santa Bárbara, Mérida.' },
-  { id: 3, name: 'Biblioteca Pública de Ejido', address: 'Ejido, Municipio Campo Elías.' },
-  { id: 4, name: 'Biblioteca Infantil', address: 'Parque La Isla, Mérida.' },
-  { id: 5, name: 'Biblioteca Pública de Tabay', address: 'Plaza Bolívar de Tabay, Municipio Santos Marquina.' },
-  { id: 6, name: 'Biblioteca de Lagunillas', address: 'Lagunillas, Municipio Sucre.' },
-  { id: 7, name: 'Sala de Lectura Los Curos', address: 'Sector Los Curos, parte media.' },
-  { id: 8, name: 'Sala de Lectura La Parroquia', address: 'Plaza Bolívar de La Parroquia.' },
-  { id: 9, name: 'Biblioteca San Juan', address: 'San Juan de Lagunillas.' },
-  { id: 10, name: 'Sala de Lectura Santa Cruz', address: 'Santa Cruz de Mora.' },
-  { id: 11, name: 'Biblioteca Comunitaria El Chama', address: 'Sector El Chama.' },
-  { id: 12, name: 'Sala de Lectura Jacinto Plaza', address: 'Cuenca del Chama.' },
-  { id: 13, name: 'Biblioteca Escolar', address: 'Liceo Libertador, Av. Las Américas.' },
-  { id: 14, name: 'Sala de Literatura', address: 'Centro Cultural Tulio Febres Cordero.' },
-  { id: 15, name: 'Biblioteca de Jají', address: 'Pueblo de Jají, Municipio Campo Elías.' },
-  { id: 16, name: 'Sala de Lectura Chiguará', address: 'Chiguará, Municipio Sucre.' },
-  { id: 17, name: 'Biblioteca Móvil', address: 'Rutas rotativas en el área metropolitana.' },
-];
-
-const getMockLibrariesForDistrict = (district: District) => {
-  if (district.id === 1) return metropolitanoLibrariesData;
-  const count = district.libraries || 0;
-  return Array.from({ length: count }).map((_, i) => ({
-    id: parseInt(`${district.id}${i + 1}`),
-    name: `Biblioteca ${i + 1} (${district.name})`,
-    address: `Dirección de prueba para la biblioteca ${i + 1} del ${district.name}, estado Mérida.`
-  }));
-};
-
-const DistrictLibrariesDialog = ({ district, children }: { district: District; children: JSX.Element }) => {
-  if (district.libraries == null || district.libraries === 0) {
-    return <>{children}</>;
-  }
-
-  const librariesData = getMockLibrariesForDistrict(district);
-
-  return (
-    <Dialog>
-      <DialogTrigger asChild>
-        {children}
-      </DialogTrigger>
-      <DialogContent className="max-w-3xl max-h-[85vh] flex flex-col overflow-hidden">
-        <DialogHeader className="shrink-0 pb-4 border-b border-border/50">
-          <DialogTitle className="text-2xl font-bold flex items-center gap-2">
-            <Library className="w-6 h-6 text-secondary" />
-            Bibliotecas del {district.name}
-          </DialogTitle>
-          <DialogDescription>
-            Conoce las direcciones de nuestras bibliotecas en este eje.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="flex-1 overflow-y-auto pr-4 py-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {librariesData.map((lib) => (
-              <Dialog key={lib.id}>
-                <DialogTrigger asChild>
-                  <button className="flex items-center justify-between text-left p-4 rounded-xl border border-border bg-card hover:border-secondary hover:bg-secondary/5 transition-colors group shadow-sm">
-                    <span className="font-semibold text-foreground group-hover:text-secondary transition-colors">{lib.name}</span>
-                    <MapPin className="w-4 h-4 text-muted-foreground group-hover:text-secondary opacity-50 group-hover:opacity-100 transition-all" />
-                  </button>
-                </DialogTrigger>
-                <DialogContent className="max-w-md bg-card/95 backdrop-blur">
-                  <DialogHeader>
-                    <DialogTitle className="text-xl text-secondary">{lib.name}</DialogTitle>
-                  </DialogHeader>
-                  <div className="flex items-start gap-4 p-5 bg-background rounded-xl border border-border/50 mt-2 shadow-sm">
-                    <div className="w-10 h-10 rounded-full bg-secondary/10 flex items-center justify-center shrink-0">
-                      <MapPin className="w-5 h-5 text-secondary" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-bold text-muted-foreground mb-1 uppercase tracking-wider">Dirección</p>
-                      <p className="text-foreground font-medium leading-relaxed">{lib.address}</p>
-                    </div>
-                  </div>
-                </DialogContent>
-              </Dialog>
-            ))}
-          </div>
+/**
+ * Ficha individual de una biblioteca: se abre al pulsar su entrada en el
+ * directorio y muestra únicamente el nombre oficial y su ubicación.
+ *
+ * La ubicación es la rotulada en el mapa del eje —localidad o municipio—,
+ * no una dirección postal: los mapas no registran calle ni avenida.
+ */
+const LibraryLocationDialog = ({
+  axisName,
+  library,
+}: {
+  axisName: string;
+  library: LibraryEntry;
+}) => (
+  <Dialog>
+    <DialogTrigger asChild>
+      <button
+        type="button"
+        className="w-full flex items-center justify-between gap-3 text-left rounded-lg border border-border bg-background p-4 shadow-[var(--shadow-sm)] transition-colors hover:border-accent/60 group/lib focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      >
+        <span className="font-display font-semibold text-foreground leading-snug">
+          {library.name}
+        </span>
+        <MapPin
+          className="w-4 h-4 text-accent shrink-0 opacity-60 group-hover/lib:opacity-100 transition-opacity"
+          aria-hidden="true"
+        />
+      </button>
+    </DialogTrigger>
+    <DialogContent className="max-w-lg bg-card rounded-xl">
+      <DialogHeader>
+        <DialogTitle className="text-xl font-display font-bold text-foreground pr-6">
+          {library.name}
+        </DialogTitle>
+        <DialogDescription className="text-muted-foreground">
+          Ubicación registrada en el mapa del {axisName}.
+        </DialogDescription>
+      </DialogHeader>
+      <div className="flex items-start gap-4 rounded-lg border border-border bg-background p-5 shadow-[var(--shadow-sm)]">
+        <div className="w-10 h-10 rounded-lg bg-[hsl(var(--ebime-navy))] flex items-center justify-center shrink-0">
+          <MapPin className="w-5 h-5 text-white" aria-hidden="true" />
         </div>
-      </DialogContent>
-    </Dialog>
-  );
-};
+        <div>
+          <p className="text-sm font-display font-semibold text-muted-foreground mb-1">Ubicación</p>
+          {library.locality && (
+            <p className="text-foreground font-medium leading-relaxed">{library.locality}</p>
+          )}
+          <p className="text-foreground font-medium leading-relaxed">
+            Municipio {library.municipality}
+          </p>
+        </div>
+      </div>
+    </DialogContent>
+  </Dialog>
+);
+
+/**
+ * Directorio de bibliotecas de un eje. Los datos provienen del mapa
+ * institucional del eje (ver `data/library-network.ts`).
+ */
+const AxisDirectoryDialog = ({ axis, children }: { axis: Axis; children: JSX.Element }) => (
+  <Dialog>
+    <DialogTrigger asChild>{children}</DialogTrigger>
+    <DialogContent className="max-w-4xl max-h-[88vh] flex flex-col overflow-hidden bg-card rounded-xl">
+      <DialogHeader className="shrink-0 pb-4 border-b border-border">
+        <span className="badge-institutional self-start mb-2">Red Bibliotecaria</span>
+        <DialogTitle className="text-2xl font-display font-bold text-foreground flex items-center gap-2.5">
+          <Library className="w-6 h-6 text-accent shrink-0" aria-hidden="true" />
+          {axis.name}
+        </DialogTitle>
+        <DialogDescription className="text-muted-foreground">
+          {axis.libraries.length} bibliotecas registradas en los municipios{' '}
+          {axis.municipalities.join(', ')} del estado Mérida.
+        </DialogDescription>
+      </DialogHeader>
+
+      <ul className="flex-1 overflow-y-auto pr-2 py-4 grid grid-cols-1 md:grid-cols-2 gap-3 list-none">
+        {axis.libraries.map((lib) => (
+          <li key={`${axis.id}-${lib.name}`}>
+            <LibraryLocationDialog axisName={axis.name} library={lib} />
+          </li>
+        ))}
+      </ul>
+    </DialogContent>
+  </Dialog>
+);
 
 export const ServicesSection = () => {
   return (
@@ -177,139 +123,152 @@ export const ServicesSection = () => {
             Servicios <span className="text-gradient">Bibliotecarios</span>
           </h2>
           <p className="text-muted-foreground max-w-2xl mx-auto text-lg">
-            Nuestra red metropolitana de bibliotecas cubre todos los distritos de la ciudad,
-            acercando el conocimiento a cada rincón de la comunidad.
+            Nuestra red cubre los cinco ejes del estado Mérida, acercando el conocimiento
+            a cada municipio y comunidad de la entidad.
           </p>
         </div>
 
-        {/* Districts Grid */}
+        {/* Ejes */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {districts.map((district, index) => (
-            <div
-              key={district.id}
-              className="card-institutional group overflow-hidden"
-              style={{ animationDelay: `${index * 100}ms` }}
-            >
-              {/* Map representation: mapa real del eje si existe; si no, el degradado de siempre */}
-              {district.image ? (
+          {AXES.map((axis, index) => {
+            const { image, color } = axisPresentation[axis.id];
+
+            return (
+              <div
+                key={axis.id}
+                className="card-institutional group overflow-hidden"
+                style={{ animationDelay: `${index * 100}ms` }}
+              >
+                {/* Mapa del eje: abre el lightbox institucional */}
                 <Dialog>
                   <DialogTrigger asChild>
-                      <button
-                        type="button"
-                        aria-label={`Ampliar el mapa del ${district.name}`}
-                        className={`h-56 w-full rounded-xl mb-5 relative overflow-hidden flex items-center justify-center p-4 cursor-zoom-in focus:outline-none focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2 bg-gradient-to-br ${district.color}`}
-                      >
-                        {/* Patron de rejilla institucional (blanca), igual que las tarjetas de la red */}
-                        <div className="absolute inset-0 opacity-20">
-                          <svg viewBox="0 0 100 100" className="w-full h-full" preserveAspectRatio="none">
-                            <pattern id={`grid-map-${district.id}`} width="10" height="10" patternUnits="userSpaceOnUse">
-                              <path d="M 10 0 L 0 0 0 10" fill="none" stroke="currentColor" strokeWidth="0.5" className="text-primary-foreground" />
-                            </pattern>
-                            <rect width="100" height="100" fill={`url(#grid-map-${district.id})`} />
-                          </svg>
-                        </div>
-                        <img
-                          src={district.image}
-                          alt={`Mapa del ${district.name}`}
-                          className="relative max-h-full max-w-full object-contain drop-shadow-md transition-transform duration-300 group-hover:scale-105"
-                          loading="lazy"
-                        />
-                        {/* Pista visual de que el mapa se puede ampliar */}
-                        <div className="absolute inset-0 flex items-center justify-center bg-foreground/0 group-hover:bg-foreground/20 transition-colors">
-                          <span className="flex items-center gap-1.5 rounded-full bg-background/90 px-3 py-1.5 text-sm font-medium text-foreground opacity-0 shadow-md group-hover:opacity-100 transition-opacity">
-                            <ZoomIn className="w-4 h-4" /> Ampliar mapa
-                          </span>
-                        </div>
-                      </button>
+                    <button
+                      type="button"
+                      aria-label={`Ampliar el mapa del ${axis.name}`}
+                      className={`h-56 w-full rounded-xl mb-5 relative overflow-hidden flex items-center justify-center p-4 cursor-zoom-in focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 bg-gradient-to-br ${color}`}
+                    >
+                      {/* Patrón de rejilla institucional, igual que las tarjetas de la red */}
+                      <div className="absolute inset-0 opacity-20">
+                        <svg viewBox="0 0 100 100" className="w-full h-full" preserveAspectRatio="none">
+                          <pattern id={`grid-map-${axis.id}`} width="10" height="10" patternUnits="userSpaceOnUse">
+                            <path d="M 10 0 L 0 0 0 10" fill="none" stroke="currentColor" strokeWidth="0.5" className="text-primary-foreground" />
+                          </pattern>
+                          <rect width="100" height="100" fill={`url(#grid-map-${axis.id})`} />
+                        </svg>
+                      </div>
+                      <img
+                        src={image}
+                        alt={`Mapa del ${axis.name}`}
+                        className="relative max-h-full max-w-full object-contain drop-shadow-md transition-transform duration-300 group-hover:scale-105"
+                        loading="lazy"
+                      />
+                      {/* Pista visual de que el mapa se puede ampliar */}
+                      <div className="absolute inset-0 flex items-center justify-center bg-foreground/0 group-hover:bg-foreground/20 transition-colors">
+                        <span className="flex items-center gap-1.5 rounded-lg bg-background/95 px-3 py-1.5 text-sm font-medium text-foreground opacity-0 shadow-[var(--shadow-md)] group-hover:opacity-100 transition-opacity">
+                          <ZoomIn className="w-4 h-4" aria-hidden="true" /> Ampliar mapa
+                        </span>
+                      </div>
+                    </button>
                   </DialogTrigger>
-                  <DialogContent className="max-w-4xl">
+                  <DialogContent className="max-w-4xl bg-card rounded-xl">
                     <DialogHeader>
-                      <DialogTitle>{district.name}</DialogTitle>
-                      <DialogDescription>
-                        Mapa de la red bibliotecaria del {district.name} · estado Mérida
+                      <DialogTitle className="text-xl font-display font-bold text-foreground">
+                        {axis.name}
+                      </DialogTitle>
+                      <DialogDescription className="text-muted-foreground">
+                        Mapa de la red bibliotecaria del {axis.name} · estado Mérida
                       </DialogDescription>
                     </DialogHeader>
                     <div className="flex items-center justify-center overflow-hidden relative rounded-lg p-2">
                       <img
-                        src={district.image}
-                        alt={`Mapa ampliado del ${district.name}`}
+                        src={image}
+                        alt={`Mapa ampliado del ${axis.name}`}
                         className="max-h-[75vh] w-auto max-w-full object-contain"
                       />
-                      {/* Small modal/card indicating library count */}
-                      {district.libraries != null && district.libraries > 0 && (
-                        <DistrictLibrariesDialog district={district}>
-                          <button className="absolute bottom-6 right-6 bg-background/95 backdrop-blur p-4 rounded-2xl shadow-2xl border border-border flex items-center gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500 hover:scale-105 hover:border-secondary transition-all text-left">
-                            <div className="w-12 h-12 rounded-xl bg-secondary/10 flex items-center justify-center shrink-0">
-                              <Library className="w-6 h-6 text-secondary" />
-                            </div>
-                            <div>
-                              <p className="text-3xl font-display font-bold text-foreground leading-none">{district.libraries}</p>
-                              <p className="text-sm font-medium text-muted-foreground mt-1">Bibliotecas</p>
-                            </div>
-                          </button>
-                        </DistrictLibrariesDialog>
-                      )}
+                      {/* Acceso al directorio del eje desde el mapa ampliado.
+                          Navy institucional (#0B1930) sobre blanco: el token
+                          --ebime-navy no se reasigna en modo oscuro, así que el
+                          contraste del recuadro es estable en cualquier tema. */}
+                      <AxisDirectoryDialog axis={axis}>
+                        <button
+                          type="button"
+                          className="absolute bottom-6 right-6 bg-[hsl(var(--ebime-navy))] p-4 rounded-xl shadow-[var(--shadow-card)] border border-white/15 flex items-center gap-4 text-left transition-[transform,border-color] duration-300 hover:-translate-y-1 hover:border-white/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                        >
+                          <div className="w-12 h-12 rounded-lg bg-white/10 flex items-center justify-center shrink-0">
+                            <Library className="w-6 h-6 text-white" aria-hidden="true" />
+                          </div>
+                          <div>
+                            <p className="text-3xl font-display font-bold text-white leading-none">
+                              {axis.libraries.length}
+                            </p>
+                            <p className="text-sm font-display font-medium text-white/75 mt-1">Bibliotecas</p>
+                          </div>
+                        </button>
+                      </AxisDirectoryDialog>
                     </div>
                   </DialogContent>
                 </Dialog>
-              ) : (
-                <div className={`h-56 rounded-xl bg-gradient-to-br ${district.color} mb-5 relative overflow-hidden`}>
-                  <div className="absolute inset-0 opacity-20">
-                    <svg viewBox="0 0 100 100" className="w-full h-full">
-                      <pattern id={`grid-${district.id}`} width="10" height="10" patternUnits="userSpaceOnUse">
-                        <path d="M 10 0 L 0 0 0 10" fill="none" stroke="currentColor" strokeWidth="0.5" className="text-primary-foreground" />
-                      </pattern>
-                      <rect width="100" height="100" fill={`url(#grid-${district.id})`} />
-                    </svg>
-                  </div>
-                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
-                    <Wrench className="w-12 h-12 text-primary-foreground opacity-80 group-hover:rotate-12 transition-transform" />
-                    <span className="font-display font-bold text-lg md:text-xl text-primary-foreground/90 uppercase tracking-wider drop-shadow-sm">
-                      En Construcción
-                    </span>
-                  </div>
-                </div>
-              )}
 
-              {/* Content */}
-              <h3 className="text-xl font-display font-bold text-foreground mb-2">
-                {district.name}
-              </h3>
-              <p className="text-secondary font-medium mb-4">
-                {district.library}
-              </p>
+                {/* Contenido */}
+                <h3 className="text-xl font-display font-bold text-foreground mb-2">{axis.name}</h3>
+                <p className="text-accent font-medium mb-4">Red bibliotecaria · Mérida</p>
 
-              {/* Stats: solo se muestran los datos reales disponibles */}
-              {(district.libraries != null || district.readingPoints != null) && (
+                {/* Cifras respaldadas por el mapa del eje */}
                 <div className="flex gap-6 mt-auto">
-                  {district.libraries != null && (
-                    <DistrictLibrariesDialog district={district}>
-                      <button className="flex items-center gap-2 hover:opacity-80 transition-opacity text-left group outline-none rounded-lg focus-visible:ring-2 focus-visible:ring-secondary">
-                        <div className="w-10 h-10 rounded-lg bg-secondary/10 group-hover:bg-secondary/20 transition-colors flex items-center justify-center">
-                          <Library className="w-5 h-5 text-secondary" />
-                        </div>
-                        <div>
-                          <p className="text-lg font-bold text-foreground group-hover:text-secondary transition-colors">{district.libraries}</p>
-                          <p className="text-xs text-muted-foreground">Bibliotecas</p>
-                        </div>
-                      </button>
-                    </DistrictLibrariesDialog>
-                  )}
-                  {district.readingPoints != null && (
-                    <div className="flex items-center gap-2">
-                      <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center">
-                        <BookOpen className="w-5 h-5 text-accent" />
+                  <AxisDirectoryDialog axis={axis}>
+                    <button
+                      type="button"
+                      className="flex items-center gap-2 text-left group/stat outline-none rounded-lg focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                      <div className="w-10 h-10 rounded-lg bg-accent/10 group-hover/stat:bg-accent/20 transition-colors flex items-center justify-center">
+                        <Library className="w-5 h-5 text-accent" aria-hidden="true" />
                       </div>
                       <div>
-                        <p className="text-lg font-bold text-foreground">{district.readingPoints}</p>
+                        <p className="text-lg font-bold text-foreground group-hover/stat:text-accent transition-colors">
+                          {axis.libraries.length}
+                        </p>
+                        <p className="text-xs text-muted-foreground">Bibliotecas</p>
+                      </div>
+                    </button>
+                  </AxisDirectoryDialog>
+
+                  {axis.readingPoints != null && (
+                    <div className="flex items-center gap-2">
+                      <div className="w-10 h-10 rounded-lg bg-secondary/10 flex items-center justify-center">
+                        <BookOpen className="w-5 h-5 text-secondary" aria-hidden="true" />
+                      </div>
+                      <div>
+                        <p className="text-lg font-bold text-foreground">{axis.readingPoints}</p>
                         <p className="text-xs text-muted-foreground">Puntos de lectura</p>
                       </div>
                     </div>
                   )}
                 </div>
-              )}
+              </div>
+            );
+          })}
+
+          {/* Eje en construcción: sin datos publicables todavía */}
+          <div className="card-institutional group overflow-hidden">
+            <div className={`h-56 rounded-xl bg-gradient-to-br ${UNDER_CONSTRUCTION_COLOR} mb-5 relative overflow-hidden`}>
+              <div className="absolute inset-0 opacity-20">
+                <svg viewBox="0 0 100 100" className="w-full h-full">
+                  <pattern id="grid-under-construction" width="10" height="10" patternUnits="userSpaceOnUse">
+                    <path d="M 10 0 L 0 0 0 10" fill="none" stroke="currentColor" strokeWidth="0.5" className="text-primary-foreground" />
+                  </pattern>
+                  <rect width="100" height="100" fill="url(#grid-under-construction)" />
+                </svg>
+              </div>
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
+                <Wrench className="w-12 h-12 text-primary-foreground opacity-80 group-hover:rotate-12 transition-transform" aria-hidden="true" />
+                <span className="font-display font-bold text-lg md:text-xl text-primary-foreground/90 uppercase tracking-wider drop-shadow-sm">
+                  En Construcción
+                </span>
+              </div>
             </div>
-          ))}
+            <h3 className="text-xl font-display font-bold text-foreground mb-2">En Construcción</h3>
+            <p className="text-accent font-medium mb-4">Red bibliotecaria · Mérida</p>
+          </div>
         </div>
       </div>
     </section>
