@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-IBIME Connect — institutional platform for the Mérida state library network (Venezuela). The centerpiece is an AI chat assistant with a **hybrid deterministic/probabilistic** engine: the LLM is *never* allowed to decide the final output. See `README.md` (Spanish) for the full architecture narrative and `docs/ARCHITECTURE.md`, `docs/AI_STRATEGY.md`. Other docs (all Spanish): `docs/CARGA_DE_CATALOGO.md` (how to populate the RAG `knowledge_base`), `docs/CONTRIBUTING.md` (branch flow + standards), `docs/CODE_QUALITY.md` (the local + CI quality gate), `docs/DATA_RETENTION.md` (PII retention policy — still a **PROPUESTA**, plazos not yet ratified), and `docs/CHANGELOG.md`.
+IBIME Connect — institutional platform for the Mérida state library network (Venezuela). The centerpiece is an AI chat assistant with a **hybrid deterministic/probabilistic** engine: the LLM is *never* allowed to decide the final output. See `README.md` (Spanish) for the full architecture narrative and `docs/ARCHITECTURE.md`, `docs/AI_STRATEGY.md`. Other docs (all Spanish): `docs/CARGA_DE_CATALOGO.md` (how to populate the RAG `knowledge_base`), `docs/CONTRIBUTING.md` (branch flow + standards), `docs/CODE_QUALITY.md` (the local + CI quality gate), `docs/DATA_RETENTION.md` (PII retention policy — still a **PROPUESTA**, plazos not yet ratified), `docs/AUDITORIA_RAG.md` (2026-08-26 audit of the retrieval pipeline measured against production — findings **RAG-01…RAG-11 are still open**, read it before touching the RAG), and `docs/CHANGELOG.md`.
 
 ## Monorepo layout
 

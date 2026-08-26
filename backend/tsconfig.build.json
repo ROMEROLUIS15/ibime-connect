@@ -1,0 +1,15 @@
+{
+  // Config SOLO para el build de producción. Extiende el tsconfig base y le quita
+  // los tests: antes viajaban compilados dentro de `dist/` (peso muerto en Render,
+  // que arranca `dist/backend/src/index.js`).
+  //
+  // El `tsconfig.json` base SÍ sigue incluyendo `src/__tests__/**`, para que
+  // `npm run typecheck` (tsc --noEmit) los siga verificando. No muevas la
+  // exclusión al base o los tests dejarían de tener typecheck.
+  "extends": "./tsconfig.json",
+  "exclude": [
+    "node_modules",
+    "dist",
+    "src/__tests__/**"
+  ]
+}
