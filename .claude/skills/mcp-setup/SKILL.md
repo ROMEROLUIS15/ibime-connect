@@ -1,0 +1,14 @@
+---
+name: mcp-setup
+description: "How the five MCP servers (playwright, redis, render, vercel, supabase) are wired for this repo at local scope, and their gotchas — the repo-owned redis server, npx version pinning, the Supabase PAT, and why 'claude mcp list' lies. Use when configuring, debugging, or re-creating MCP servers on a new machine."
+---
+
+# MCP servers (local dev tooling)
+
+Five MCP servers are wired for this repo at **local scope** inside `~/.claude.json`. Both `.claude.json` and `.mcp.json` are gitignored, so this config never travels with the repo — it has to be rebuilt per machine, which is why the recipe is here. None of it touches the build or the runtime: `playwright`, `redis`, `render`, `vercel`, `supabase`.
+
+- **redis is repo-owned**: `backend/scripts/redis-mcp.mjs`, read-only (list/get/ttl/stats, no SET/DEL), taking `REDIS_URL` from `backend/.env` so the password isn't duplicated in `~/.claude.json`. It exists because `@gongrzhe/server-redis-mcp@1.0.0` (its only published version) creates the node-redis client with no `pingInterval` and no `reconnectStrategy`: Redis Cloud cuts the idle connection at ~90s, the process exits with `read ETIMEDOUT`, and its tools vanish mid-session without warning.
+- **Pin npx versions** (`@playwright/mcp@0.0.79`, `@supabase/mcp-server-supabase@0.11.0`). `@latest` adds a registry dist-tag lookup on every spawn that pushes cold start past the 30s health-check.
+- **supabase runs `--read-only --project-ref=pcfohplpomrsqflwsyah`** against the production DB (PII) — drop the flag only for an assisted migration. It authenticates with `SUPABASE_ACCESS_TOKEN`, which must be a Supabase **Personal Access Token** (`sbp_…`, Management API scope, from the account's Access Tokens page), *not* the `service_role` key in `backend/.env`. The server boots and advertises its tools with **no valid token at all** — it only fails once a call is made (`Unauthorized`), so a missing or expired token looks exactly like a healthy server until you actually query something. Changing the token means editing `env.SUPABASE_ACCESS_TOKEN` in `~/.claude.json` (or `claude mcp remove` + `claude mcp add supabase -s local -e SUPABASE_ACCESS_TOKEN=sbp_… -- npx -y @supabase/mcp-server-supabase@0.11.0 --read-only --project-ref=pcfohplpomrsqflwsyah`) **and restarting the session**: a live session keeps the value its server process was spawned with.
+- **`claude mcp list` gives false negatives** — it times the boot of every server against one shared 30s budget and has marked `vercel` ✘ and `supabase` "tools fetch failed" while both answered fine in-session. Confirm with a real tool call instead. For supabase, note that `get_project_url` answers *without* a valid token (it's derived from `--project-ref`, never hits the API); `list_tables` is the call that actually proves auth works.
+- The playwright server writes snapshots to `.playwright-mcp/` in the repo root, which is **not** in `.gitignore`.

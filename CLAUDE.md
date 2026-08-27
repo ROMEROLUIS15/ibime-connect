@@ -10,30 +10,15 @@ IBIME Connect — institutional platform for the Mérida state library network (
 
 Three npm workspaces installed independently (no root workspace linking):
 
-- `backend/` — Express 5 (+ helmet, trust proxy) + TypeScript (ESM), tsyringe DI, Vitest. **Node ≥22** (required: `@supabase/supabase-js` 2.110+ needs Node 22's native WebSocket; on Node 20 `createClient` throws at import and the backend won't boot). Dev server on **port 3000** (`PORT` env, default 3000).
-- `frontend/` — React 18 + Vite + shadcn/ui. Dev server on **port 4000** (`strictPort`). The hexagonal (ports/adapters) layering applies to the **assistant path only** — `domain/ports/AssistantPort.ts` → `infrastructure/adapters/BackendAssistantAdapter.ts` → `application/use-cases/AskAssistantUseCase.ts`. Everything else (contact, events) is plain `services/`; don't force new code into the hexagon unless it talks to the assistant. The assistant **UI** is deliberately split: `components/IBIMEAssistant.tsx` owns the chat window plus all client state (messages, `sessionId`, DI of the use-case, focus-trap), while `components/assistant/AssistantLauncher.tsx` is the floating mascot (the institutional **owl**, `assets/buho_8-removebg-preview.png`) + speech-bubble launcher — purely presentational, knows nothing of the chat pipeline, and only signals the parent via `onToggle`. Keep that boundary: launcher = presentation, `IBIMEAssistant` = state/logic.
+- `backend/` — **Node ≥22** (required: `@supabase/supabase-js` 2.110+ needs Node 22's native WebSocket; on Node 20 `createClient` throws at import and the backend won't boot). Dev server on **port 3000** (`PORT` env, default 3000).
+- `frontend/` — Dev server on **port 4000** (`strictPort`). The hexagonal (ports/adapters) layering applies to the **assistant path only** — `domain/ports/AssistantPort.ts` → `infrastructure/adapters/BackendAssistantAdapter.ts` → `application/use-cases/AskAssistantUseCase.ts`. Everything else (contact, events) is plain `services/`; don't force new code into the hexagon unless it talks to the assistant. The assistant **UI** is deliberately split: `components/IBIMEAssistant.tsx` owns the chat window plus all client state (messages, `sessionId`, DI of the use-case, focus-trap), while `components/assistant/AssistantLauncher.tsx` is the floating mascot (the institutional **owl**, `assets/buho_8-removebg-preview.png`) + speech-bubble launcher — purely presentational, knows nothing of the chat pipeline, and only signals the parent via `onToggle`. Keep that boundary: launcher = presentation, `IBIMEAssistant` = state/logic.
 - `shared/` — Zod schemas + domain types imported by both sides via the `@shared/*` path alias. `"type": "module"`.
 
 ## Commands
 
-Run from the repo root:
+Root scripts (`dev`, `lint`, `typecheck`, `test`) fan out to both packages via `--prefix`; see `package.json` and `backend/package.json` for the full set. Both packages run Vitest, so a single test needs the right prefix:
 
 ```bash
-npm run dev         # frontend (:4000) + backend (:3000) concurrently
-npm run lint        # eslint both packages (frontend `eslint .`, backend `eslint . --ext .js,.ts`)
-npm run typecheck   # tsc --noEmit both packages
-npm run test        # vitest run both packages
-```
-
-Backend-specific (prefix or cd):
-
-```bash
-npm run test --prefix backend                 # all backend unit tests (384)
-npm run test:coverage --prefix backend        # v8 coverage
-npm run test:integration --prefix backend     # only *.integration.test.ts (supertest smoke)
-npm run build --prefix backend                # clean + prebuild (copy-shared-zod) + tsc + tsc-alias
-
-# Run a single test file / single test:
 npx vitest run src/__tests__/modules/chat/chat-orchestrator.test.ts --prefix backend
 npx vitest run -t "name of the test" --prefix backend
 ```
@@ -63,12 +48,12 @@ Both sides are pinned to **zod 3** (unified 2026-07): frontend and backend share
 
 ## Chat engine architecture
 
-Entry: `chat.controller.ts` → `ChatService` (thin wrapper) → `ChatOrchestrator.process()` in `backend/src/modules/chat/`. The orchestrator is the whole brain; the LLM only ever drafts text that later layers can override. Pipeline:
+The pipeline spans three directories, all under `backend/src/`: `controllers/chat.controller.ts` → `services/chat.service.ts` (thin wrapper) → `modules/chat/chat-orchestrator.ts`. The split is: gate and policy modules (`intent-classifier.ts`, `response-policy.ts`, `response-guardrail.ts`, `system-prompt.ts`, `email-validator.ts`) live in `modules/chat/`, while everything they call (`rag.service.ts`, `sentiment-analyzer.service.ts`, `session-memory.service.ts`, `verification-throttle.service.ts`, `tools/check_registration.tool.ts`) lives in `services/`. The orchestrator is the whole brain; the LLM only ever drafts text that later layers can override. Pipeline:
 
 1. **IntentClassifier** (`intent-classifier.ts`) — pure regex, no LLM. Priority 0: any email pattern → `registration`. Otherwise `catalog` / `general`.
 2. **SentimentAnalyzerService** — synchronous, <1ms, no I/O. Frustration score ≥2 injects an empathy prefix into the system prompt for Branch B / catalog / general **only** — never Branch A.
 3. Intent switch:
-   - **registration** → Privacy Gate (Redis is the authoritative source of the session email) then **Branch A** (known email: fully deterministic, LLM *not called*, `tokensUsed=0`, gated behind phone-ownership verification) or **Branch B** (unknown email: LLM only asks for the email).
+   - **registration** → Privacy Gate (Redis, via `services/session-memory.service.ts`, is the authoritative source of the session email) then **Branch A** (known email: fully deterministic, LLM *not called*, `tokensUsed=0`, gated behind phone-ownership verification) or **Branch B** (unknown email: LLM only asks for the email).
    - **catalog** → RAG (`rag.service.ts`, fail-hard if similarity < 0.65) → LLM.
    - **general** → greeting hardcoded, else RAG + LLM.
 4. **ResponsePolicy** (`response-policy.ts`) — last gate before output: structural validation + `ResponseGuardrail` (regex blocks user-state hallucinations) + per-intent fallback. Branch A responses are `isDbBacked` and exempt from the guardrail. **Final output is controlled 100% here, never by the LLM.**
@@ -109,10 +94,7 @@ Husky v9: `pre-commit` runs lint-staged (eslint --fix on staged files); `pre-pus
 
 Backend coverage is **gated**, not just reported: `vitest.config.ts` fails the run below 82% statements / 74% branches / 78% functions / 82% lines. Those thresholds are pinned a few points under actual coverage on purpose (to absorb the flake) — raise them when coverage improves, don't lower them to make a run pass.
 
-Three GitHub Actions workflows:
-- `ci.yml` — lint + typecheck + test with dummy env vars, on push/PR to `develop` and `main`. It also runs `npm audit --audit-level=high`, currently `continue-on-error` (advisory only).
-- `e2e.yml` — Playwright Chromium, same triggers.
-- `heartbeat.yml` — cron every 6h, pings Render and Supabase to keep the free tiers from sleeping. Not a quality gate; don't "fix" it by deleting it.
+Three GitHub Actions workflows (`ci.yml`, `e2e.yml`, `heartbeat.yml`); only the last needs explaining. `heartbeat.yml` is a cron every 6h that wakes the Render backend and pings Supabase to keep the free tiers from sleeping — not a quality gate, so don't "fix" it by deleting it. The **real** Render keep-alive is an UptimeRobot HTTP monitor every 14 min, configured outside this repo; nothing in the tree points to it.
 
 ## Deploy targets
 
@@ -122,14 +104,6 @@ Render builds with `rootDir: backend` — that constraint is what forces the sha
 
 There is also a parallel **on-prem** deployment (the free tiers are the public mirror, not the only target): the root `DEPLOYMENT.md` documents a self-hosted Debian server (`192.168.0.41`, public domain `www.ibime.gob.ve`) running the same stack behind nginx with a local Redis. Consult it before assuming Render/Vercel is the only place this runs.
 
-Database schema lives in `supabase/migrations/`.
-
 ## MCP servers (local dev tooling)
 
-Five MCP servers are wired for this repo at **local scope** inside `~/.claude.json`. Both `.claude.json` and `.mcp.json` are gitignored, so this config never travels with the repo — it has to be rebuilt per machine, which is why the recipe is here. None of it touches the build or the runtime: `playwright`, `redis`, `render`, `vercel`, `supabase`.
-
-- **redis is repo-owned**: `backend/scripts/redis-mcp.mjs`, read-only (list/get/ttl/stats, no SET/DEL), taking `REDIS_URL` from `backend/.env` so the password isn't duplicated in `~/.claude.json`. It exists because `@gongrzhe/server-redis-mcp@1.0.0` (its only published version) creates the node-redis client with no `pingInterval` and no `reconnectStrategy`: Redis Cloud cuts the idle connection at ~90s, the process exits with `read ETIMEDOUT`, and its tools vanish mid-session without warning.
-- **Pin npx versions** (`@playwright/mcp@0.0.79`, `@supabase/mcp-server-supabase@0.11.0`). `@latest` adds a registry dist-tag lookup on every spawn that pushes cold start past the 30s health-check.
-- **supabase runs `--read-only --project-ref=pcfohplpomrsqflwsyah`** against the production DB (PII) — drop the flag only for an assisted migration. It authenticates with `SUPABASE_ACCESS_TOKEN`, which must be a Supabase **Personal Access Token** (`sbp_…`, Management API scope, from the account's Access Tokens page), *not* the `service_role` key in `backend/.env`. The server boots and advertises its tools with **no valid token at all** — it only fails once a call is made (`Unauthorized`), so a missing or expired token looks exactly like a healthy server until you actually query something. Changing the token means editing `env.SUPABASE_ACCESS_TOKEN` in `~/.claude.json` (or `claude mcp remove` + `claude mcp add supabase -s local -e SUPABASE_ACCESS_TOKEN=sbp_… -- npx -y @supabase/mcp-server-supabase@0.11.0 --read-only --project-ref=pcfohplpomrsqflwsyah`) **and restarting the session**: a live session keeps the value its server process was spawned with.
-- **`claude mcp list` gives false negatives** — it times the boot of every server against one shared 30s budget and has marked `vercel` ✘ and `supabase` "tools fetch failed" while both answered fine in-session. Confirm with a real tool call instead. For supabase, note that `get_project_url` answers *without* a valid token (it's derived from `--project-ref`, never hits the API); `list_tables` is the call that actually proves auth works.
-- The playwright server writes snapshots to `.playwright-mcp/` in the repo root, which is **not** in `.gitignore`.
+Five servers (`playwright`, `redis`, `render`, `vercel`, `supabase`) are wired for this repo at **local scope** inside `~/.claude.json`. Both `.claude.json` and `.mcp.json` are gitignored, so this config never travels with the repo — it has to be rebuilt per machine. None of it touches the build or the runtime. The full recipe and its gotchas live in the `mcp-setup` skill (`.claude/skills/mcp-setup/SKILL.md`).
