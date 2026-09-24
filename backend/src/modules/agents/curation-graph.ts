@@ -212,21 +212,29 @@ export class CurationGraph {
       }
     }
 
-    // 2. Validación de duplicados en la base de datos Supabase (batch: una sola query)
+    // 2. Validación de duplicados en la base de datos Supabase (batch por columna).
+    // El título real puede estar en la columna `title` (semilla, Koha) o solo en
+    // `metadata.title`: la ingesta de PDF guarda la columna como "{documento} (Parte N)".
     const titles = items
       .map((item) => item.title?.trim())
       .filter((t): t is string => !!t);
 
     if (titles.length > 0) {
       try {
-        const { data, error } = await supabaseClient
-          .from('knowledge_base')
-          .select('title')
-          .in('title', titles);
+        const [byColumn, byMetadata] = await Promise.all([
+          supabaseClient.from('knowledge_base').select('title').in('title', titles),
+          supabaseClient.from('knowledge_base').select('metadata').in('metadata->>title', titles),
+        ]);
 
-        if (error) throw error;
+        if (byColumn.error) throw byColumn.error;
+        if (byMetadata.error) throw byMetadata.error;
 
-        const existingTitles = new Set((data ?? []).map((row: any) => String(row.title)));
+        const existingTitles = new Set<string>(
+          [
+            ...(byColumn.data ?? []).map((row: { title: string | null }) => row.title),
+            ...(byMetadata.data ?? []).map((row: { metadata: { title?: unknown } | null }) => row.metadata?.title),
+          ].filter((t): t is string => typeof t === 'string')
+        );
         for (const item of items) {
           const normalized = item.title?.trim();
           if (normalized && existingTitles.has(normalized)) {
