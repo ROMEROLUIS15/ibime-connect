@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import container from '../infrastructure/di/container.js';
 import { CurationGraph } from '../modules/agents/curation-graph.js';
 import { DocumentProcessorService, DocumentChunk } from '../services/document-processor.service.js';
-import { KnowledgeIngestionService } from '../services/knowledge-ingestion.service.js';
+import { KnowledgeIngestionService, computeDocumentHash } from '../services/knowledge-ingestion.service.js';
 import { contextLogger } from '../infrastructure/logger/index.js';
 import { BadRequestError } from '../domain/errors/app-error.js';
 
@@ -44,13 +44,27 @@ export class AgentController {
         throw new BadRequestError('Debe proveer el texto del documento a analizar en el cuerpo (text).');
       }
 
+      const shouldIngest = req.file || req.body.ingest === true;
+      const documentHash = computeDocumentHash(text);
+
+      // ── 0. Idempotencia: el mismo documento no se cura ni se ingiere dos veces ─
+      // Evita duplicar el contenido en knowledge_base y gastar cuota del LLM.
+      if (shouldIngest && (await this.ingestionService.isDocumentIngested(documentHash, requestId))) {
+        logger.info('Documento ya ingerido (mismo document_hash). Se omiten curación e ingesta.');
+        return res.status(200).json({
+          success: false,
+          iterations: 0,
+          conflicts: ['Este documento ya fue ingerido en la base de conocimiento; no se volvió a procesar.'],
+          items: [],
+        });
+      }
+
       // ── 1. Ejecutar el Grafo de Curación de LangGraph ──────────────────────
       const curationResult = await this.curationGraph.curate(text, requestId);
 
       let ingestionResult = null;
 
       // ── 2. Ingesta Automática en Supabase si fue Aprobado ──────────────────
-      const shouldIngest = req.file || req.body.ingest === true;
       if (curationResult.approved && shouldIngest && curationResult.extractedItems?.length > 0) {
         logger.info('Curación aprobada. Iniciando ingesta en Supabase (knowledge_base)...');
         
@@ -63,7 +77,8 @@ export class AgentController {
             title: item.title,
             category: item.category,
             source: 'langgraph_curator',
-            originalIndex: idx
+            originalIndex: idx,
+            document_hash: documentHash
           }
         }));
 

@@ -6,6 +6,7 @@ const mocks = vi.hoisted(() => ({
   updateResult: { error: null as any },
   insertSpy: vi.fn(),
   updateSpy: vi.fn(),
+  eqSpy: vi.fn(),
   getEmbedding: vi.fn(),
 }));
 
@@ -13,9 +14,10 @@ vi.mock('../../config/supabase.config.js', () => ({
   supabaseClient: {
     from: () => ({
       select: () => ({
-        eq: () => ({
-          limit: () => Promise.resolve(mocks.selectResult),
-        }),
+        eq: (column: string, value: unknown) => {
+          mocks.eqSpy(column, value);
+          return { limit: () => Promise.resolve(mocks.selectResult) };
+        },
       }),
       insert: (payload: any) => {
         mocks.insertSpy(payload);
@@ -35,7 +37,7 @@ vi.mock('../../services/embedding.service.js', () => ({
   },
 }));
 
-import { KnowledgeIngestionService } from '../../services/knowledge-ingestion.service.js';
+import { KnowledgeIngestionService, computeDocumentHash } from '../../services/knowledge-ingestion.service.js';
 
 // --- Constants ----------------------------------------------------------------
 
@@ -123,6 +125,43 @@ describe('KnowledgeIngestionService.upsertKohaItems', () => {
     expect(result.inserted).toBe(0);
     expect(result.updated).toBe(0);
     expect(result.skipped).toBe(0);
+  });
+});
+
+describe('KnowledgeIngestionService.isDocumentIngested (RAG-06)', () => {
+  let service: KnowledgeIngestionService;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.selectResult = { data: [], error: null };
+    service = new KnowledgeIngestionService();
+  });
+
+  it('should look up chunks by metadata.document_hash and return true when one exists', async () => {
+    mocks.selectResult = { data: [{ id: 7 }], error: null };
+
+    await expect(service.isDocumentIngested('abc123')).resolves.toBe(true);
+    expect(mocks.eqSpy).toHaveBeenCalledWith('metadata->>document_hash', 'abc123');
+  });
+
+  it('should return false when no chunk has that document hash', async () => {
+    await expect(service.isDocumentIngested('abc123')).resolves.toBe(false);
+  });
+
+  it('should throw when the lookup fails instead of assuming the document is new', async () => {
+    mocks.selectResult = { data: [], error: { message: 'DB caida' } };
+
+    await expect(service.isDocumentIngested('abc123')).rejects.toThrow();
+  });
+});
+
+describe('computeDocumentHash (RAG-06)', () => {
+  it('should be stable for the same text regardless of surrounding whitespace', () => {
+    expect(computeDocumentHash('  Catalogo IBIME 2026\n')).toBe(computeDocumentHash('Catalogo IBIME 2026'));
+  });
+
+  it('should differ when the document text differs', () => {
+    expect(computeDocumentHash('Catalogo IBIME 2026')).not.toBe(computeDocumentHash('Catalogo IBIME 2027'));
   });
 });
 

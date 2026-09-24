@@ -1,5 +1,6 @@
-﻿import { describe, it, expect, vi, beforeEach } from 'vitest';
+﻿import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { AgentController } from '../../controllers/agent.controller.js';
+import { KnowledgeIngestionService, computeDocumentHash } from '../../services/knowledge-ingestion.service.js';
 import type { CurationGraph } from '../../modules/agents/curation-graph.js';
 import type { Request, Response, NextFunction } from 'express';
 
@@ -84,6 +85,53 @@ describe('AgentController', () => {
         })
       );
       expect(mockNext).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('handleCurationRequest — document idempotency (RAG-06)', () => {
+    const DOCUMENT_TEXT = 'Catalogo completo de talleres del IBIME';
+    const ingestRequest = () => ({ body: { text: DOCUMENT_TEXT, ingest: true } }) as Request;
+
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    it('should skip curation and ingestion when the same document was already ingested', async () => {
+      const lookupSpy = vi.spyOn(KnowledgeIngestionService.prototype, 'isDocumentIngested').mockResolvedValue(true);
+      const ingestSpy = vi.spyOn(KnowledgeIngestionService.prototype, 'ingestChunks').mockResolvedValue({ success: 1, errors: 0 });
+
+      await controller.handleCurationRequest(ingestRequest(), mockRes as Response, mockNext);
+
+      expect(lookupSpy).toHaveBeenCalledWith(computeDocumentHash(DOCUMENT_TEXT), undefined);
+      expect(mockCurationGraph.curate).not.toHaveBeenCalled();
+      expect(ingestSpy).not.toHaveBeenCalled();
+      expect(mockRes.status).toHaveBeenCalledWith(200);
+      expect(mockRes.json).toHaveBeenCalledWith(expect.objectContaining({ success: false, items: [] }));
+      expect(mockNext).not.toHaveBeenCalled();
+    });
+
+    it('should tag every ingested chunk with the document hash when the document is new', async () => {
+      vi.spyOn(KnowledgeIngestionService.prototype, 'isDocumentIngested').mockResolvedValue(false);
+      const ingestSpy = vi.spyOn(KnowledgeIngestionService.prototype, 'ingestChunks').mockResolvedValue({ success: 1, errors: 0 });
+
+      await controller.handleCurationRequest(ingestRequest(), mockRes as Response, mockNext);
+
+      expect(mockCurationGraph.curate).toHaveBeenCalledWith(DOCUMENT_TEXT, undefined);
+      const [chunks] = ingestSpy.mock.calls[0];
+      expect(chunks).toHaveLength(1);
+      expect(chunks[0].metadata).toMatchObject({
+        title: CURATED_ITEM.title,
+        document_hash: computeDocumentHash(DOCUMENT_TEXT),
+      });
+    });
+
+    it('should not look up the document hash for a curation-only request (no ingestion)', async () => {
+      const lookupSpy = vi.spyOn(KnowledgeIngestionService.prototype, 'isDocumentIngested');
+
+      await controller.handleCurationRequest({ body: { text: DOCUMENT_TEXT } } as Request, mockRes as Response, mockNext);
+
+      expect(lookupSpy).not.toHaveBeenCalled();
+      expect(mockCurationGraph.curate).toHaveBeenCalled();
     });
   });
 });

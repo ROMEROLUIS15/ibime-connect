@@ -11,8 +11,35 @@ export interface KohaUpsertResult {
   errors: number;
 }
 
+/**
+ * Hash estable del texto de un documento: clave de idempotencia de la ingesta.
+ * Se guarda como metadata.document_hash en cada chunk del documento.
+ */
+export function computeDocumentHash(text: string): string {
+  return createHash('sha256').update(text.trim()).digest('hex');
+}
+
 export class KnowledgeIngestionService {
   private embeddingService = new EmbeddingService();
+
+  /**
+   * Indica si ya existe algún chunk ingerido de este documento (mismo document_hash).
+   * Lanza si la consulta falla: sin poder verificarlo, no se ingiere a ciegas.
+   */
+  async isDocumentIngested(documentHash: string, requestId?: string): Promise<boolean> {
+    const { data, error } = await supabaseClient
+      .from('knowledge_base')
+      .select('id')
+      .eq('metadata->>document_hash', documentHash)
+      .limit(1);
+
+    if (error) {
+      contextLogger(requestId).error('No se pudo verificar si el documento ya fue ingerido', { error: error.message });
+      throw new Error('No se pudo verificar si el documento ya fue ingerido', { cause: error });
+    }
+
+    return (data ?? []).length > 0;
+  }
 
   /**
    * Ingesta idempotente de ítems del catálogo de Koha (vía webhook n8n).
