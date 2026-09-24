@@ -1,7 +1,9 @@
 import { createHash } from 'crypto';
 import { supabaseClient } from '../config/supabase.config.js';
 import { contextLogger } from '../infrastructure/logger/index.js';
+import { CacheService } from '../infrastructure/cache/cache.service.js';
 import { EmbeddingService } from './embedding.service.js';
+import { RAG_CONTEXT_CACHE_PREFIX } from './rag.service.js';
 import type { DocumentChunk } from './document-processor.service.js';
 
 export interface KohaUpsertResult {
@@ -21,6 +23,16 @@ export function computeDocumentHash(text: string): string {
 
 export class KnowledgeIngestionService {
   private embeddingService = new EmbeddingService();
+  private cacheService = new CacheService();
+
+  /**
+   * Tras escribir en knowledge_base, las respuestas RAG cacheadas pueden estar
+   * obsoletas: se borran solo las claves rag:* (nunca flushDb, que se llevaría
+   * sesiones, throttle de verificación y contadores de cuota).
+   */
+  private async invalidateRagCache(requestId?: string): Promise<void> {
+    await this.cacheService.deleteByPrefix(RAG_CONTEXT_CACHE_PREFIX, requestId);
+  }
 
   /**
    * Indica si ya existe algún chunk ingerido de este documento (mismo document_hash).
@@ -129,6 +141,7 @@ export class KnowledgeIngestionService {
     }
 
     logger.info('Upsert de Koha finalizado', { inserted, updated, skipped, errors });
+    if (inserted + updated > 0) await this.invalidateRagCache(requestId);
     return { inserted, updated, skipped, errors };
   }
 
@@ -186,6 +199,7 @@ export class KnowledgeIngestionService {
     }
 
     logger.info(`Ingesta finalizada para ${documentTitle}`, { successCount, errorCount });
+    if (successCount > 0) await this.invalidateRagCache(requestId);
     return { success: successCount, errors: errorCount };
   }
 }

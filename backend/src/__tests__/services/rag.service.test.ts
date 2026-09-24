@@ -1,5 +1,5 @@
 ﻿import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { RAGService } from '../../services/rag.service.js';
+import { RAGService, RAG_CONTEXT_CACHE_PREFIX } from '../../services/rag.service.js';
 import type { IEmbeddingService, IKnowledgeRepository } from '../../domain/interfaces/index.js';
 
 vi.mock('../../infrastructure/cache/cache.service.js', () => ({
@@ -8,6 +8,7 @@ vi.mock('../../infrastructure/cache/cache.service.js', () => ({
     set = vi.fn();
     del = vi.fn();
     clear = vi.fn();
+    deleteByPrefix = vi.fn();
   },
 }));
 
@@ -85,6 +86,31 @@ describe('RAGService', () => {
       // Assert
       expect(result.sources).toEqual([]);
       expect(result.context).toBe('');
+    });
+  });
+
+  describe('retrieveContext — cache key (RAG-07)', () => {
+    const ragKeysWritten = () =>
+      vi.mocked(service.cacheService.set).mock.calls
+        .map(([key]) => key as string)
+        .filter((key) => key.startsWith(RAG_CONTEXT_CACHE_PREFIX));
+
+    it.each([
+      ['matchCount', { matchCount: 5 }, { matchCount: 3 }],
+      ['threshold', { threshold: 0.7 }, { threshold: 0.8 }],
+    ])('should cache the same message under different keys when %s differs', async (_param, first, second) => {
+      await service.retrieveContext('Que servicios?', first);
+      await service.retrieveContext('Que servicios?', second);
+
+      const keys = ragKeysWritten();
+      expect(keys).toHaveLength(2);
+      expect(keys[0]).not.toBe(keys[1]);
+    });
+
+    it('should keep every RAG context key under the prefix that ingestion invalidates', async () => {
+      await service.retrieveContext('Que servicios?');
+
+      expect(ragKeysWritten()).toHaveLength(1);
     });
   });
 });

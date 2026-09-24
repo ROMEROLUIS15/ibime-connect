@@ -8,6 +8,15 @@ const mocks = vi.hoisted(() => ({
   updateSpy: vi.fn(),
   eqSpy: vi.fn(),
   getEmbedding: vi.fn(),
+  deleteByPrefix: vi.fn(),
+}));
+
+vi.mock('../../infrastructure/cache/cache.service.js', () => ({
+  CacheService: class {
+    get = vi.fn();
+    set = vi.fn();
+    deleteByPrefix = mocks.deleteByPrefix;
+  },
 }));
 
 vi.mock('../../config/supabase.config.js', () => ({
@@ -38,6 +47,7 @@ vi.mock('../../services/embedding.service.js', () => ({
 }));
 
 import { KnowledgeIngestionService, computeDocumentHash } from '../../services/knowledge-ingestion.service.js';
+import { RAG_CONTEXT_CACHE_PREFIX } from '../../services/rag.service.js';
 
 // --- Constants ----------------------------------------------------------------
 
@@ -152,6 +162,50 @@ describe('KnowledgeIngestionService.isDocumentIngested (RAG-06)', () => {
     mocks.selectResult = { data: [], error: { message: 'DB caida' } };
 
     await expect(service.isDocumentIngested('abc123')).rejects.toThrow();
+  });
+});
+
+describe('KnowledgeIngestionService — RAG cache invalidation (RAG-07)', () => {
+  let service: KnowledgeIngestionService;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.selectResult = { data: [], error: null };
+    mocks.insertResult = { error: null };
+    mocks.getEmbedding.mockResolvedValue([0.1, 0.2, 0.3]);
+    service = new KnowledgeIngestionService();
+  });
+
+  it('should invalidate the RAG cache after a Koha sync that wrote items', async () => {
+    await service.upsertKohaItems([BOOK_ITEM]);
+
+    expect(mocks.deleteByPrefix).toHaveBeenCalledOnce();
+    expect(mocks.deleteByPrefix).toHaveBeenCalledWith(RAG_CONTEXT_CACHE_PREFIX, undefined);
+  });
+
+  it('should not invalidate the RAG cache when every Koha item was skipped', async () => {
+    mocks.selectResult = {
+      data: [{ id: 5, metadata: { koha_id: '1', content_hash: SAMPLE_CONTENT_HASH } }],
+      error: null,
+    };
+
+    await service.upsertKohaItems([BOOK_ITEM]);
+
+    expect(mocks.deleteByPrefix).not.toHaveBeenCalled();
+  });
+
+  it('should invalidate the RAG cache after ingesting at least one chunk', async () => {
+    await service.ingestChunks([{ content: 'Taller de lectura para ninos' }], 'catalogo', 'Catalogo.pdf');
+
+    expect(mocks.deleteByPrefix).toHaveBeenCalledWith(RAG_CONTEXT_CACHE_PREFIX, undefined);
+  });
+
+  it('should not invalidate the RAG cache when no chunk could be written', async () => {
+    mocks.insertResult = { error: { message: 'DB caida' } };
+
+    await service.ingestChunks([{ content: 'Taller de lectura para ninos' }], 'catalogo', 'Catalogo.pdf');
+
+    expect(mocks.deleteByPrefix).not.toHaveBeenCalled();
   });
 });
 
