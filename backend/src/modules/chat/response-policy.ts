@@ -30,6 +30,15 @@ const FALLBACKS: Record<ChatIntent, string> = {
 };
 
 /**
+ * Returns the intent-specific fallback without running any validation.
+ * Used by flows that must short-circuit before calling the LLM (e.g. a RAG miss
+ * in the catalog flow), so the deterministic answer stays defined in one place.
+ */
+export function getIntentFallback(intent: ChatIntent): string {
+  return FALLBACKS[intent];
+}
+
+/**
  * Hallucination-specific fallback — used when guardrail blocks a response.
  * This message is neutral and safe for any flow.
  */
