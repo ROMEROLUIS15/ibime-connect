@@ -309,6 +309,21 @@ describe('ChatOrchestrator', () => {
   });
 
   // ---------------------------------------------------------------------------
+  describe('RAG context instruction (RAG-04)', () => {
+    it('should not authorize answering from the model own knowledge when the context does not cover the question', async () => {
+      await orchestrator.process({ userMessage: 'Que cursos tienen?', conversationHistory: [] });
+
+      const systemPrompt = vi.mocked(mockLLMProvider.generateAnswer).mock.calls[0][0][0].content;
+      const instructionAfterContext = systemPrompt.slice(systemPrompt.indexOf(RAG_HIT.context) + RAG_HIT.context.length);
+
+      expect(systemPrompt).toContain(RAG_HIT.context);
+      expect(instructionAfterContext).not.toMatch(/conocimiento institucional/i);
+      expect(instructionAfterContext).toMatch(/no completes con conocimiento propio/i);
+      expect(instructionAfterContext).toMatch(/canales de contacto/i);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
   describe('intent classification routing', () => {
     it('should route a catalog query ("que cursos tienen") to RAG', async () => {
       await orchestrator.process({ userMessage: 'Que cursos tienen?', conversationHistory: [] });

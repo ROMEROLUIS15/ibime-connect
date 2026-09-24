@@ -663,7 +663,9 @@ export class ChatOrchestrator {
 
   private formatRagContextForPrompt(ragContext: string): string {
     if (!ragContext || ragContext.trim() === '') return '';
-    return `\n\n${ragContext}\n\nUtiliza la información anterior como referencia para responder con precisión. Si no es relevante para la pregunta del usuario, responde con tu conocimiento institucional.`;
+    // Instrucción cerrada: sin fuentes que cubran la pregunta, derivar a contacto en
+    // lugar de completar con conocimiento paramétrico del modelo.
+    return `\n\n${ragContext}\n\nUtiliza la información anterior como referencia para responder con precisión. Si ni esta información ni los datos institucionales de este prompt responden la pregunta del usuario, no completes con conocimiento propio: dilo con honestidad y deriva a los canales de contacto indicados arriba.`;
   }
 
   /**
