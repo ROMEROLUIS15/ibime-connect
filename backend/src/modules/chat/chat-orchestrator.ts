@@ -23,7 +23,7 @@ import type { ILLMProvider, LLMMessage } from '../../domain/interfaces/index.js'
 import { inject, injectable } from 'tsyringe';
 import { createHash } from 'crypto';
 import { classifyIntent } from './intent-classifier.js';
-import { applyResponsePolicy, type ChatIntent as PolicyIntent } from './response-policy.js';
+import { applyResponsePolicy, getIntentFallback, type ChatIntent as PolicyIntent } from './response-policy.js';
 import { contextLogger } from '../../infrastructure/logger/index.js';
 import { wrapChain } from '../../infrastructure/observability/tracing.js';
 import { CHAT_SYSTEM_PROMPT } from './system-prompt.js';
@@ -404,6 +404,13 @@ export class ChatOrchestrator {
       maxSimilarity: ragResult.maxSimilarity,
       sourceCount: ragResult.sources.length,
     });
+
+    // Fail-hard: sin contexto recuperado el LLM solo podría inventar cursos o libros,
+    // y una invención plausible pasa la ResponsePolicy. Respuesta determinista.
+    if (!ragResult.hit) {
+      logger.info('RAG miss (fail-hard) — returning catalog fallback without LLM call');
+      return { answer: getIntentFallback('catalog'), sources: [], tokensUsed: 0 };
+    }
 
     const empathyPrefix = isFrustrated ? EMPATHY_ALERT : '';
     const systemPrompt = empathyPrefix + CHAT_SYSTEM_PROMPT + this.formatRagContextForPrompt(ragResult.context);
