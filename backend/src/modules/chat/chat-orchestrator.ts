@@ -522,7 +522,7 @@ export class ChatOrchestrator {
     const systemPrompt =
       empathyPrefix +
       CHAT_SYSTEM_PROMPT +
-      '\n\nNota: No se encontró información específica en la base de conocimientos para esta consulta. Responde con tu conocimiento institucional general o indica amablemente que no tienes esa información disponible.';
+      '\n\nNota: No se encontró información específica en la base de conocimientos para esta consulta. Responde solo con los datos institucionales de este prompt; si no cubren la pregunta, no completes con conocimiento propio: indícalo amablemente y deriva a los canales de contacto indicados arriba.';
     const trimmedHistory = this.trimHistory(conversationHistory);
 
     const messages: LLMMessage[] = [

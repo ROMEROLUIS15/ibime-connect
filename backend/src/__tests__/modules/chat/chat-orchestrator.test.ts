@@ -4,6 +4,7 @@ import type { ILLMProvider } from '../../../domain/interfaces/index.js';
 import type { RAGService } from '../../../services/rag.service.js';
 import { ToolRegistry } from '../../../services/tools.service.js';
 import { getIntentFallback } from '../../../modules/chat/response-policy.js';
+import { CHAT_SYSTEM_PROMPT } from '../../../modules/chat/system-prompt.js';
 
 // --- Fixtures -----------------------------------------------------------------
 
@@ -320,6 +321,20 @@ describe('ChatOrchestrator', () => {
       expect(instructionAfterContext).not.toMatch(/conocimiento institucional/i);
       expect(instructionAfterContext).toMatch(/no completes con conocimiento propio/i);
       expect(instructionAfterContext).toMatch(/canales de contacto/i);
+    });
+
+    it('should not authorize answering from the model own knowledge in the general fallback (RAG miss)', async () => {
+      vi.mocked(mockRAGService.retrieveContext).mockResolvedValue(RAG_MISS);
+
+      await orchestrator.process({ userMessage: 'Donde queda la sede del IBIME?', conversationHistory: [] });
+
+      const systemPrompt = vi.mocked(mockLLMProvider.generateAnswer).mock.calls[0][0][0].content;
+      const fallbackNote = systemPrompt.slice(systemPrompt.indexOf(CHAT_SYSTEM_PROMPT) + CHAT_SYSTEM_PROMPT.length);
+
+      expect(systemPrompt).toContain(CHAT_SYSTEM_PROMPT);
+      expect(fallbackNote).not.toMatch(/conocimiento institucional/i);
+      expect(fallbackNote).toMatch(/no completes con conocimiento propio/i);
+      expect(fallbackNote).toMatch(/canales de contacto/i);
     });
   });
 
