@@ -37,22 +37,23 @@ raíz.
 > Actualizado el 2026-09-24. Los hallazgos de más abajo se conservan tal como se
 > midieron el 2026-08-26; esta tabla solo registra qué se hizo con cada uno.
 
-Las migraciones **no se aplican solas**: RAG-01 y RAG-10 están en `develop` pero
-hay que aplicarlas a mano en Supabase, en ese orden. Hasta aplicar RAG-01, la
-recuperación en producción sigue rota.
+Las migraciones de RAG-01 y RAG-10 se **aplicaron en producción el 2026-09-24**,
+en ese orden, y quedaron registradas en `supabase_migrations.schema_migrations`
+con la versión de su archivo (un `supabase db push` no las reaplica). El resto de
+las correcciones está en `develop` y llega a producción al promover `develop` → `main`.
 
 | ID | Severidad | Estado | PR | Notas |
 | --- | --- | --- | --- | --- |
-| RAG-01 | CRÍTICO | En `develop` · **migración pendiente en prod** | [#139](https://github.com/ROMEROLUIS15/ibime-connect/pull/139) | Se elimina el índice; HNSW cuando la tabla supere ~1.000 filas. |
-| RAG-02 | ALTO | Abierto | — | Cargar el catálogo real después de aplicar RAG-01. |
+| RAG-01 | CRÍTICO | En `develop` · **aplicada en prod** (2026-09-24) | [#139](https://github.com/ROMEROLUIS15/ibime-connect/pull/139) | Se elimina el índice; HNSW cuando la tabla supere ~1.000 filas. Control en prod tras aplicarla: 6 de 6 filas recuperables por documento (antes 5, 1, 5, 5, 5, 5). |
+| RAG-02 | ALTO | Abierto | — | Cargar el catálogo real (RAG-01 ya está aplicada). |
 | RAG-03 | ALTO | En `develop` | [#140](https://github.com/ROMEROLUIS15/ibime-connect/pull/140) | Sin `hit`, fallback determinista de `catalog` sin llamar al LLM. |
 | RAG-04 | ALTO | En `develop` | [#141](https://github.com/ROMEROLUIS15/ibime-connect/pull/141) | El mismo criterio se aplicó a la nota del fallback `general` sin fuentes ([#142](https://github.com/ROMEROLUIS15/ibime-connect/pull/142)). |
-| RAG-05 | ALTO | Abierto | — | Recalibrar con el índice sano y el corpus real (después de RAG-01 y RAG-02). |
+| RAG-05 | ALTO | Abierto | — | Recalibrar con el índice sano y el corpus real (después de RAG-02). |
 | RAG-06 | MEDIO | En `develop` | [#143](https://github.com/ROMEROLUIS15/ibime-connect/pull/143), [#146](https://github.com/ROMEROLUIS15/ibime-connect/pull/146) | Además de comparar contra `metadata.title`: el corrector renombraba los duplicados y se insertaban igual, así que se añadió idempotencia por `metadata.document_hash`. #146 revierte el documento completo si la ingesta falla a medias. |
 | RAG-07 | MEDIO | En `develop` | [#144](https://github.com/ROMEROLUIS15/ibime-connect/pull/144) | Se borra solo `rag:*` tras cada ingesta con escrituras. No se usa `flushDb`: en la misma base viven sesiones, throttle anti fuerza bruta y cuotas de Groq. |
 | RAG-08 | MEDIO | En `develop` | [#145](https://github.com/ROMEROLUIS15/ibime-connect/pull/145) | Webhook de Koha limitado a 50 ítems por petición (413 si se supera). El caso PDF no aplica: se ingieren los ítems curados, acotados por `maxTokens`. |
 | RAG-09 | MEDIO | Sin cambios | — | `chunkText` no se usa en ninguna ruta de producción. |
-| RAG-10 | BAJO | En `develop` · **migración pendiente en prod** | [#147](https://github.com/ROMEROLUIS15/ibime-connect/pull/147) | Falla si `ibime_knowledge` tiene filas. Revoca `EXECUTE` de `match_knowledge` a `public` y `anon`. |
+| RAG-10 | BAJO | En `develop` · **aplicada en prod** (2026-09-24) | [#147](https://github.com/ROMEROLUIS15/ibime-connect/pull/147) | Falla si `ibime_knowledge` tiene filas (en prod tenía 0). Revoca `EXECUTE` de `match_knowledge` a `public` y `anon`; `service_role` lo sigue ejecutando. Efecto colateral: `supabase_read_only_user` (el rol del MCP en modo solo lectura) lo tenía solo vía `PUBLIC` y ya no puede ejecutarlo; el backend no se ve afectado. |
 | RAG-11 | BAJO | En `develop` | [#148](https://github.com/ROMEROLUIS15/ibime-connect/pull/148) | Cada fix trajo sus tests; #148 cubre el fail-hard por umbral. |
 
 ---
