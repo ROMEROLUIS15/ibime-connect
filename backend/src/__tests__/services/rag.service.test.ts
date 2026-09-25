@@ -1,6 +1,6 @@
 ﻿import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { RAGService, RAG_CONTEXT_CACHE_PREFIX } from '../../services/rag.service.js';
-import type { IEmbeddingService, IKnowledgeRepository } from '../../domain/interfaces/index.js';
+import type { IEmbeddingService, IKnowledgeRepository, KnowledgeMatch } from '../../domain/interfaces/index.js';
 
 vi.mock('../../infrastructure/cache/cache.service.js', () => ({
   CacheService: class {
@@ -111,6 +111,51 @@ describe('RAGService', () => {
       await service.retrieveContext('Que servicios?');
 
       expect(ragKeysWritten()).toHaveLength(1);
+    });
+  });
+
+  describe('retrieveContext — fail-hard by similarity threshold (RAG-11)', () => {
+    const MIN_VALID_THRESHOLD = 0.65;
+
+    const matchWith = (similarity: number, id = '1'): KnowledgeMatch => ({
+      id,
+      category: 'servicio',
+      title: `Doc ${id}`,
+      content: `Content ${id}`,
+      similarity,
+    });
+
+    it('should reject every source when the best similarity is below the minimum, even if the repository returns matches', async () => {
+      vi.mocked(mockKnowledgeRepository.matchKnowledge).mockResolvedValueOnce([matchWith(0.64), matchWith(0.5, '2')]);
+
+      const result = await service.retrieveContext('Que servicios?');
+
+      expect(result).toEqual({ context: '', sources: [], maxSimilarity: 0.64, hit: false });
+    });
+
+    it('should not cache a fail-hard result', async () => {
+      vi.mocked(mockKnowledgeRepository.matchKnowledge).mockResolvedValueOnce([matchWith(0.64)]);
+
+      await service.retrieveContext('Que servicios?');
+
+      const ragWrites = vi.mocked(service.cacheService.set).mock.calls
+        .filter(([key]) => (key as string).startsWith(RAG_CONTEXT_CACHE_PREFIX));
+      expect(ragWrites).toHaveLength(0);
+    });
+
+    it('should accept the sources when the best similarity is exactly the minimum', async () => {
+      vi.mocked(mockKnowledgeRepository.matchKnowledge).mockResolvedValueOnce([matchWith(MIN_VALID_THRESHOLD)]);
+
+      const result = await service.retrieveContext('Que servicios?');
+
+      expect(result.hit).toBe(true);
+      expect(result.sources).toHaveLength(1);
+    });
+
+    it('should never ask the repository for a threshold below the minimum', async () => {
+      await service.retrieveContext('Que servicios?', { threshold: 0.3 });
+
+      expect(mockKnowledgeRepository.matchKnowledge).toHaveBeenCalledWith(SAMPLE_EMBEDDING, 5, MIN_VALID_THRESHOLD, undefined);
     });
   });
 });
