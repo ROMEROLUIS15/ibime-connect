@@ -212,10 +212,20 @@ respuesta está limitada a **800 tokens**. De ahí salen dos límites:
   caracteres por token) más 800 de respuesta. Un documento de más de unos 20.000
   caracteres no entra, y si hubo otras llamadas en ese minuto el margen es menor.
 
-En los dos casos el conflicto que devuelve es *«Fallo al estructurar o interpretar
-la información extraída (JSON Parsing Error)»*. Para evitarlo, **parte los PDF
-largos** en documentos de una página o sección, con pocos ítems cada uno, y espera
-alrededor de un minuto entre subidas.
+Para evitarlos, **parte los PDF largos** en documentos de una página o sección, con
+pocos ítems cada uno, y espera alrededor de un minuto entre subidas.
+
+Si la curación falla, el conflicto dice la causa (los del corrector llevan el prefijo
+«Agente Corrector:»):
+
+| Conflicto | Qué pasó | Qué hacer |
+| --- | --- | --- |
+| «Se agotó el presupuesto por minuto de Groq: reintenta en N s…» | El texto no entró en los 6.400 tokens/minuto, o hubo otras llamadas en ese minuto | Esperar N segundos; si el documento es largo, dividirlo |
+| «Se alcanzó la cuota diaria de Groq…» | Se agotó la cuota del día | Reintentar al día siguiente |
+| «La respuesta del LLM se cortó en el límite de 800 tokens…» | Demasiados ítems en el documento | Dividirlo en documentos con menos ítems |
+| «El LLM devolvió una respuesta vacía…» | Groq no devolvió contenido | Reintentar; si se repite, dividir el documento |
+| «Fallo al llamar al LLM: …» | Error de Groq o de red (5xx, timeout) | Reintentar más tarde |
+| «Fallo al estructurar o interpretar la información extraída (JSON Parsing Error)» | La respuesta llegó completa pero no es JSON válido | Reintentar; si se repite, simplificar el texto |
 
 ### Método 3 — Script de seed (información institucional base)
 
