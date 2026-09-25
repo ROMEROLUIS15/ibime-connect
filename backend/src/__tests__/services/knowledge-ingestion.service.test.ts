@@ -4,9 +4,11 @@ const mocks = vi.hoisted(() => ({
   selectResult: { data: [] as any[], error: null as any },
   insertResult: { error: null as any },
   updateResult: { error: null as any },
+  deleteResult: { error: null as { message: string } | null, count: 0 as number | null },
   insertSpy: vi.fn(),
   updateSpy: vi.fn(),
   eqSpy: vi.fn(),
+  deleteEqSpy: vi.fn(),
   getEmbedding: vi.fn(),
   deleteByPrefix: vi.fn(),
 }));
@@ -36,6 +38,12 @@ vi.mock('../../config/supabase.config.js', () => ({
         mocks.updateSpy(payload);
         return { eq: () => Promise.resolve(mocks.updateResult) };
       },
+      delete: () => ({
+        eq: (column: string, value: unknown) => {
+          mocks.deleteEqSpy(column, value);
+          return Promise.resolve(mocks.deleteResult);
+        },
+      }),
     }),
   },
 }));
@@ -206,6 +214,43 @@ describe('KnowledgeIngestionService — RAG cache invalidation (RAG-07)', () => 
     await service.ingestChunks([{ content: 'Taller de lectura para ninos' }], 'catalogo', 'Catalogo.pdf');
 
     expect(mocks.deleteByPrefix).not.toHaveBeenCalled();
+  });
+});
+
+describe('KnowledgeIngestionService.deleteDocumentChunks (rollback de ingesta parcial)', () => {
+  let service: KnowledgeIngestionService;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.deleteResult = { error: null, count: 0 };
+    service = new KnowledgeIngestionService();
+  });
+
+  it('should delete every chunk of the document by metadata.document_hash and return how many', async () => {
+    mocks.deleteResult = { error: null, count: 3 };
+
+    await expect(service.deleteDocumentChunks('abc123')).resolves.toBe(3);
+    expect(mocks.deleteEqSpy).toHaveBeenCalledWith('metadata->>document_hash', 'abc123');
+  });
+
+  it('should invalidate the RAG cache when chunks were deleted', async () => {
+    mocks.deleteResult = { error: null, count: 2 };
+
+    await service.deleteDocumentChunks('abc123');
+
+    expect(mocks.deleteByPrefix).toHaveBeenCalledWith(RAG_CONTEXT_CACHE_PREFIX, undefined);
+  });
+
+  it('should not invalidate the RAG cache when nothing was deleted', async () => {
+    await service.deleteDocumentChunks('abc123');
+
+    expect(mocks.deleteByPrefix).not.toHaveBeenCalled();
+  });
+
+  it('should throw when the delete fails so the caller can report the half-ingested document', async () => {
+    mocks.deleteResult = { error: { message: 'DB caida' }, count: null };
+
+    await expect(service.deleteDocumentChunks('abc123')).rejects.toThrow();
   });
 });
 

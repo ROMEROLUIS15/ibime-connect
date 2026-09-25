@@ -54,6 +54,28 @@ export class KnowledgeIngestionService {
   }
 
   /**
+   * Borra todos los chunks de un documento (mismo document_hash). Revierte una
+   * ingesta parcial: sin esto, los chunks que sí se escribieron bloquearían
+   * volver a subir el documento (isDocumentIngested daría true).
+   * Lanza si el borrado falla, para que el llamador informe el documento a medias.
+   */
+  async deleteDocumentChunks(documentHash: string, requestId?: string): Promise<number> {
+    const { error, count } = await supabaseClient
+      .from('knowledge_base')
+      .delete({ count: 'exact' })
+      .eq('metadata->>document_hash', documentHash);
+
+    if (error) {
+      contextLogger(requestId).error('No se pudieron borrar los chunks del documento', { error: error.message });
+      throw new Error('No se pudieron borrar los chunks del documento', { cause: error });
+    }
+
+    const deleted = count ?? 0;
+    if (deleted > 0) await this.invalidateRagCache(requestId);
+    return deleted;
+  }
+
+  /**
    * Ingesta idempotente de ítems del catálogo de Koha (vía webhook n8n).
    *
    * Para cada ítem:

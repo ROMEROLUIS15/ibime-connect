@@ -99,6 +99,30 @@ export class AgentController {
 
       if (ingestionResult !== null) {
         responseBody.ingestion = ingestionResult;
+
+        // ── 3. Todo o nada: si falló algún chunk, se revierte el documento ─────
+        // Los chunks ya escritos llevan document_hash y bloquearían volver a subirlo.
+        if (ingestionResult.errors > 0) {
+          const total = ingestionResult.success + ingestionResult.errors;
+          responseBody.success = false;
+
+          try {
+            await this.ingestionService.deleteDocumentChunks(documentHash, requestId);
+            logger.warn('Ingesta parcial revertida', { documentHash, ...ingestionResult });
+            responseBody.ingestion = { ...ingestionResult, rolledBack: true };
+            responseBody.conflicts = [
+              ...responseBody.conflicts,
+              `La ingesta falló en ${ingestionResult.errors} de ${total} elementos; se revirtió el documento completo. Puedes volver a subirlo.`,
+            ];
+          } catch {
+            logger.error('No se pudo revertir la ingesta parcial', { documentHash, ...ingestionResult });
+            responseBody.ingestion = { ...ingestionResult, rolledBack: false };
+            responseBody.conflicts = [
+              ...responseBody.conflicts,
+              `La ingesta falló en ${ingestionResult.errors} de ${total} elementos y no se pudo revertir: quedan chunks con document_hash ${documentHash}. Bórralos antes de volver a subir el documento.`,
+            ];
+          }
+        }
       }
 
       return res.status(200).json(responseBody);

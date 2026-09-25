@@ -134,4 +134,56 @@ describe('AgentController', () => {
       expect(mockCurationGraph.curate).toHaveBeenCalled();
     });
   });
+
+  describe('handleCurationRequest — rollback of a partial ingestion', () => {
+    const DOCUMENT_TEXT = 'Catalogo completo de talleres del IBIME';
+    const ingestRequest = () => ({ body: { text: DOCUMENT_TEXT, ingest: true } }) as Request;
+
+    beforeEach(() => {
+      vi.spyOn(KnowledgeIngestionService.prototype, 'isDocumentIngested').mockResolvedValue(false);
+    });
+
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    it('should delete the whole document and report failure when some chunks could not be ingested', async () => {
+      vi.spyOn(KnowledgeIngestionService.prototype, 'ingestChunks').mockResolvedValue({ success: 2, errors: 1 });
+      const rollbackSpy = vi.spyOn(KnowledgeIngestionService.prototype, 'deleteDocumentChunks').mockResolvedValue(2);
+
+      await controller.handleCurationRequest(ingestRequest(), mockRes as Response, mockNext);
+
+      expect(rollbackSpy).toHaveBeenCalledWith(computeDocumentHash(DOCUMENT_TEXT), undefined);
+      expect(mockRes.status).toHaveBeenCalledWith(200);
+      const body = vi.mocked(mockRes.json!).mock.calls[0][0];
+      expect(body.success).toBe(false);
+      expect(body.ingestion).toMatchObject({ success: 2, errors: 1, rolledBack: true });
+      expect(body.conflicts.some((c: string) => /revirti/i.test(c))).toBe(true);
+    });
+
+    it('should not roll back when every chunk was ingested', async () => {
+      vi.spyOn(KnowledgeIngestionService.prototype, 'ingestChunks').mockResolvedValue({ success: 1, errors: 0 });
+      const rollbackSpy = vi.spyOn(KnowledgeIngestionService.prototype, 'deleteDocumentChunks');
+
+      await controller.handleCurationRequest(ingestRequest(), mockRes as Response, mockNext);
+
+      expect(rollbackSpy).not.toHaveBeenCalled();
+      const body = vi.mocked(mockRes.json!).mock.calls[0][0];
+      expect(body.success).toBe(true);
+      expect(body.ingestion).toEqual({ success: 1, errors: 0 });
+    });
+
+    it('should report a half-ingested document when the rollback itself fails', async () => {
+      vi.spyOn(KnowledgeIngestionService.prototype, 'ingestChunks').mockResolvedValue({ success: 2, errors: 1 });
+      vi.spyOn(KnowledgeIngestionService.prototype, 'deleteDocumentChunks').mockRejectedValue(new Error('DB caida'));
+
+      await controller.handleCurationRequest(ingestRequest(), mockRes as Response, mockNext);
+
+      expect(mockNext).not.toHaveBeenCalled();
+      const body = vi.mocked(mockRes.json!).mock.calls[0][0];
+      expect(body.success).toBe(false);
+      expect(body.ingestion).toMatchObject({ rolledBack: false });
+      expect(body.conflicts.some((c: string) => c.includes(computeDocumentHash(DOCUMENT_TEXT)))).toBe(true);
+    });
+  });
 });
