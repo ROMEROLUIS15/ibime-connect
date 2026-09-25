@@ -71,7 +71,7 @@ Security-critical invariants when editing the chat flow:
 
 Two auth tiers, and the split is deliberate:
 - **Public, unauthenticated**: `chat`, `contact`, `registrations`. The chat limiter allows **6 req/min per IP** (sized against Groq's 30 RPM free tier) and is skipped entirely when `NODE_ENV=test`.
-- **Admin-only** via `requireAdminKey` (`middlewares/admin-auth.middleware.ts`, timing-safe compare against `ADMIN_SECRET`): knowledge ingestion, the curation agent, and `POST /admin/flush-cache`. On the agent route the guard runs *before* multer parses the upload, so unauthorized requests are rejected before any file is read — keep that ordering. `ADMIN_SECRET` is optional in `env.config.ts`; tests pin it to `test-admin-secret` via `vitest.config.ts`.
+- **Admin-only** via `requireAdminKey` (`middlewares/admin-auth.middleware.ts`, timing-safe compare against `ADMIN_SECRET`): knowledge ingestion, the curation agent, `POST /admin/flush-cache`, and `POST /admin/rag-probe` (also under `/v1`: embeds each question and returns its top-k similarities with **no threshold**, to calibrate RAG-05 — no LLM call, no cache, no writes). On the agent route the guard runs *before* multer parses the upload, so unauthorized requests are rejected before any file is read — keep that ordering. `ADMIN_SECRET` is optional in `env.config.ts`; tests pin it to `test-admin-secret` via `vitest.config.ts`.
 
 ## Env config
 

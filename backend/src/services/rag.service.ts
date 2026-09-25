@@ -18,6 +18,12 @@ export interface RagRetrievalResult {
  */
 export const RAG_CONTEXT_CACHE_PREFIX = 'rag:';
 
+/**
+ * Similitud mínima para considerar útil el contexto recuperado (fail-hard por
+ * debajo). Exportada para que el sondeo de RAG-05 mida contra el mismo valor.
+ */
+export const RAG_MIN_VALID_THRESHOLD = 0.65;
+
 export class RAGService {
   readonly cacheService = new CacheService();
   // Include model name in key — if model changes, old cached embeddings are ignored automatically
@@ -25,7 +31,7 @@ export class RAGService {
   private static readonly CACHE_TTL = 3600; // 1 hour
 
   // MINIMUM quality threshold — below this, results are considered noise (fail-hard)
-  private static readonly MIN_VALID_THRESHOLD = 0.65;
+  private static readonly MIN_VALID_THRESHOLD = RAG_MIN_VALID_THRESHOLD;
 
   /**
    * Deriva una clave de caché estable a partir del mensaje del usuario.
