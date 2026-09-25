@@ -120,6 +120,35 @@ describe('CurationGraph', () => {
     });
   });
 
+  describe('LLM failures report their real cause instead of "JSON Parsing Error"', () => {
+    const LLM = { tokensUsed: 800, model: 'openai/gpt-oss-20b' };
+
+    it.each([
+      ['the per-minute Groq budget is exhausted', () => Promise.reject(new Error('RATE_LIMIT_EXCEEDED:42:El asistente está muy ocupado.')), /presupuesto por minuto de Groq.*42 s/],
+      ['the daily Groq quota is exhausted', () => Promise.reject(new Error('RATE_LIMIT_EXCEEDED:40000:El asistente alcanzó su cuota de consultas por hoy.')), /cuota diaria de Groq/],
+      ['the answer was cut at max_tokens', () => Promise.resolve({ ...LLM, content: '[{"title": "Taller de', finishReason: 'length' }), /se cortó en el límite de 800 tokens/],
+      ['Groq returned an empty answer', () => Promise.reject(new Error('Empty response from Groq')), /respuesta vacía/],
+      ['the Groq API failed', () => Promise.reject(new Error('Groq API Error (503): upstream down')), /Fallo al llamar al LLM: Groq API Error \(503\)/],
+    ])('should say so when %s', async (_cause, answer, expected) => {
+      vi.mocked(mockLLMProvider.generateAnswer).mockImplementation(answer as () => Promise<never>);
+
+      const result = await graph.curate('Texto de un documento largo');
+
+      expect(result.approved).toBe(false);
+      expect(result.conflicts.some((c) => expected.test(c))).toBe(true);
+      expect(result.conflicts.some((c) => c.includes('JSON Parsing Error'))).toBe(false);
+    });
+
+    it('should keep reporting a JSON parsing error when the complete answer is not valid JSON', async () => {
+      vi.mocked(mockLLMProvider.generateAnswer).mockResolvedValue({ ...LLM, content: 'esto no es json', finishReason: 'stop' });
+
+      const result = await graph.curate('Texto de prueba');
+
+      expect(result.approved).toBe(false);
+      expect(result.conflicts.some((c) => c.includes('JSON Parsing Error'))).toBe(true);
+    });
+  });
+
   describe('validator — duplicates against knowledge_base (RAG-06)', () => {
     it.each([
       ['the title column (seed, Koha)', 'title', { title: VALID_ITEM.title, metadata: null }],

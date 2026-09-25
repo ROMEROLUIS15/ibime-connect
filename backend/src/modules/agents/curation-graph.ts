@@ -24,6 +24,44 @@ export const CurationStateAnnotation = Annotation.Root({
 
 export type CurationState = typeof CurationStateAnnotation.State;
 
+/** Tope de salida de las llamadas del extractor y del corrector. */
+const LLM_MAX_TOKENS = 800;
+
+/** Por encima de esta espera, GroqProvider está reportando la cuota diaria, no la del minuto. */
+const DAILY_QUOTA_WAIT_SEC = 3600;
+
+/**
+ * Traduce el fallo de una llamada al LLM del grafo en un conflicto que diga la causa.
+ * Antes cualquier error (cuota de Groq, respuesta cortada, red) se reportaba como
+ * "JSON Parsing Error", sin indicar si había que esperar o dividir el documento.
+ */
+export function describeCurationFailure(error: unknown, finishReason?: string): string {
+  const message = error instanceof Error ? error.message : String(error);
+
+  // GroqProvider lanza "RATE_LIMIT_EXCEEDED:<segundos>:<mensaje para el chat>".
+  if (message.startsWith('RATE_LIMIT_EXCEEDED:')) {
+    const waitSec = Number(message.split(':')[1]) || 60;
+    if (waitSec >= DAILY_QUOTA_WAIT_SEC) {
+      return 'Se alcanzó la cuota diaria de Groq. Reintenta mañana.';
+    }
+    return `Se agotó el presupuesto por minuto de Groq: reintenta en ${waitSec} s. Si el documento es largo, divídelo (cada llamada reserva el texto completo más la respuesta).`;
+  }
+
+  if (finishReason === 'length') {
+    return `La respuesta del LLM se cortó en el límite de ${LLM_MAX_TOKENS} tokens: el documento tiene demasiados ítems. Divídelo en documentos más cortos.`;
+  }
+
+  if (message === 'Empty response from Groq') {
+    return 'El LLM devolvió una respuesta vacía. Reintenta; si se repite, divide el documento.';
+  }
+
+  if (error instanceof SyntaxError) {
+    return 'Fallo al estructurar o interpretar la información extraída (JSON Parsing Error).';
+  }
+
+  return `Fallo al llamar al LLM: ${message.slice(0, 200)}`;
+}
+
 @injectable()
 export class CurationGraph {
   private compiledGraph: CompiledStateGraph<CurationState, any, any>;
@@ -120,12 +158,14 @@ export class CurationGraph {
 
     const curationResultSchema = z.array(extractedItemSchema);
 
+    let finishReason: string | undefined;
     try {
       const response = await this.llmProvider.generateAnswer(
         messages,
-        { temperature: 0.1, maxTokens: 800 },
+        { temperature: 0.1, maxTokens: LLM_MAX_TOKENS },
         requestId
       );
+      finishReason = response.finishReason;
 
       const content = response.content?.trim() ?? '[]';
       // Limpiar posibles decoraciones markdown si el LLM ignoró la instrucción
@@ -155,11 +195,11 @@ export class CurationGraph {
         conflicts: []
       };
     } catch (err) {
-      logger.warn({ requestId, error: String(err) }, 'CurationGraph: Extractor Node failed to parse JSON');
+      logger.warn({ requestId, error: String(err), finishReason }, 'CurationGraph: Extractor Node failed');
       return {
         extractedItems: [],
         iterations: state.iterations + 1,
-        conflicts: ['Fallo al estructurar o interpretar la información extraída (JSON Parsing Error).']
+        conflicts: [describeCurationFailure(err, finishReason)]
       };
     }
   }
@@ -283,12 +323,14 @@ export class CurationGraph {
       { role: 'user', content: `JSON original con errores:\n${JSON.stringify(state.extractedItems, null, 2)}` }
     ];
 
+    let finishReason: string | undefined;
     try {
       const response = await this.llmProvider.generateAnswer(
         messages,
-        { temperature: 0.2, maxTokens: 800 },
+        { temperature: 0.2, maxTokens: LLM_MAX_TOKENS },
         requestId
       );
+      finishReason = response.finishReason;
 
       const content = response.content?.trim() ?? '[]';
       const jsonText = content.replace(/^```json/i, '').replace(/```$/, '').trim();
@@ -303,7 +345,7 @@ export class CurationGraph {
       logger.error(err as Error, 'CurationGraph: Corrector Node failed to fix JSON');
       return {
         iterations: state.iterations + 1,
-        conflicts: [...state.conflicts, 'Fallo crítico del Agente Corrector al regenerar JSON estructurado.']
+        conflicts: [...state.conflicts, `Agente Corrector: ${describeCurationFailure(err, finishReason)}`]
       };
     }
   }

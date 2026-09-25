@@ -45,6 +45,8 @@ export interface LLMResponse {
       arguments: string;
     };
   }[];
+  /** Motivo de fin que reporta el proveedor; 'length' = la respuesta se cortó en maxTokens. */
+  finishReason?: string;
 }
 
 export interface ITool {

@@ -212,6 +212,7 @@ export class GroqProvider implements ILLMProvider {
       tokensUsed,
       model: GroqProvider.MODEL,
       toolCalls,
+      finishReason: data?.choices?.[0]?.finish_reason,
     };
   }
 }
