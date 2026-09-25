@@ -97,6 +97,28 @@ describe('GroqProvider', () => {
       expect(result.tokensUsed).toBe(0);
     });
 
+    it('should expose finish_reason as finishReason so callers can tell a truncated answer apart', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          choices: [{ message: { content: '[{"title": "Taller de' }, finish_reason: 'length' }],
+          usage: { total_tokens: 800 },
+        }),
+      });
+
+      const result = await provider.generateAnswer(SAMPLE_MESSAGES, { maxTokens: 800 });
+
+      expect(result.finishReason).toBe('length');
+    });
+
+    it('should leave finishReason undefined when Groq does not report it', async () => {
+      mockFetch.mockResolvedValueOnce({ ok: true, json: async () => buildGroqResponse() });
+
+      const result = await provider.generateAnswer(SAMPLE_MESSAGES);
+
+      expect(result.finishReason).toBeUndefined();
+    });
+
     it('should return 0 tokensUsed when usage.total_tokens is zero', async () => {
       // Arrange
       mockFetch.mockResolvedValueOnce({
