@@ -78,6 +78,14 @@ curl -X POST "https://ibime-connect.onrender.com/api/v1/knowledge/webhook/koha" 
   ]'
 ```
 
+- **Límite por petición:** como máximo **50 ítems**. Cada ítem nuevo o modificado se
+  embebe y se escribe en serie, así que el lote acota cuánto dura la petición. Si
+  se envían más, responde `413` con `{ error, registrosRecibidos, maxItems }` y no
+  ingiere nada. Para cargar un catálogo grande, cualquier cliente (script, curl o
+  n8n) debe partirlo en lotes de hasta 50 y enviarlos uno tras otro; reenviar un
+  lote es seguro gracias al upsert idempotente. El cuerpo JSON además no puede
+  superar **100 KB** (límite por defecto de `express.json`): con registros largos,
+  usar lotes más chicos.
 - **Respuesta:** `{ message, registrosRecibidos, resultado: { inserted, updated, skipped, errors } }`.
 - **Uso típico:** un flujo n8n (cron o trigger) consulta Koha, mapea los registros
   incluyendo `biblionumber`, y hace el `POST` con el header `x-admin-key`.
