@@ -23,7 +23,7 @@ import type { ILLMProvider, LLMMessage } from '../../domain/interfaces/index.js'
 import { inject, injectable } from 'tsyringe';
 import { createHash } from 'crypto';
 import { classifyIntent } from './intent-classifier.js';
-import { applyResponsePolicy, type ChatIntent as PolicyIntent } from './response-policy.js';
+import { applyResponsePolicy, getIntentFallback, type ChatIntent as PolicyIntent } from './response-policy.js';
 import { contextLogger } from '../../infrastructure/logger/index.js';
 import { wrapChain } from '../../infrastructure/observability/tracing.js';
 import { CHAT_SYSTEM_PROMPT } from './system-prompt.js';
@@ -405,6 +405,13 @@ export class ChatOrchestrator {
       sourceCount: ragResult.sources.length,
     });
 
+    // Fail-hard: sin contexto recuperado el LLM solo podría inventar cursos o libros,
+    // y una invención plausible pasa la ResponsePolicy. Respuesta determinista.
+    if (!ragResult.hit) {
+      logger.info('RAG miss (fail-hard) — returning catalog fallback without LLM call');
+      return { answer: getIntentFallback('catalog'), sources: [], tokensUsed: 0 };
+    }
+
     const empathyPrefix = isFrustrated ? EMPATHY_ALERT : '';
     const systemPrompt = empathyPrefix + CHAT_SYSTEM_PROMPT + this.formatRagContextForPrompt(ragResult.context);
     const trimmedHistory = this.trimHistory(conversationHistory);
@@ -515,7 +522,7 @@ export class ChatOrchestrator {
     const systemPrompt =
       empathyPrefix +
       CHAT_SYSTEM_PROMPT +
-      '\n\nNota: No se encontró información específica en la base de conocimientos para esta consulta. Responde con tu conocimiento institucional general o indica amablemente que no tienes esa información disponible.';
+      '\n\nNota: No se encontró información específica en la base de conocimientos para esta consulta. Responde solo con los datos institucionales de este prompt; si no cubren la pregunta, no completes con conocimiento propio: indícalo amablemente y deriva a los canales de contacto indicados arriba.';
     const trimmedHistory = this.trimHistory(conversationHistory);
 
     const messages: LLMMessage[] = [
@@ -656,7 +663,9 @@ export class ChatOrchestrator {
 
   private formatRagContextForPrompt(ragContext: string): string {
     if (!ragContext || ragContext.trim() === '') return '';
-    return `\n\n${ragContext}\n\nUtiliza la información anterior como referencia para responder con precisión. Si no es relevante para la pregunta del usuario, responde con tu conocimiento institucional.`;
+    // Instrucción cerrada: sin fuentes que cubran la pregunta, derivar a contacto en
+    // lugar de completar con conocimiento paramétrico del modelo.
+    return `\n\n${ragContext}\n\nUtiliza la información anterior como referencia para responder con precisión. Si ni esta información ni los datos institucionales de este prompt responden la pregunta del usuario, no completes con conocimiento propio: dilo con honestidad y deriva a los canales de contacto indicados arriba.`;
   }
 
   /**

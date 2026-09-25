@@ -4,18 +4,31 @@ const mocks = vi.hoisted(() => ({
   selectResult: { data: [] as any[], error: null as any },
   insertResult: { error: null as any },
   updateResult: { error: null as any },
+  deleteResult: { error: null as { message: string } | null, count: 0 as number | null },
   insertSpy: vi.fn(),
   updateSpy: vi.fn(),
+  eqSpy: vi.fn(),
+  deleteEqSpy: vi.fn(),
   getEmbedding: vi.fn(),
+  deleteByPrefix: vi.fn(),
+}));
+
+vi.mock('../../infrastructure/cache/cache.service.js', () => ({
+  CacheService: class {
+    get = vi.fn();
+    set = vi.fn();
+    deleteByPrefix = mocks.deleteByPrefix;
+  },
 }));
 
 vi.mock('../../config/supabase.config.js', () => ({
   supabaseClient: {
     from: () => ({
       select: () => ({
-        eq: () => ({
-          limit: () => Promise.resolve(mocks.selectResult),
-        }),
+        eq: (column: string, value: unknown) => {
+          mocks.eqSpy(column, value);
+          return { limit: () => Promise.resolve(mocks.selectResult) };
+        },
       }),
       insert: (payload: any) => {
         mocks.insertSpy(payload);
@@ -25,6 +38,12 @@ vi.mock('../../config/supabase.config.js', () => ({
         mocks.updateSpy(payload);
         return { eq: () => Promise.resolve(mocks.updateResult) };
       },
+      delete: () => ({
+        eq: (column: string, value: unknown) => {
+          mocks.deleteEqSpy(column, value);
+          return Promise.resolve(mocks.deleteResult);
+        },
+      }),
     }),
   },
 }));
@@ -35,7 +54,8 @@ vi.mock('../../services/embedding.service.js', () => ({
   },
 }));
 
-import { KnowledgeIngestionService } from '../../services/knowledge-ingestion.service.js';
+import { KnowledgeIngestionService, computeDocumentHash } from '../../services/knowledge-ingestion.service.js';
+import { RAG_CONTEXT_CACHE_PREFIX } from '../../services/rag.service.js';
 
 // --- Constants ----------------------------------------------------------------
 
@@ -123,6 +143,124 @@ describe('KnowledgeIngestionService.upsertKohaItems', () => {
     expect(result.inserted).toBe(0);
     expect(result.updated).toBe(0);
     expect(result.skipped).toBe(0);
+  });
+});
+
+describe('KnowledgeIngestionService.isDocumentIngested (RAG-06)', () => {
+  let service: KnowledgeIngestionService;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.selectResult = { data: [], error: null };
+    service = new KnowledgeIngestionService();
+  });
+
+  it('should look up chunks by metadata.document_hash and return true when one exists', async () => {
+    mocks.selectResult = { data: [{ id: 7 }], error: null };
+
+    await expect(service.isDocumentIngested('abc123')).resolves.toBe(true);
+    expect(mocks.eqSpy).toHaveBeenCalledWith('metadata->>document_hash', 'abc123');
+  });
+
+  it('should return false when no chunk has that document hash', async () => {
+    await expect(service.isDocumentIngested('abc123')).resolves.toBe(false);
+  });
+
+  it('should throw when the lookup fails instead of assuming the document is new', async () => {
+    mocks.selectResult = { data: [], error: { message: 'DB caida' } };
+
+    await expect(service.isDocumentIngested('abc123')).rejects.toThrow();
+  });
+});
+
+describe('KnowledgeIngestionService — RAG cache invalidation (RAG-07)', () => {
+  let service: KnowledgeIngestionService;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.selectResult = { data: [], error: null };
+    mocks.insertResult = { error: null };
+    mocks.getEmbedding.mockResolvedValue([0.1, 0.2, 0.3]);
+    service = new KnowledgeIngestionService();
+  });
+
+  it('should invalidate the RAG cache after a Koha sync that wrote items', async () => {
+    await service.upsertKohaItems([BOOK_ITEM]);
+
+    expect(mocks.deleteByPrefix).toHaveBeenCalledOnce();
+    expect(mocks.deleteByPrefix).toHaveBeenCalledWith(RAG_CONTEXT_CACHE_PREFIX, undefined);
+  });
+
+  it('should not invalidate the RAG cache when every Koha item was skipped', async () => {
+    mocks.selectResult = {
+      data: [{ id: 5, metadata: { koha_id: '1', content_hash: SAMPLE_CONTENT_HASH } }],
+      error: null,
+    };
+
+    await service.upsertKohaItems([BOOK_ITEM]);
+
+    expect(mocks.deleteByPrefix).not.toHaveBeenCalled();
+  });
+
+  it('should invalidate the RAG cache after ingesting at least one chunk', async () => {
+    await service.ingestChunks([{ content: 'Taller de lectura para ninos' }], 'catalogo', 'Catalogo.pdf');
+
+    expect(mocks.deleteByPrefix).toHaveBeenCalledWith(RAG_CONTEXT_CACHE_PREFIX, undefined);
+  });
+
+  it('should not invalidate the RAG cache when no chunk could be written', async () => {
+    mocks.insertResult = { error: { message: 'DB caida' } };
+
+    await service.ingestChunks([{ content: 'Taller de lectura para ninos' }], 'catalogo', 'Catalogo.pdf');
+
+    expect(mocks.deleteByPrefix).not.toHaveBeenCalled();
+  });
+});
+
+describe('KnowledgeIngestionService.deleteDocumentChunks (rollback de ingesta parcial)', () => {
+  let service: KnowledgeIngestionService;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.deleteResult = { error: null, count: 0 };
+    service = new KnowledgeIngestionService();
+  });
+
+  it('should delete every chunk of the document by metadata.document_hash and return how many', async () => {
+    mocks.deleteResult = { error: null, count: 3 };
+
+    await expect(service.deleteDocumentChunks('abc123')).resolves.toBe(3);
+    expect(mocks.deleteEqSpy).toHaveBeenCalledWith('metadata->>document_hash', 'abc123');
+  });
+
+  it('should invalidate the RAG cache when chunks were deleted', async () => {
+    mocks.deleteResult = { error: null, count: 2 };
+
+    await service.deleteDocumentChunks('abc123');
+
+    expect(mocks.deleteByPrefix).toHaveBeenCalledWith(RAG_CONTEXT_CACHE_PREFIX, undefined);
+  });
+
+  it('should not invalidate the RAG cache when nothing was deleted', async () => {
+    await service.deleteDocumentChunks('abc123');
+
+    expect(mocks.deleteByPrefix).not.toHaveBeenCalled();
+  });
+
+  it('should throw when the delete fails so the caller can report the half-ingested document', async () => {
+    mocks.deleteResult = { error: { message: 'DB caida' }, count: null };
+
+    await expect(service.deleteDocumentChunks('abc123')).rejects.toThrow();
+  });
+});
+
+describe('computeDocumentHash (RAG-06)', () => {
+  it('should be stable for the same text regardless of surrounding whitespace', () => {
+    expect(computeDocumentHash('  Catalogo IBIME 2026\n')).toBe(computeDocumentHash('Catalogo IBIME 2026'));
+  });
+
+  it('should differ when the document text differs', () => {
+    expect(computeDocumentHash('Catalogo IBIME 2026')).not.toBe(computeDocumentHash('Catalogo IBIME 2027'));
   });
 });
 

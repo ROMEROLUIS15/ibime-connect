@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import container from '../infrastructure/di/container.js';
 import { CurationGraph } from '../modules/agents/curation-graph.js';
 import { DocumentProcessorService, DocumentChunk } from '../services/document-processor.service.js';
-import { KnowledgeIngestionService } from '../services/knowledge-ingestion.service.js';
+import { KnowledgeIngestionService, computeDocumentHash } from '../services/knowledge-ingestion.service.js';
 import { contextLogger } from '../infrastructure/logger/index.js';
 import { BadRequestError } from '../domain/errors/app-error.js';
 
@@ -44,13 +44,27 @@ export class AgentController {
         throw new BadRequestError('Debe proveer el texto del documento a analizar en el cuerpo (text).');
       }
 
+      const shouldIngest = req.file || req.body.ingest === true;
+      const documentHash = computeDocumentHash(text);
+
+      // ── 0. Idempotencia: el mismo documento no se cura ni se ingiere dos veces ─
+      // Evita duplicar el contenido en knowledge_base y gastar cuota del LLM.
+      if (shouldIngest && (await this.ingestionService.isDocumentIngested(documentHash, requestId))) {
+        logger.info('Documento ya ingerido (mismo document_hash). Se omiten curación e ingesta.');
+        return res.status(200).json({
+          success: false,
+          iterations: 0,
+          conflicts: ['Este documento ya fue ingerido en la base de conocimiento; no se volvió a procesar.'],
+          items: [],
+        });
+      }
+
       // ── 1. Ejecutar el Grafo de Curación de LangGraph ──────────────────────
       const curationResult = await this.curationGraph.curate(text, requestId);
 
       let ingestionResult = null;
 
       // ── 2. Ingesta Automática en Supabase si fue Aprobado ──────────────────
-      const shouldIngest = req.file || req.body.ingest === true;
       if (curationResult.approved && shouldIngest && curationResult.extractedItems?.length > 0) {
         logger.info('Curación aprobada. Iniciando ingesta en Supabase (knowledge_base)...');
         
@@ -63,7 +77,8 @@ export class AgentController {
             title: item.title,
             category: item.category,
             source: 'langgraph_curator',
-            originalIndex: idx
+            originalIndex: idx,
+            document_hash: documentHash
           }
         }));
 
@@ -84,6 +99,30 @@ export class AgentController {
 
       if (ingestionResult !== null) {
         responseBody.ingestion = ingestionResult;
+
+        // ── 3. Todo o nada: si falló algún chunk, se revierte el documento ─────
+        // Los chunks ya escritos llevan document_hash y bloquearían volver a subirlo.
+        if (ingestionResult.errors > 0) {
+          const total = ingestionResult.success + ingestionResult.errors;
+          responseBody.success = false;
+
+          try {
+            await this.ingestionService.deleteDocumentChunks(documentHash, requestId);
+            logger.warn('Ingesta parcial revertida', { documentHash, ...ingestionResult });
+            responseBody.ingestion = { ...ingestionResult, rolledBack: true };
+            responseBody.conflicts = [
+              ...responseBody.conflicts,
+              `La ingesta falló en ${ingestionResult.errors} de ${total} elementos; se revirtió el documento completo. Puedes volver a subirlo.`,
+            ];
+          } catch {
+            logger.error('No se pudo revertir la ingesta parcial', { documentHash, ...ingestionResult });
+            responseBody.ingestion = { ...ingestionResult, rolledBack: false };
+            responseBody.conflicts = [
+              ...responseBody.conflicts,
+              `La ingesta falló en ${ingestionResult.errors} de ${total} elementos y no se pudo revertir: quedan chunks con document_hash ${documentHash}. Bórralos antes de volver a subir el documento.`,
+            ];
+          }
+        }
       }
 
       return res.status(200).json(responseBody);

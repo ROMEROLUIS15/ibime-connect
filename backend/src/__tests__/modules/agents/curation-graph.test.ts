@@ -2,12 +2,14 @@
 import { CurationGraph } from '../../../modules/agents/curation-graph.js';
 import type { ILLMProvider } from '../../../domain/interfaces/index.js';
 
+const mocks = vi.hoisted(() => ({ inMock: vi.fn() }));
+
 vi.mock('../../../config/supabase.config.js', () => ({
   supabaseClient: {
     from: vi.fn().mockReturnValue({
       select: vi.fn().mockReturnValue({
         eq: vi.fn().mockResolvedValue({ data: [], error: null }),
-        in: vi.fn().mockResolvedValue({ data: [], error: null }),
+        in: mocks.inMock,
       }),
     }),
   },
@@ -37,6 +39,7 @@ describe('CurationGraph', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.inMock.mockResolvedValue({ data: [], error: null });
 
     mockLLMProvider = { generateAnswer: vi.fn() };
     graph = new CurationGraph(mockLLMProvider);
@@ -114,6 +117,30 @@ describe('CurationGraph', () => {
       expect(result.conflicts.length).toBeGreaterThan(0);
       // Conflicts must mention the problematic field names for traceability
       expect(result.conflicts.some((c) => c.includes('title') || c.includes('elemento'))).toBe(true);
+    });
+  });
+
+  describe('validator — duplicates against knowledge_base (RAG-06)', () => {
+    it.each([
+      ['the title column (seed, Koha)', 'title', { title: VALID_ITEM.title, metadata: null }],
+      ['metadata.title (PDF chunks titled "… (Parte N)")', 'metadata->>title', { title: 'Catalogo.pdf (Parte 1)', metadata: { title: VALID_ITEM.title } }],
+    ])('should flag an item whose title already exists in %s', async (_label, column, existingRow) => {
+      // Arrange — only the query that filters by `column` finds the existing row
+      mocks.inMock.mockImplementation((filteredColumn: string) =>
+        Promise.resolve({ data: filteredColumn === column ? [existingRow] : [], error: null })
+      );
+      vi.mocked(mockLLMProvider.generateAnswer).mockResolvedValue({
+        content: JSON.stringify([VALID_ITEM]),
+        tokensUsed: 150,
+        model: 'openai/gpt-oss-20b',
+      });
+
+      // Act
+      const result = await graph.curate('Texto con un taller que ya existe en la base');
+
+      // Assert
+      expect(result.approved).toBe(false);
+      expect(result.conflicts).toContain(`El elemento "${VALID_ITEM.title}" ya existe en la base de datos institucional.`);
     });
   });
 });

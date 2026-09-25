@@ -1,7 +1,9 @@
 import { createHash } from 'crypto';
 import { supabaseClient } from '../config/supabase.config.js';
 import { contextLogger } from '../infrastructure/logger/index.js';
+import { CacheService } from '../infrastructure/cache/cache.service.js';
 import { EmbeddingService } from './embedding.service.js';
+import { RAG_CONTEXT_CACHE_PREFIX } from './rag.service.js';
 import type { DocumentChunk } from './document-processor.service.js';
 
 export interface KohaUpsertResult {
@@ -11,8 +13,67 @@ export interface KohaUpsertResult {
   errors: number;
 }
 
+/**
+ * Hash estable del texto de un documento: clave de idempotencia de la ingesta.
+ * Se guarda como metadata.document_hash en cada chunk del documento.
+ */
+export function computeDocumentHash(text: string): string {
+  return createHash('sha256').update(text.trim()).digest('hex');
+}
+
 export class KnowledgeIngestionService {
   private embeddingService = new EmbeddingService();
+  private cacheService = new CacheService();
+
+  /**
+   * Tras escribir en knowledge_base, las respuestas RAG cacheadas pueden estar
+   * obsoletas: se borran solo las claves rag:* (nunca flushDb, que se llevaría
+   * sesiones, throttle de verificación y contadores de cuota).
+   */
+  private async invalidateRagCache(requestId?: string): Promise<void> {
+    await this.cacheService.deleteByPrefix(RAG_CONTEXT_CACHE_PREFIX, requestId);
+  }
+
+  /**
+   * Indica si ya existe algún chunk ingerido de este documento (mismo document_hash).
+   * Lanza si la consulta falla: sin poder verificarlo, no se ingiere a ciegas.
+   */
+  async isDocumentIngested(documentHash: string, requestId?: string): Promise<boolean> {
+    const { data, error } = await supabaseClient
+      .from('knowledge_base')
+      .select('id')
+      .eq('metadata->>document_hash', documentHash)
+      .limit(1);
+
+    if (error) {
+      contextLogger(requestId).error('No se pudo verificar si el documento ya fue ingerido', { error: error.message });
+      throw new Error('No se pudo verificar si el documento ya fue ingerido', { cause: error });
+    }
+
+    return (data ?? []).length > 0;
+  }
+
+  /**
+   * Borra todos los chunks de un documento (mismo document_hash). Revierte una
+   * ingesta parcial: sin esto, los chunks que sí se escribieron bloquearían
+   * volver a subir el documento (isDocumentIngested daría true).
+   * Lanza si el borrado falla, para que el llamador informe el documento a medias.
+   */
+  async deleteDocumentChunks(documentHash: string, requestId?: string): Promise<number> {
+    const { error, count } = await supabaseClient
+      .from('knowledge_base')
+      .delete({ count: 'exact' })
+      .eq('metadata->>document_hash', documentHash);
+
+    if (error) {
+      contextLogger(requestId).error('No se pudieron borrar los chunks del documento', { error: error.message });
+      throw new Error('No se pudieron borrar los chunks del documento', { cause: error });
+    }
+
+    const deleted = count ?? 0;
+    if (deleted > 0) await this.invalidateRagCache(requestId);
+    return deleted;
+  }
 
   /**
    * Ingesta idempotente de ítems del catálogo de Koha (vía webhook n8n).
@@ -102,6 +163,7 @@ export class KnowledgeIngestionService {
     }
 
     logger.info('Upsert de Koha finalizado', { inserted, updated, skipped, errors });
+    if (inserted + updated > 0) await this.invalidateRagCache(requestId);
     return { inserted, updated, skipped, errors };
   }
 
@@ -159,6 +221,7 @@ export class KnowledgeIngestionService {
     }
 
     logger.info(`Ingesta finalizada para ${documentTitle}`, { successCount, errorCount });
+    if (successCount > 0) await this.invalidateRagCache(requestId);
     return { success: successCount, errors: errorCount };
   }
 }

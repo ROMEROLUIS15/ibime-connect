@@ -6,7 +6,13 @@ const mockRedisClient = vi.hoisted(() => ({
   setEx: vi.fn(),
   del: vi.fn(),
   flushDb: vi.fn(),
+  scanIterator: vi.fn(),
 }));
+
+/** node-redis 5: scanIterator devuelve un lote de claves por cada SCAN. */
+async function* scanBatches(...batches: string[][]) {
+  for (const batch of batches) yield batch;
+}
 
 vi.mock('../../../infrastructure/cache/redis.js', () => ({
   get redisClient() {
@@ -52,6 +58,41 @@ describe('CacheService', () => {
     it('clear no intenta vaciar', async () => {
       await cache.clear();
       expect(mockRedisClient.flushDb).not.toHaveBeenCalled();
+    });
+
+    it('deleteByPrefix no intenta escanear y devuelve 0', async () => {
+      await expect(cache.deleteByPrefix('rag:')).resolves.toBe(0);
+      expect(mockRedisClient.scanIterator).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('deleteByPrefix (RAG-07)', () => {
+    it('borra lote a lote solo las claves del prefijo y devuelve cuántas borró', async () => {
+      mockRedisClient.scanIterator.mockReturnValue(scanBatches(['rag:a', 'rag:b'], [], ['rag:c']));
+      mockRedisClient.del.mockImplementation(async (keys: string[]) => keys.length);
+
+      await expect(cache.deleteByPrefix('rag:')).resolves.toBe(3);
+      expect(mockRedisClient.scanIterator).toHaveBeenCalledWith(expect.objectContaining({ MATCH: 'rag:*' }));
+      expect(mockRedisClient.del).toHaveBeenCalledTimes(2);
+      expect(mockRedisClient.del).toHaveBeenCalledWith(['rag:a', 'rag:b']);
+      expect(mockRedisClient.del).toHaveBeenCalledWith(['rag:c']);
+    });
+
+    it('nunca vacía la base completa (sesiones, throttle y cuotas viven en la misma DB)', async () => {
+      mockRedisClient.scanIterator.mockReturnValue(scanBatches(['rag:a']));
+      mockRedisClient.del.mockResolvedValue(1);
+
+      await cache.deleteByPrefix('rag:');
+
+      expect(mockRedisClient.flushDb).not.toHaveBeenCalled();
+    });
+
+    it('no propaga el error si el SCAN falla y devuelve 0', async () => {
+      mockRedisClient.scanIterator.mockImplementation(() => {
+        throw new Error('ECONNRESET');
+      });
+
+      await expect(cache.deleteByPrefix('rag:')).resolves.toBe(0);
     });
   });
 

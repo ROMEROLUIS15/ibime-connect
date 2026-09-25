@@ -3,6 +3,8 @@ import { ChatOrchestrator } from '../../../modules/chat/chat-orchestrator.js';
 import type { ILLMProvider } from '../../../domain/interfaces/index.js';
 import type { RAGService } from '../../../services/rag.service.js';
 import { ToolRegistry } from '../../../services/tools.service.js';
+import { getIntentFallback } from '../../../modules/chat/response-policy.js';
+import { CHAT_SYSTEM_PROMPT } from '../../../modules/chat/system-prompt.js';
 
 // --- Fixtures -----------------------------------------------------------------
 
@@ -281,6 +283,58 @@ describe('ChatOrchestrator', () => {
       const calls = vi.mocked(mockLLMProvider.generateAnswer).mock.calls;
       expect(calls.length).toBeGreaterThan(0);
       expect(calls[0][0]).toHaveLength(2);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  describe('catalog flow — RAG fail-hard (RAG-03)', () => {
+    it('should return the catalog fallback without calling the LLM when RAG misses', async () => {
+      vi.mocked(mockRAGService.retrieveContext).mockResolvedValue(RAG_MISS);
+
+      const result = await orchestrator.process({ userMessage: 'Que cursos tienen?', conversationHistory: [] });
+
+      expect(mockRAGService.retrieveContext).toHaveBeenCalled();
+      expect(mockLLMProvider.generateAnswer).not.toHaveBeenCalled();
+      expect(result.answer).toBe(getIntentFallback('catalog'));
+      expect(result.sources).toEqual([]);
+      expect(result.tokensUsed).toBe(0);
+    });
+
+    it('should call the LLM with the retrieved sources when RAG hits', async () => {
+      const result = await orchestrator.process({ userMessage: 'Que cursos tienen?', conversationHistory: [] });
+
+      expect(mockLLMProvider.generateAnswer).toHaveBeenCalledTimes(1);
+      expect(result.answer).toBe(LLM_RESPONSE.content);
+      expect(result.sources).toEqual(RAG_HIT.sources);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  describe('RAG context instruction (RAG-04)', () => {
+    it('should not authorize answering from the model own knowledge when the context does not cover the question', async () => {
+      await orchestrator.process({ userMessage: 'Que cursos tienen?', conversationHistory: [] });
+
+      const systemPrompt = vi.mocked(mockLLMProvider.generateAnswer).mock.calls[0][0][0].content;
+      const instructionAfterContext = systemPrompt.slice(systemPrompt.indexOf(RAG_HIT.context) + RAG_HIT.context.length);
+
+      expect(systemPrompt).toContain(RAG_HIT.context);
+      expect(instructionAfterContext).not.toMatch(/conocimiento institucional/i);
+      expect(instructionAfterContext).toMatch(/no completes con conocimiento propio/i);
+      expect(instructionAfterContext).toMatch(/canales de contacto/i);
+    });
+
+    it('should not authorize answering from the model own knowledge in the general fallback (RAG miss)', async () => {
+      vi.mocked(mockRAGService.retrieveContext).mockResolvedValue(RAG_MISS);
+
+      await orchestrator.process({ userMessage: 'Donde queda la sede del IBIME?', conversationHistory: [] });
+
+      const systemPrompt = vi.mocked(mockLLMProvider.generateAnswer).mock.calls[0][0][0].content;
+      const fallbackNote = systemPrompt.slice(systemPrompt.indexOf(CHAT_SYSTEM_PROMPT) + CHAT_SYSTEM_PROMPT.length);
+
+      expect(systemPrompt).toContain(CHAT_SYSTEM_PROMPT);
+      expect(fallbackNote).not.toMatch(/conocimiento institucional/i);
+      expect(fallbackNote).toMatch(/no completes con conocimiento propio/i);
+      expect(fallbackNote).toMatch(/canales de contacto/i);
     });
   });
 

@@ -2,6 +2,13 @@ import { Request, Response } from 'express';
 import { KnowledgeIngestionService } from '../services/knowledge-ingestion.service.js';
 import { contextLogger } from '../infrastructure/logger/index.js';
 
+/**
+ * Máximo de ítems por petición al webhook de Koha. Cada ítem nuevo o modificado
+ * se embebe y se escribe en serie (con pausa por la cuota de Gemini), así que el
+ * tamaño del lote acota cuánto tiempo queda abierta la petición HTTP.
+ */
+export const MAX_KOHA_ITEMS_PER_REQUEST = 50;
+
 export class KnowledgeController {
   private ingestionService = new KnowledgeIngestionService();
 
@@ -17,6 +24,15 @@ export class KnowledgeController {
       
       if (!Array.isArray(items)) {
         return res.status(400).json({ error: 'El cuerpo de la petición debe ser un arreglo JSON.' });
+      }
+
+      if (items.length > MAX_KOHA_ITEMS_PER_REQUEST) {
+        logger.warn(`Webhook Koha rechazado: ${items.length} elementos (máximo ${MAX_KOHA_ITEMS_PER_REQUEST} por petición).`);
+        return res.status(413).json({
+          error: `Se aceptan como máximo ${MAX_KOHA_ITEMS_PER_REQUEST} elementos por petición; envía el catálogo en lotes.`,
+          registrosRecibidos: items.length,
+          maxItems: MAX_KOHA_ITEMS_PER_REQUEST,
+        });
       }
 
       logger.info(`Recibida petición Webhook Koha con ${items.length} elementos.`);
