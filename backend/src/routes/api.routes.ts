@@ -3,6 +3,7 @@ import rateLimit from 'express-rate-limit';
 import { ChatController } from '../controllers/chat.controller.js';
 import { ContactController } from '../controllers/contact.controller.js';
 import { RegistrationController } from '../controllers/registration.controller.js';
+import { RagProbeController } from '../controllers/rag-probe.controller.js';
 import { CacheService } from '../infrastructure/cache/cache.service.js';
 import { requireAdminKey } from '../middlewares/admin-auth.middleware.js';
 import { logger } from '../infrastructure/logger/index.js';
@@ -80,5 +81,25 @@ router.post('/admin/flush-cache', adminLimiter, requireAdminKey, async (req, res
     return res.status(500).json({ error: 'Failed to flush cache' });
   }
 });
+
+// Admin endpoint: sondeo de recuperación para calibrar el umbral del RAG (RAG-05).
+// Cada llamada puede sumar hasta 50 embeddings de Gemini, así que tiene su propio
+// limitador; se omite en tests (como chatLimiter) para poder ejercitar la validación.
+const probeLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 5,
+  message: { error: 'Demasiados sondeos. Por favor intenta más tarde.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: (_req) => process.env.NODE_ENV === 'test',
+});
+
+router.post('/v1/admin/rag-probe', probeLimiter, requireAdminKey, (req, res, next) =>
+  new RagProbeController().handleProbe(req, res, next)
+);
+
+router.post('/admin/rag-probe', probeLimiter, requireAdminKey, (req, res, next) =>
+  new RagProbeController().handleProbe(req, res, next)
+);
 
 export default router;

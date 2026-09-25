@@ -4,6 +4,7 @@ import { EmbeddingService } from '../../services/embedding.service.js';
 import { KnowledgeRepository } from '../repositories/knowledge.repository.js';
 import { GroqProvider } from '../providers/groq.provider.js';
 import { RAGService } from '../../services/rag.service.js';
+import { RagProbeService } from '../../services/rag-probe.service.js';
 import { ChatService } from '../../services/chat.service.js';
 import { SessionMemoryService } from '../../services/session-memory.service.js';
 import { SentimentAnalyzerService } from '../../services/sentiment-analyzer.service.js';
@@ -22,6 +23,15 @@ container.registerSingleton<CurationGraph>(CurationGraph);
 container.register('RAGService', {
   useFactory: (c) => {
     return new RAGService(
+      c.resolve<IEmbeddingService>('IEmbeddingService'),
+      c.resolve<IKnowledgeRepository>('IKnowledgeRepository')
+    );
+  },
+});
+
+container.register('RagProbeService', {
+  useFactory: (c) => {
+    return new RagProbeService(
       c.resolve<IEmbeddingService>('IEmbeddingService'),
       c.resolve<IKnowledgeRepository>('IKnowledgeRepository')
     );
