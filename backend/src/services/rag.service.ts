@@ -12,9 +12,14 @@ export interface RagRetrievalResult {
   hit: boolean; // true if results meet minimum quality threshold
 }
 
+/**
+ * Prefijo de los resultados RAG cacheados. La ingesta invalida la caché borrando
+ * este prefijo, así que toda clave de contexto RAG debe empezar por él.
+ */
+export const RAG_CONTEXT_CACHE_PREFIX = 'rag:';
+
 export class RAGService {
   readonly cacheService = new CacheService();
-  private static readonly CACHE_KEY_PREFIX = 'rag:';
   // Include model name in key — if model changes, old cached embeddings are ignored automatically
   private static readonly EMBEDDING_KEY_PREFIX = `embedding:${EmbeddingService.MODEL}:`;
   private static readonly CACHE_TTL = 3600; // 1 hour
@@ -47,8 +52,17 @@ export class RAGService {
     const startTime = Date.now();
 
     try {
+      // Use the HIGHER of: caller's threshold OR our minimum valid threshold
+      const matchCount = options?.matchCount ?? 5;
+      const effectiveThreshold = Math.max(
+        options?.threshold ?? 0.4,
+        RAGService.MIN_VALID_THRESHOLD
+      );
+
+      // La clave incluye los parámetros de búsqueda: el mismo mensaje con otro
+      // matchCount o umbral no debe recibir el resultado calculado con los anteriores.
       const messageHash = RAGService.hashMessage(userMessage);
-      const cacheKey = `${RAGService.CACHE_KEY_PREFIX}${messageHash}`;
+      const cacheKey = `${RAG_CONTEXT_CACHE_PREFIX}${messageHash}:${matchCount}:${effectiveThreshold}`;
       const cached = await this.cacheService.get<{ context: string; sources: KnowledgeMatch[]; maxSimilarity: number }>(cacheKey, requestId);
 
       if (cached) {
@@ -72,15 +86,9 @@ export class RAGService {
         logger.debug('Embedding retrieved from cache', { embeddingCacheKey });
       }
 
-      // Use the HIGHER of: caller's threshold OR our minimum valid threshold
-      const effectiveThreshold = Math.max(
-        options?.threshold ?? 0.4,
-        RAGService.MIN_VALID_THRESHOLD
-      );
-
       const sources = await this.knowledgeRepository.matchKnowledge(
         embedding,
-        options?.matchCount ?? 5,
+        matchCount,
         effectiveThreshold,
         requestId
       );
