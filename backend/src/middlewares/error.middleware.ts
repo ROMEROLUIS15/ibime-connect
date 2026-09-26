@@ -3,6 +3,39 @@ import { contextLogger } from '../infrastructure/logger/index.js';
 import { AppError, InternalServerError } from '../domain/errors/app-error.js';
 import { captureError } from '../infrastructure/observability/sentry.js';
 
+/**
+ * Error de cliente que lanza el parser de cuerpos de Express (body-parser, vía
+ * http-errors): cuerpo sobre el límite (413), JSON malformado (400), charset no
+ * soportado (415)… Trae `expose: true` y un `status` 4xx.
+ */
+interface ExposedClientError extends Error {
+  status: number;
+  expose: true;
+  type?: string;
+  limit?: number;
+}
+
+const isExposedClientError = (err: Error): err is ExposedClientError => {
+  const candidate = err as Partial<ExposedClientError>;
+  return (
+    candidate.expose === true &&
+    typeof candidate.status === 'number' &&
+    candidate.status >= 400 &&
+    candidate.status < 500
+  );
+};
+
+const clientErrorMessage = (err: ExposedClientError): string => {
+  if (err.type === 'entity.too.large') {
+    const limit = typeof err.limit === 'number' ? ` (${Math.round(err.limit / 1024)} KB)` : '';
+    return `La solicitud supera el tamaño máximo permitido${limit}.`;
+  }
+  if (err.type === 'entity.parse.failed') {
+    return 'El cuerpo de la solicitud no es un JSON válido.';
+  }
+  return 'La solicitud no es válida.';
+};
+
 export const errorHandler = (err: Error, req: Request, res: Response, next: NextFunction) => {
   const requestId = (req as any).requestId || 'unknown';
   const logger = contextLogger(requestId);
@@ -21,6 +54,21 @@ export const errorHandler = (err: Error, req: Request, res: Response, next: Next
     return res.status(429).json({
       text: friendlyMessage,
       retryAfterSeconds: parseInt(waitSec, 10),
+      requestId,
+    });
+  }
+
+  // ── Errores de cliente del parser de cuerpos (413, 400, 415…) ─────────────
+  // Son 4xx esperados, no incidentes: se registran como warn y no van a Sentry.
+  if (isExposedClientError(err)) {
+    logger.warn('Request rejected by body parser', {
+      status: err.status,
+      type: err.type,
+      method: req.method,
+      path: req.path,
+    });
+    return res.status(err.status).json({
+      text: clientErrorMessage(err),
       requestId,
     });
   }

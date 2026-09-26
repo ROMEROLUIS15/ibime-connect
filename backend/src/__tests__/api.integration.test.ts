@@ -57,6 +57,32 @@ describe('API Integration', () => {
     });
   });
 
+  describe('request body parsing', () => {
+    it('should return 413 (not 500) when the JSON body exceeds the 100 KB limit', async () => {
+      const response = await request(app)
+        .post('/api/v1/contact')
+        .set('Content-Type', 'application/json')
+        .send(JSON.stringify({ message: 'a'.repeat(101 * 1024) }));
+
+      expect(response.status).toBe(413);
+      expect(response.body).toMatchObject({
+        text: 'La solicitud supera el tamaño máximo permitido (100 KB).',
+      });
+    });
+
+    it('should return 400 (not 500) when the JSON body is malformed', async () => {
+      const response = await request(app)
+        .post('/api/v1/contact')
+        .set('Content-Type', 'application/json')
+        .send('{"message":');
+
+      expect(response.status).toBe(400);
+      expect(response.body).toMatchObject({
+        text: 'El cuerpo de la solicitud no es un JSON válido.',
+      });
+    });
+  });
+
   describe('unknown routes', () => {
     it('should return 404 for unregistered route paths', async () => {
       // Act
