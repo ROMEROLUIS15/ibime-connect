@@ -103,8 +103,8 @@ Para cargar registros estructurados del catálogo de Koha desde cualquier client
   embebe y se escribe en serie (con una pausa de 400 ms por la cuota de Gemini), así
   que el lote acota cuánto dura la petición. Si se envían más, responde `413` con
   `{ error, registrosRecibidos, maxItems }` y no ingiere nada. El cuerpo JSON además
-  no puede superar **100 KB** (límite por defecto de `express.json`): con registros
-  largos, usa lotes más chicos.
+  no puede superar **100 KB** (límite por defecto de `express.json`): si lo supera,
+  responde `413` y no ingiere nada. Con registros largos, usa lotes más chicos.
 - **Errores parciales:** si un ítem falla, se cuenta en `errors` y el lote sigue.
   Reenviar el lote completo es seguro gracias al upsert idempotente.
 - **Respuesta:** `{ message, registrosRecibidos, resultado: { inserted, updated, skipped, errors } }`.
