@@ -49,7 +49,7 @@ const ENTRIES: SeedEntry[] = [
     category: 'servicio',
     title: 'Sistema Koha - Catálogo en línea',
     content:
-      'El IBIME utiliza Koha, un sistema integrado de gestión bibliotecaria de código abierto. Permite buscar libros, revistas y recursos digitales, y gestionar préstamos, renovaciones y reservas. Acceso al catálogo en línea: http://www.ibime.gob.ve:8001/',
+      'El IBIME utiliza Koha, un sistema integrado de gestión bibliotecaria de código abierto. Permite buscar libros, revistas y recursos digitales, y gestionar préstamos, renovaciones y reservas. Acceso al catálogo en línea: http://www.ibime.gob.ve:8000/',
   },
   {
     category: 'curso',
