@@ -52,7 +52,7 @@ const KohaPage = () => {
               que permite a los usuarios buscar, reservar y gestionar recursos bibliográficos.
             </p>
             <Button className="btn-hero" asChild>
-              <a href="http://www.ibime.gob.ve:8001/" target="_blank" rel="noopener noreferrer">
+              <a href="http://www.ibime.gob.ve:8000/" target="_blank" rel="noopener noreferrer">
                 <ExternalLink className="w-5 h-5 mr-2" />
                 Acceder a Koha
               </a>

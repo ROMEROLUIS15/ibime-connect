@@ -43,13 +43,13 @@ const ENTRIES: SeedEntry[] = [
     category: 'servicio',
     title: 'Red Bibliotecaria del estado Mérida',
     content:
-      'La Red Bibliotecaria del IBIME cubre 6 distritos (Norte, Sur, Este, Oeste, Central y Periférico) con más de 40 bibliotecas y más de 71 puntos de lectura en todo el estado Mérida, brindando acceso a libros, revistas y recursos a la comunidad.',
+      'La Red Bibliotecaria del IBIME cuenta con 58 bibliotecas públicas en 5 ejes territoriales del estado Mérida: Metropolitano (17 bibliotecas y 1 punto de lectura), Panamericano (12), Mocotíes (11), Páramo (11) y Pueblo del Sur (7), brindando acceso a libros, revistas y recursos a la comunidad. El directorio de bibliotecas por eje, con sus mapas, está en la sección Servicios Bibliotecarios del sitio web.',
   },
   {
     category: 'servicio',
     title: 'Sistema Koha - Catálogo en línea',
     content:
-      'El IBIME utiliza Koha, un sistema integrado de gestión bibliotecaria de código abierto. Permite buscar libros, revistas y recursos digitales, y gestionar préstamos, renovaciones y reservas. Acceso al catálogo en línea: http://www.ibime.gob.ve:8001/',
+      'El IBIME utiliza Koha, un sistema integrado de gestión bibliotecaria de código abierto. Permite buscar libros, revistas y recursos digitales, y gestionar préstamos, renovaciones y reservas. Acceso al catálogo en línea: http://www.ibime.gob.ve:8000/',
   },
   {
     category: 'curso',
