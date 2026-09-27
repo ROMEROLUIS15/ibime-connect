@@ -1,8 +1,8 @@
 import { Calendar, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import libraryActivity from '@/assets/library-activity.jpg';
-import communityEvent from '@/assets/community-event.jpeg';
+import libraryActivity from '@/assets/library-activity.webp';
+import communityEvent from '@/assets/community-event.webp';
 import donaciones from '@/assets/donaciones.webp';
 
 // Las fechas se calculan al render como "hoy - daysAgo" para que nunca queden

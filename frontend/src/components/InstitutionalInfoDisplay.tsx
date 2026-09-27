@@ -1,6 +1,6 @@
 import { Calendar, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import libraryActivity from '@/assets/library-activity.jpg';
+import libraryActivity from '@/assets/library-activity.webp';
 
 interface InstitutionalInfoDisplayProps {
   className?: string;

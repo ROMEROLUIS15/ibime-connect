@@ -15,7 +15,7 @@
 
 import { useState, useRef, useEffect, type JSX, type TouchEvent } from 'react';
 import { useFloatingButtonsTheme } from '@/hooks/useFloatingButtonsTheme';
-import owlMascot from '@/assets/buho_8-removebg-preview.png';
+import owlMascot from '@/assets/buho_8-removebg-preview.webp';
 
 interface AssistantLauncherProps {
   /** Si el panel de chat está abierto: la mascota se oculta para no estorbar. */
