@@ -49,11 +49,24 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
         
-      - name: Run Tests
-        run: npm run test
+      - name: Run Frontend Tests
+        run: npm run test --prefix frontend
+
+      # Con --coverage, backend/vitest.config.ts hace fallar la corrida si la
+      # cobertura baja de sus umbrales (82/74/78/82). Sin la bandera no se aplican.
+      - name: Run Backend Tests (coverage)
+        run: npm run test:coverage --prefix backend
         env:
           SUPABASE_URL: "http://dummy-supabase.url"
           SUPABASE_SERVICE_ROLE_KEY: "dummy-key"
           GEMINI_API_KEY: "dummy-key"
           GROQ_API_KEY: "dummy-key"
           REDIS_URL: "redis://localhost:6379"
+
+      - name: Upload Backend Coverage Report
+        uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: backend-coverage
+          path: backend/coverage/
+          retention-days: 15
