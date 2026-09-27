@@ -1,6 +1,4 @@
-/* ─── @import SIEMPRE PRIMERO — antes de cualquier otra regla ─── */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Libre+Franklin:wght@500;600;700;800&display=swap');
-
+/* Las fuentes (Inter, Libre Franklin, Fredoka) se cargan desde index.html sin bloquear el pintado. */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

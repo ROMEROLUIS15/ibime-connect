@@ -28,7 +28,8 @@ El sistema actúa en tres fases de defensa. Garantiza que el código defectuoso 
 │    │     ├─► Instalación con --legacy-peer-deps                         │
 │    │     ├─► npm audit --audit-level=high (back + front, no bloqueante) │
 │    │     ├─► Simulación de Entorno (Dummy Env Vars)                     │
-│    │     └─► Quality Gate Remoto (419 tests: 384 back + 35 front)       │
+│    │     ├─► Quality Gate Remoto (505 tests: 460 back + 45 front)       │
+│    │     └─► Cobertura del backend con umbrales + reporte HTML          │
 │    │                                                                    │
 │    └─► .github/workflows/e2e.yml (Pesado: ~3m)                          │
 │          ├─► Configuración Node + Dependencias                          │
@@ -130,7 +131,7 @@ Tanto el backend como el frontend ya migraron a **ESLint Flat Config** (por cons
 
 - **`.github/dependabot.yml`**: abre PRs semanales de actualización para la raíz, `backend/`, `frontend/` y `github-actions`. Los *minor/patch* se agrupan para no inundar de PRs; los *majors* llegan sueltos para revisarse uno a uno. **Los bumps de major (Node, TypeScript, redis, etc.) no se auto-mergean** — cada uno puede romper y debe probarse en su rama.
 - **`npm audit --audit-level=high`** corre en CI (backend y frontend). Hoy es **no-bloqueante** (`continue-on-error`) mientras se saneia el árbol; endurecer a bloqueante cuando esté limpio.
-- **Umbrales de cobertura** (`backend/vitest.config.ts`): `statements 82 / branches 74 / functions 78 / lines 82`, unos puntos por debajo del actual (~85/79/83/87) para gatear regresiones sin ser frágiles ante el flake ocasional del worker. Se miden con `npm run test:coverage --prefix backend`.
+- **Umbrales de cobertura** (`backend/vitest.config.ts`): `statements 82 / branches 74 / functions 78 / lines 82`, por debajo del actual (90,6/82,7/88,2/91,8 al 2026-09-27) para gatear regresiones sin ser frágiles ante el flake ocasional del worker. El CI los aplica en cada push y PR: el paso `Run Backend Tests (coverage)` corre `npm run test:coverage --prefix backend` y falla si alguna métrica queda por debajo. El reporte HTML se sube como artefacto `backend-coverage` (15 días) aunque la corrida falle. En local se miden con el mismo comando.
 
 ---
 

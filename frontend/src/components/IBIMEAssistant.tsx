@@ -30,7 +30,7 @@ import { BackendAssistantAdapter } from '@/infrastructure/adapters/BackendAssist
 import { AssistantLauncher } from '@/components/assistant/AssistantLauncher';
 import { createSessionId } from '@/lib/session-id';
 import type { ChatMessage, KnowledgeMatch } from '@shared/types/domain';
-import owlMascot from '@/assets/buho_8-removebg-preview.png';
+import owlMascot from '@/assets/buho_8-removebg-preview.webp';
 
 // ─── Assets ───────────────────────────────────────────────────────────────────
 

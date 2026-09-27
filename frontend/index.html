@@ -13,7 +13,15 @@
   <link rel="icon" href="/favicon.ico" type="image/x-icon" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&display=swap" rel="stylesheet">
+  <!-- Fuentes sin bloquear el primer pintado: media="print" hace que la hoja se
+       descargue sin bloquear y onload la activa; mientras tanto el texto se ve
+       con la fuente de respaldo (display=swap). -->
+  <link rel="stylesheet" media="print" onload="this.media='all'"
+    href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Inter:wght@300;400;500;600;700;800&family=Libre+Franklin:wght@500;600;700;800&display=swap">
+  <noscript>
+    <link rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Inter:wght@300;400;500;600;700;800&family=Libre+Franklin:wght@500;600;700;800&display=swap">
+  </noscript>
   <meta property="og:title" content="IBIME | Instituto de Bibliotecas e Información de Mérida" />
   <meta property="og:description"
     content="Instituto Autónomo de Servicios de Bibliotecas e Información del Estado Bolivariano de Mérida. Educación, cultura y comunidad." />
