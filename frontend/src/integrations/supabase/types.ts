@@ -7,8 +7,10 @@ export type Json =
   | Json[]
 
 export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.1"
+    PostgrestVersion: "14.5"
   }
   public: {
     Tables: {
@@ -44,6 +46,7 @@ export type Database = {
           id: string
           name: string
           phone: string | null
+          registration_status: string | null
         }
         Insert: {
           course_name: string
@@ -52,6 +55,7 @@ export type Database = {
           id?: string
           name: string
           phone?: string | null
+          registration_status?: string | null
         }
         Update: {
           course_name?: string
@@ -60,88 +64,112 @@ export type Database = {
           id?: string
           name?: string
           phone?: string | null
+          registration_status?: string | null
         }
         Relationships: []
       }
-      ibime_knowledge: {
+      courses: {
         Row: {
+          capacity: number
+          created_at: string | null
+          end_date: string | null
           id: string
-          category: 'libro' | 'evento' | 'tramite' | 'horario' | 'curso' | 'servicio' | 'contacto'
+          start_date: string | null
+          status: string
           title: string
-          content: string
-          keywords: string[] | null
-          embedding: number[] | null
-          source_url: string | null
-          is_active: boolean
-          created_at: string
-          updated_at: string
+          updated_at: string | null
         }
         Insert: {
+          capacity?: number
+          created_at?: string | null
+          end_date?: string | null
           id?: string
-          category: 'libro' | 'evento' | 'tramite' | 'horario' | 'curso' | 'servicio' | 'contacto'
+          start_date?: string | null
+          status: string
           title: string
-          content: string
-          keywords?: string[] | null
-          embedding?: number[] | null
-          source_url?: string | null
-          is_active?: boolean
-          created_at?: string
-          updated_at?: string
+          updated_at?: string | null
         }
         Update: {
+          capacity?: number
+          created_at?: string | null
+          end_date?: string | null
           id?: string
-          category?: 'libro' | 'evento' | 'tramite' | 'horario' | 'curso' | 'servicio' | 'contacto'
+          start_date?: string | null
+          status?: string
           title?: string
-          content?: string
-          keywords?: string[] | null
-          embedding?: number[] | null
-          source_url?: string | null
-          is_active?: boolean
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      knowledge_base: {
+        Row: {
+          content: string
+          created_at: string
+          embedding: string | null
+          id: number
+          metadata: Json | null
+          title: string | null
+        }
+        Insert: {
+          content: string
           created_at?: string
-          updated_at?: string
+          embedding?: string | null
+          id?: number
+          metadata?: Json | null
+          title?: string | null
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          embedding?: string | null
+          id?: number
+          metadata?: Json | null
+          title?: string | null
         }
         Relationships: []
       }
     }
-    Views: Record<string, never>
+    Views: {
+      [_ in never]: never
+    }
     Functions: {
-      match_ibime_knowledge: {
+      match_knowledge: {
         Args: {
-          query_embedding: number[]
-          match_threshold?: number
           match_count?: number
-          filter_category?: 'libro' | 'evento' | 'tramite' | 'horario' | 'curso' | 'servicio' | 'contacto' | null
+          match_threshold?: number
+          query_embedding: string
         }
         Returns: {
-          id: string
-          category: 'libro' | 'evento' | 'tramite' | 'horario' | 'curso' | 'servicio' | 'contacto'
-          title: string
           content: string
+          id: number
           similarity: number
+          title: string
         }[]
       }
     }
     Enums: {
-      knowledge_category: 'libro' | 'evento' | 'tramite' | 'horario' | 'curso' | 'servicio' | 'contacto'
+      [_ in never]: never
     }
-    CompositeTypes: Record<string, never>
+    CompositeTypes: {
+      [_ in never]: never
+    }
   }
 }
 
 type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
 
-type DefaultSchema = DatabaseWithoutInternals["public"]
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -165,11 +193,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -190,11 +218,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -215,11 +243,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -232,25 +260,21 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
   ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
-    ? DefaultSchema["CompositeTypes"] extends Record<string, never>
-      ? never
-      : DefaultSchema["CompositeTypes"][CompositeTypeName]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
     : never
 
 export const Constants = {
   public: {
-    Enums: {
-      knowledge_category: ['libro', 'evento', 'tramite', 'horario', 'curso', 'servicio', 'contacto'] as const,
-    },
+    Enums: {},
   },
 } as const
