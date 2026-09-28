@@ -277,6 +277,9 @@ export function IBIMEAssistant(): JSX.Element {
     setMessages((prev) => [...prev, userMessage]);
     setInputValue('');
     setIsTyping(true);
+    // Al enviar con el botón el foco queda en él (y el botón se deshabilita):
+    // se devuelve a la caja para que el usuario siga escribiendo sin hacer clic.
+    inputRef.current?.focus();
 
     try {
       // Build conversation history (last 10 messages, excluding welcome)
@@ -534,7 +537,9 @@ export function IBIMEAssistant(): JSX.Element {
                   onChange={handleInputChange}
                   onKeyDown={handleKeyDown}
                   placeholder="Escribe tu consulta..."
-                  disabled={isTyping}
+                  // Sin `disabled` mientras el asistente responde: un input
+                  // deshabilitado pierde el foco. El envío ya se bloquea con
+                  // `isTyping` en handleSendMessage y en el botón.
                   maxLength={500}
                   aria-label="Escribe tu consulta al asistente"
                   style={{
