@@ -19,6 +19,7 @@ vi.mock('../../../infrastructure/providers/groq-rate-limiter.js', () => ({
 
 import { GroqProvider } from '../../../infrastructure/providers/groq.provider.js';
 import { groqRateLimiter } from '../../../infrastructure/providers/groq-rate-limiter.js';
+import { logger } from '../../../infrastructure/logger/index.js';
 
 // --- Fixtures -----------------------------------------------------------------
 
@@ -273,6 +274,31 @@ describe('GroqProvider', () => {
 
       // Act & Assert
       await expect(provider.generateAnswer(SAMPLE_MESSAGES)).rejects.toThrow('Groq API Error (400)');
+    });
+
+    it('should not leak emails or phones from the Groq error body into the error or the log', async () => {
+      // Arrange: Groq devuelve en el cuerpo del error lo que el modelo intentó generar
+      const body = JSON.stringify({
+        error: {
+          code: 'tool_use_failed',
+          failed_generation: '{"name":"consultar_inscripciones","arguments":{"email":"ana.perez@test.com","phone":"04121234567"}}',
+        },
+      });
+      mockFetch.mockResolvedValueOnce({ ok: false, status: 400, text: async () => body });
+      const errorSpy = vi.spyOn(logger, 'error');
+
+      // Act
+      const error = (await provider.generateAnswer(SAMPLE_MESSAGES).catch((e: unknown) => e)) as Error;
+
+      // Assert: el error conserva el diagnóstico, sin datos personales
+      expect(error.message).toContain('Groq API Error (400)');
+      expect(error.message).toContain('tool_use_failed');
+      expect(error.message).toContain('a***@test.com');
+      expect(error.message).not.toContain('ana.perez@test.com');
+      expect(error.message).not.toContain('04121234567');
+      const logged = JSON.stringify(errorSpy.mock.calls);
+      expect(logged).not.toContain('ana.perez@test.com');
+      expect(logged).not.toContain('04121234567');
     });
 
     it('should tell the user to retry in N seconds when a per-minute window is saturated', async () => {
