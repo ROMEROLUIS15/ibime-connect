@@ -53,7 +53,9 @@ export class BackendAssistantAdapter implements IAssistantPort {
 
       const data = await response.json() as ChatResponse;
 
-      if (!data) {
+      // El cast no valida nada en tiempo de ejecución: si `answer` no llega como
+      // texto, la burbuja del chat fallaría al pintarlo y desmontaría el widget.
+      if (!data || typeof data.answer !== 'string') {
         return { ok: false, error: 'Respuesta vacía del servidor.' };
       }
 
