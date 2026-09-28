@@ -41,6 +41,9 @@ export interface ChatOrchestratorInput {
   sessionId?: string;
 }
 
+/** Enmascara un correo opcional para los logs (null se registra como null). */
+const maskOptionalEmail = (email: string | null): string | null => (email === null ? null : maskEmail(email));
+
 /** Fallback hardcoded para cuando el LLM no devuelve nada al pedir el email */
 const ASK_FOR_EMAIL_FALLBACK =
   '¡Claro que sí! Con mucho gusto te ayudo a verificar tus inscripciones. Por favor, indícame tu correo electrónico registrado para buscarlo en nuestro sistema.';
@@ -220,11 +223,12 @@ export class ChatOrchestrator {
     // Fallback: extraer del historial del cliente si Redis no tiene datos
     const firstEmailInHistory = serverEmail ?? this.extractEmailFromConversation(conversationHistory, '');
 
+    // Los correos van enmascarados a los logs: nunca PII en claro.
     logger.info('Privacy Gate inputs', {
       effectiveSessionId,
-      serverEmail,
-      firstEmailInHistory,
-      emailInCurrentMessage,
+      serverEmail: maskOptionalEmail(serverEmail),
+      firstEmailInHistory: maskOptionalEmail(firstEmailInHistory),
+      emailInCurrentMessage: maskOptionalEmail(emailInCurrentMessage),
     });
 
     if (
@@ -233,8 +237,8 @@ export class ChatOrchestrator {
       emailInCurrentMessage !== firstEmailInHistory
     ) {
       logger.warn('Privacy gate triggered: second email detected in same session', {
-        firstEmail: firstEmailInHistory,
-        newEmail: emailInCurrentMessage,
+        firstEmail: maskEmail(firstEmailInHistory),
+        newEmail: maskEmail(emailInCurrentMessage),
       });
       return this.applyPolicy(
         'Para proteger tu privacidad y procesar una nueva consulta correctamente, por favor inicia un nuevo chat. ¡Estaré encantado de ayudarte con ese otro correo!',
@@ -253,13 +257,13 @@ export class ChatOrchestrator {
       });
       logger.info('Privacy Gate: email saved to session store', {
         sessionId: effectiveSessionId,
-        email: emailInCurrentMessage,
+        email: maskEmail(emailInCurrentMessage),
       });
     }
 
     // Resuelve el email: servidor > cliente > mensaje actual
     const existingEmail = firstEmailInHistory ?? emailInCurrentMessage;
-    logger.info('Registration flow', { hasEmail: existingEmail !== null, email: existingEmail });
+    logger.info('Registration flow', { hasEmail: existingEmail !== null, email: maskOptionalEmail(existingEmail) });
 
     // ─── BRANCH A: EMAIL KNOWN → OWNERSHIP VERIFICATION, NO LLM ─────────────
     // Antes de revelar PII exigimos el teléfono registrado (prueba de propiedad).

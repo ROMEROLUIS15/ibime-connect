@@ -23,7 +23,16 @@ npx vitest run src/__tests__/modules/chat/chat-orchestrator.test.ts --prefix bac
 npx vitest run -t "name of the test" --prefix backend
 ```
 
-E2E (Playwright, Chromium only): `npx playwright test` — its `webServer` config boots both dev servers automatically (backend `:3000`, frontend `:4000`).
+Frontend-specific:
+
+```bash
+npm run test --prefix frontend                # all frontend tests (56, jsdom)
+npm run build --prefix frontend               # vite build
+cd frontend && npx vitest run src/components/ServicesSection.test.tsx   # single file
+cd frontend && npx vitest run -t "name of the test"                     # single test
+```
+
+E2E (Playwright, Chromium only): `npx playwright test` — its `webServer` config boots both dev servers automatically (backend `:3000`, frontend `:4000`) and reuses already-running ones outside CI, so `npm run dev` in another terminal is fine. Specs live in `e2e/`, run against `baseURL` `http://localhost:4000`, and **always intercept the chat call** with `page.route('**/*chat*', …)` — Groq's free quota is genuinely exhaustible (~132 responses/day), so no e2e test may hit the real LLM. `chat-rate-limit.spec.ts` fulfils a fake 429 rather than tripping the real limiter; keep it that way.
 
 ## Install quirk (do not skip)
 
@@ -46,6 +55,28 @@ The CI has historically broken on a `file:..` self-dependency; reproduce install
 
 Both sides are pinned to **zod 3** (unified 2026-07): frontend and backend share `shared/validators/schemas.ts`, and a v3/v4 split made `.email()` and error formatting diverge between them. Dependabot will periodically try to bump either side to zod 4 — don't merge that unless you migrate **both** sides together (plus `@hookform/resolvers` v5 on the frontend).
 
+## Frontend structure
+
+Path aliases (declared in both `vite.config.ts` and `vitest.config.ts` — add new ones to **both** or tests break): `@/*` → `frontend/src/*`, `@shared/*` → `shared/*`.
+
+- **Routing** is a small SPA in `App.tsx`: `/`, `/koha`, `/libro-hablado`, `/fondo-editorial`, `/donation-criteria`, `*`. `<IBIMEAssistant />` is mounted **outside `<Routes>`** on purpose so the chat floats over every route and survives navigation — don't move it into a route. `<ScrollToTop />` sits inside `<BrowserRouter>` to reset scroll on route change.
+- `pages/Index.tsx` is a one-page composition: `Navbar` → the `components/*Section.tsx` blocks in fixed order (Hero, AboutIBIME, CulturalVideos, MissionVision, News, PlanVacacional, Gallery, Events, Services, VisitorCounter, Contact) → `Footer` + `FloatingButtons`. New landing content is usually a new `*Section` component slotted into `Index`, not a new route.
+- **All backend HTTP goes through `lib/api-url.ts`** (`buildApiUrl` / `apiFetch`), which returns the typed `ApiResult<T>` from `@shared/types/domain` instead of throwing. `VITE_API_URL` wins in production; otherwise it falls back to `http://localhost:3000/api`. Don't call `fetch` directly in a component or service.
+- `services/` (`contact.service.ts`, `events.service.ts`) are thin `apiFetch` wrappers re-exported through `services/index.ts`; components import from `@/services`.
+- `lib/supabase.ts` is the **single** lazily-created Supabase client — never import the auto-generated `integrations/supabase/client.ts` directly. `integrations/supabase/types.ts` is generated; treat it as read-only.
+- `lib/session-id.ts` mints the chat `sessionId` (UUID v4). The backend uses it as the authoritative Redis key for the Privacy Gate, so a missing/invalid one silently downgrades that gate to the weaker history-hash fallback.
+
+Conventions: Tailwind only (no CSS modules/styled-components), shadcn/ui primitives from `components/ui/` first, functional components + hooks. UI copy and most inline comments are **Spanish** — match the surrounding file. The component-tagger plugin in `vite.config.ts` comes from the initial template and runs only in `mode === 'development'`; it's not part of the production build.
+
+## Frontend tests
+
+Vitest with `jsdom`, setup at `frontend/src/test/setup.ts` (imports `@testing-library/jest-dom` and stubs `window.matchMedia`, which jsdom doesn't implement and `hooks/use-mobile.tsx` needs). Two conventions coexist and both are matched by `include: src/**/*.{test,spec}.{ts,tsx}`:
+
+- Component/page tests are **co-located** (`components/ServicesSection.test.tsx`, `pages/DonationCriteriaPage.test.tsx`).
+- Pure-logic tests live under `src/test/` mirroring the source path (`src/test/lib/api-url.test.ts`, `src/test/application/use-cases/AskAssistantUseCase.test.ts`).
+
+The frontend has **no coverage gate** (unlike the backend) — coverage isn't configured here at all.
+
 ## Chat engine architecture
 
 The pipeline spans three directories, all under `backend/src/`: `controllers/chat.controller.ts` → `services/chat.service.ts` (thin wrapper) → `modules/chat/chat-orchestrator.ts`. The split is: gate and policy modules (`intent-classifier.ts`, `response-policy.ts`, `response-guardrail.ts`, `system-prompt.ts`, `email-validator.ts`) live in `modules/chat/`, while everything they call (`rag.service.ts`, `sentiment-analyzer.service.ts`, `session-memory.service.ts`, `verification-throttle.service.ts`, `tools/check_registration.tool.ts`) lives in `services/`. The orchestrator is the whole brain; the LLM only ever drafts text that later layers can override. Pipeline:
@@ -60,7 +91,7 @@ The pipeline spans three directories, all under `backend/src/`: `controllers/cha
 
 Security-critical invariants when editing the chat flow:
 - The chat endpoint is **public and unauthenticated**. `consultar_inscripciones` returns PII, so `check_registration.tool.ts` is self-protecting: it requires `email` + `phone` and verifies ownership regardless of caller. "email not found" and "phone mismatch" must return the *identical* generic `not_verified` response (anti-enumeration).
-- Phone comparison (`phone.util.ts`) matches the last 7 digits, ignoring country prefix/spaces/separators.
+- Phone comparison (`phone.util.ts`) matches the last 7 digits, ignoring country prefix/spaces/separators. The orchestrator takes the phone from the **most recent** user message that has one, scanning each message separately (never the joined history: two numbers in a row used to read as one 22-digit number and loop the phone prompt).
 - Brute-force is bounded by `verification-throttle.service.ts` (5 failures / 15 min per email, Redis) + IP rate-limit in `api.routes.ts`.
 - Log PII masked only (`pii.util.ts`, e.g. `j***@gmail.com`) — never in clear.
 - Redis is graceful-degradation: if it's down the system bypasses the cache/session layer and keeps serving.
@@ -92,7 +123,9 @@ There is also a LangGraph-based `modules/agents/curation-graph.ts` (`@langchain/
 
 Husky v9: `pre-commit` runs lint-staged (eslint --fix on staged files); `pre-push` runs lint → `tsc --noEmit` → `vitest run` sequentially and blocks on any failure. Vitest's backend worker flakes ~1 run in 7 — re-run rather than "fixing" a test that passes in isolation.
 
-Backend coverage is **gated**, not just reported: `vitest.config.ts` fails the run below 82% statements / 74% branches / 78% functions / 82% lines. Those thresholds are pinned a few points under actual coverage on purpose (to absorb the flake) — raise them when coverage improves, don't lower them to make a run pass.
+Backend coverage is **gated**, not just reported: `vitest.config.ts` fails the run below 82% statements / 74% branches / 78% functions / 82% lines. Those thresholds are pinned a few points under actual coverage on purpose (to absorb the flake) — raise them when coverage improves, don't lower them to make a run pass. The frontend has no coverage gate.
+
+Current suite sizes: **469 backend + 56 frontend** unit tests and **18** Playwright tests. `README.md` (badge, stack table, suite table, pyramid) and `docs/CODE_QUALITY.md` repeat these numbers — update them together when the counts change.
 
 Three GitHub Actions workflows (`ci.yml`, `e2e.yml`, `heartbeat.yml`); only the last needs explaining. `heartbeat.yml` is a cron every 6h that wakes the Render backend and pings Supabase to keep the free tiers from sleeping — not a quality gate, so don't "fix" it by deleting it. The **real** Render keep-alive is an UptimeRobot HTTP monitor every 14 min, configured outside this repo; nothing in the tree points to it.
 
@@ -100,10 +133,18 @@ Three GitHub Actions workflows (`ci.yml`, `e2e.yml`, `heartbeat.yml`); only the 
 
 Backend → Render (`render.yaml`), frontend → Vercel. `main` is production and auto-deploys both. Branch flow: `feature/*` and `fix/*` → `develop` → `main`. Both run on free tiers, which is why the code is defensive about quotas, cold starts, and Redis being unavailable.
 
-Render builds with `rootDir: backend` — that constraint is what forces the shared/zod copy hack above, and it means anything outside `backend/` (except the `shared/` files pulled in at build time) does not exist at runtime.
+Render builds with `rootDir: backend` — that constraint is what forces the shared/zod copy hack above, and it means anything outside `backend/` (except the `shared/` files pulled in at build time) does not exist at runtime. `render.yaml` pins `NODE_VERSION` 22.11.0 and `PORT` 10000, and it is the mirror of the backend `.env`: a new **required** env var in `env.config.ts` must be added there too or the next deploy boot-throws.
 
-There is also a parallel **on-prem** deployment (the free tiers are the public mirror, not the only target): the root `DEPLOYMENT.md` documents a self-hosted Debian server (`192.168.0.41`, public domain `www.ibime.gob.ve`) running the same stack behind nginx with a local Redis. Consult it before assuming Render/Vercel is the only place this runs.
+Today production is only Render + Vercel + Supabase. `www.ibime.gob.ve` still serves the **legacy** institutional site (static pages + PHP, not this stack), which is going away: the plan agreed with the IBIME is to move this platform to a self-hosted server under that domain, replacing the free cloud tiers. The gitignored root `DEPLOYMENT.md` sketches that setup (Debian, Apache, PM2, local Redis). The Koha public catalogue is **not** part of that change: it stays at `http://www.ibime.gob.ve:8000/` (confirmed 2026-09-28), linked from `pages/KohaPage.tsx` and `system-prompt.ts` and pinned by `system-prompt.test.ts` — keep those links as they are.
+
+Database schema lives in `supabase/migrations/` (RLS hardening, pgvector/RAG setup, data-retention functions). Migrations are append-only and timestamp-ordered — add a new file, never edit a shipped one.
 
 ## MCP servers (local dev tooling)
 
-Five servers (`playwright`, `redis`, `render`, `vercel`, `supabase`) are wired for this repo at **local scope** inside `~/.claude.json`. Both `.claude.json` and `.mcp.json` are gitignored, so this config never travels with the repo — it has to be rebuilt per machine. None of it touches the build or the runtime. The full recipe and its gotchas live in the `mcp-setup` skill (`.claude/skills/mcp-setup/SKILL.md`).
+Up to five servers (`playwright`, `redis`, `render`, `vercel`, `supabase`) are wired for this repo at **local scope** in the active tool config — `~/.claude.json`, or `$CLAUDE_CONFIG_DIR/.claude.json` when that variable is set (check which one before assuming a server is missing). Both `.claude.json` and `.mcp.json` are gitignored, so this config never travels with the repo — it has to be rebuilt per machine. None of it touches the build or the runtime. The full recipe and its gotchas live in the `mcp-setup` skill (`.claude/skills/mcp-setup/SKILL.md`).
+
+## Conventions worth keeping
+
+- Interfaces are prefixed `I` (`IEmbeddingService`); avoid `any`. Backend logging goes through `contextLogger` so the `requestId` stays traceable.
+- Commits use conventional-commit prefixes (`feat:`, `fix:`, `test:`, `style:` + scope). Branch flow is `feature/*` / `fix/*` → `develop` → `main`.
+- `.kiro/specs/` holds spec-driven artifacts (requirements/design/tasks) for a couple of features; they're historical records, not live config.

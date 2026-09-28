@@ -2,6 +2,111 @@
 
 Todos los cambios notables en este proyecto serán documentados en este archivo.
 
+## [2.7.4] - 2026-09-28
+### 💬 Chat del asistente: negrita, foco y verificación de inscripciones
+
+Releases #185 y #188.
+
+#### 🎨 Frontend — Asistente (`IBIMEAssistant.tsx`)
+- **Negrita** (#183): lo que el modelo marca con `**texto**` se muestra en negrita y sin asteriscos. `lib/inline-bold.ts` divide el texto en segmentos y la burbuja los pinta con React, sin interpretar HTML. Los mensajes del usuario se muestran como los escribió.
+- **Foco en la caja de texto** (#184): la caja ya no se deshabilita mientras el asistente responde y el foco vuelve a ella al enviar, con Enter o con el botón. Se puede escribir la siguiente pregunta, pero el envío sigue bloqueado hasta recibir la respuesta.
+- **Respuesta sin texto** (#186): `BackendAssistantAdapter` trata una respuesta sin `answer` de texto como vacía ("Respuesta vacía del servidor."). Antes, con la negrita, un `answer` ausente desmontaba el widget y dejaba la página en blanco; lo detectó el e2e del chat.
+
+#### 🔐 Backend — Verificación de inscripciones (`chat-orchestrator.ts`)
+- **Teléfono más reciente** (#187): el teléfono se busca en cada mensaje del usuario por separado y se usa el del más reciente. Antes se unían los mensajes y dos números seguidos se leían como uno de 22 dígitos: se descartaba y el asistente pedía el teléfono en bucle; además, un número mal escrito no se podía corregir. La verificación de propiedad, el throttle por correo y la respuesta anti-enumeración no cambian.
+
+#### 🧪 Testing
+- +7 unit de la negrita, +4 del widget (foco y respuesta sin texto), +3 del orquestador (teléfono).
+- Totales: **525** unit (469 backend + 56 frontend), **18** E2E.
+
+#### 📝 Documentación
+- Conteos de tests actualizados en `README.md`, `docs/CODE_QUALITY.md` y la guía de desarrollo del repositorio, que además suma las secciones de estructura y tests del frontend. Este changelog se pone al día desde la 2.6.1.
+
+---
+
+## [2.7.3] - 2026-09-28
+### 🌐 Enlaces directos, vista previa institucional y tono del asistente
+
+Releases #177, #179 y #182.
+
+- **Rutas internas en Vercel** (#176): abrir o recargar `/koha`, `/libro-hablado`, `/fondo-editorial` o `/donation-criteria` respondía 404. `frontend/vercel.json` reescribe las rutas a `index.html`.
+- **Vista previa al compartir** (#178): WhatsApp y las redes mostraban una imagen genérica de la plantilla inicial; ahora muestran el logo del IBIME (`/og-image.jpg`, 1200×630).
+- **Mayúsculas no son frustración** (#180): escribir todo en MAYÚSCULAS ya no marca al usuario como frustrado ni cambia el tono de la respuesta. Las quejas se siguen detectando por sus palabras y por los signos repetidos.
+- **Base de conocimiento** (#181): el script de carga incluye Libro Hablado y donaciones. La base de producción se recargó y verificó el 2026-09-28 (8 documentos, ids 29–36).
+
+---
+
+## [2.7.2] - 2026-09-27
+### ⚡ Catálogo Koha, red por ejes en el asistente y portada más rápida
+
+Releases #171 y #175.
+
+- **Koha** (#169): el enlace apuntaba al inicio de sesión del personal (`:8001`); ahora apunta al catálogo público (`:8000`), en la página `/koha` y en el prompt del asistente.
+- **Red bibliotecaria** (#170): el asistente describía "6 distritos"; ahora habla de 58 bibliotecas públicas en 5 ejes, con el desglose por eje.
+- **Portada** (#174): fuentes cargadas sin bloquear el primer pintado y 11 imágenes en WebP (3.427 → 1.395 KB). En un A/B local de Lighthouse móvil, el rendimiento pasó de 53 a 93.
+- **CI** (#173): mide la cobertura del backend, falla si baja de los umbrales y publica el reporte HTML.
+- **Vitest 5** (#172): Vitest y `@vitest/coverage-v8` 5 (solo desarrollo).
+
+---
+
+## [2.7.1] - 2026-09-27
+### 🛡️ Endurecimiento de la base de datos y errores del API
+
+Release #166.
+
+- **API** (#161): los errores del parser de JSON responden 413/400 en vez de 500 y no van a Sentry.
+- **Base de datos** (#159, #160, #162, #163): se elimina la tabla `notas` (lectura e inserción públicas), se adopta en el repo la tabla `courses` creada fuera de banda, se quita a `authenticated` la lectura de las tablas con PII y se reconcilian `course_registrations` y `contact_messages` entre repo y producción. Migraciones `20260926120000`–`150000`, aplicadas en Supabase el 2026-09-26.
+- **Dependencias** (#164): actualizaciones de Dependabot absorbidas en `develop` (supabase-js 2.116, Sentry 10.73, LangGraph 1.4.14, react-router-dom 7, sonner 2, Playwright 1.62, entre otras).
+- **Tipos** (#165): `integrations/supabase/types.ts` regenerado desde producción.
+
+---
+
+## [2.7.0] - 2026-09-25
+### 🔍 Correcciones de la auditoría del RAG
+
+Releases #152, #154 y #158. Detalle y estado de cada hallazgo en `docs/AUDITORIA_RAG.md`.
+
+- **RAG-01** (#139): migración que elimina el índice ivfflat que impedía la recuperación (la búsqueda devolvía 0 fuentes).
+- **RAG-03** (#140): el flujo de catálogo sin fuentes devuelve el fallback sin llamar al LLM.
+- **RAG-04** (#141, #142): el prompt ya no autoriza completar con conocimiento propio.
+- **RAG-06** (#143, #146): ingesta idempotente por `document_hash` y reversión de ingestas parciales.
+- **RAG-07** (#144): caché RAG con los parámetros en la clave e invalidación de `rag:*` al ingerir.
+- **RAG-08** (#145): webhook de Koha limitado a 50 ítems por petición.
+- **RAG-10** (#147): migración que elimina el esquema de conocimiento legado y quita a `anon` el RPC.
+- **RAG-11** (#148): tests del fail-hard por umbral de similitud.
+- **RAG-05** (#153): `POST /api/v1/admin/rag-probe`, sondeo admin-only de similitud sin umbral para calibrar el umbral.
+- **Curación** (#156): reporta la causa real de un fallo (cuota de Groq, respuesta cortada, vacía o error del API) en vez de "JSON Parsing Error".
+- **Documentación** (#149, #150, #155, #157): estado de las correcciones y `docs/CARGA_DE_CATALOGO.md` al comportamiento actual.
+
+---
+
+## [2.6.4] - 2026-08-26
+### 📋 Auditoría del RAG y herramientas de desarrollo
+
+- **`docs/AUDITORIA_RAG.md`**: auditoría del pipeline RAG medida contra producción.
+- **Build del backend**: `tsconfig.build.json` excluye los tests del bundle de producción.
+- **MCP de Redis** (#121): `backend/scripts/redis-mcp.mjs`, servidor MCP de solo lectura para inspeccionar Redis en desarrollo.
+
+---
+
+## [2.6.3] - 2026-08-24
+### 🔧 Dependencias
+
+- Actualizaciones de Dependabot mergeadas en `main`: grupos minor/patch del frontend (39) y del backend (14), `body-parser` 2.3.0, `undici` 7.29.0, `brace-expansion`, `sucrase`, `shell-quote` y `concurrently` (#97, #101, #108, #113, #114, #119, #120).
+
+---
+
+## [2.6.2] - 2026-07-20
+### 📱 Responsive sin scroll horizontal
+
+Releases #92 y #94.
+
+- **Carrusel de eventos y contacto** (#91): se elimina el desborde horizontal en 320–1024 px. Las flechas del carrusel quedan dentro del contenedor en md/lg y el correo de contacto ya no estira la columna.
+- **`README.md`**: sección "Red bibliotecaria por ejes" con la tabla de los 5 ejes.
+- **`.gitignore`** (#93): se quita la entrada obsoleta que ignoraba la guía de desarrollo del repositorio.
+
+---
+
 ## [2.6.1] - 2026-07-19
 ### 🗺️ Los 5 ejes de la red, con sus mapas reales
 
@@ -64,7 +169,7 @@ Refinamiento del sistema visual para un registro más **institucional, moderno y
 - `--destructive` (rojo semántico de error) intacto: no es color de marca.
 
 #### 📝 Documentación
-- Corrección de datos desactualizados en `README.md` y `docs/`: puertos de dev (frontend `4000`, backend `3000`), conteo de tests (**384** backend + **35** frontend = **419**), badge de `lint-staged` (v17), cadencia del heartbeat (cada 6h). `CLAUDE.md` incorporado a la rama principal.
+- Corrección de datos desactualizados en `README.md` y `docs/`: puertos de dev (frontend `4000`, backend `3000`), conteo de tests (**384** backend + **35** frontend = **419**), badge de `lint-staged` (v17), cadencia del heartbeat (cada 6h). La guía de desarrollo del repositorio se incorpora a la rama principal.
 
 ---
 
