@@ -267,7 +267,7 @@ export class ChatOrchestrator {
     if (existingEmail !== null) {
       const maskedEmail = maskEmail(existingEmail);
 
-      // Reúne el teléfono SOLO de los mensajes del usuario, no del asistente
+      // Toma el teléfono del mensaje más reciente del usuario, nunca del asistente
       // (evita capturar números que el propio bot menciona, p.ej. 0274-2623898).
       const existingPhone = this.extractPhoneFromUserMessages(conversationHistory, userMessage);
 
@@ -625,12 +625,24 @@ export class ChatOrchestrator {
     return null;
   }
 
-  /** Extrae el teléfono solo de los mensajes del usuario (nunca del asistente). */
+  /**
+   * Extrae el teléfono del mensaje del usuario más reciente que tenga uno (nunca
+   * del asistente), para que el usuario pueda corregir un número mal escrito.
+   * Cada mensaje se revisa por separado: unidos en un solo texto, dos teléfonos
+   * seguidos ("0412... 0412...") se leían como un único número de más de 15
+   * dígitos, se descartaban y el bot pedía el teléfono en bucle.
+   */
   private extractPhoneFromUserMessages(
     history: Array<{ role: 'user' | 'assistant'; text: string }>,
     currentMessage: string
   ): string | null {
-    return this.extractPhoneFromText(this.collectUserText(history, currentMessage));
+    const userTexts = history.filter((m) => m.role === 'user').map((m) => m.text);
+    userTexts.push(currentMessage);
+    for (let i = userTexts.length - 1; i >= 0; i--) {
+      const phone = this.extractPhoneFromText(userTexts[i]);
+      if (phone !== null) return phone;
+    }
+    return null;
   }
 
 
