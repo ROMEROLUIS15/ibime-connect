@@ -40,9 +40,12 @@ test-ingest.mjs
 # Private Documentation
 TECHNICAL_DOCUMENTATION.md
 DEPLOYMENT.md
+# Documentación de grado (entregable universitario, se edita en local)
+docs/grado/
 
-# Memoria de trabajo local del agente (no versionar)
+# Memoria y seguimiento de tareas locales del agente (no versionar)
 memory/
+odd/
 
 # Configuración local de Claude Code. Hasta ahora solo la ignoraba la config
 # personal de git (~/.config/git/ignore), que no viaja con el repo: en un clon
