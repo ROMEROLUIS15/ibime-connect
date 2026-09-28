@@ -11,7 +11,7 @@ const FALLBACKS = {
   general: '¡Gracias por tu interés! No tengo información específica sobre ese tema en mi base de conocimientos. Te recomiendo contactarnos al teléfono 0274-2623898, al correo contactoibime@gmail.com o visitar nuestras redes sociales @ibimegob para más información. ¡Estoy aquí para ayudarte en lo que necesites!',
 };
 
-const HALLUCINATION_FALLBACK = 'Para proteger tu privacidad y procesar una nueva consulta correctamente, por favor inicia un nuevo chat. ¡Estaré encantado de ayudarte con ese otro correo!';
+const HALLUCINATION_FALLBACK = 'Para no darte información que no pueda confirmar, prefiero verificarla primero. Si tu consulta es sobre tus inscripciones, indícame tu correo electrónico registrado y la reviso en nuestro sistema. Para cualquier otra duda, puedes contactarnos al 0274-2623898 o a contactoibime@gmail.com.';
 
 // ─── Structural validation ───────────────────────────────────────────────────
 describe('ResponsePolicy — structural validation', () => {
@@ -220,5 +220,36 @@ describe('ResponsePolicy — full valid response path', () => {
     );
     expect(result.valid).toBe(true);
     expect(result.answer.length).toBeGreaterThan(0);
+  });
+});
+
+// ─── Mensaje de la barrera de control ────────────────────────────────────────
+describe('ResponsePolicy — guardrail fallback message', () => {
+  it('should not ask to start a new chat nor mention another email outside the privacy gate', () => {
+    // Ese texto es el de la barrera de privacidad (segundo correo en la sesión);
+    // en una consulta general no tiene sentido para el ciudadano.
+    const result = applyResponsePolicy('No estás inscrito en ningún curso.', 'general', false);
+    expect(result.valid).toBe(false);
+    expect(result.answer).not.toMatch(/nuevo chat|otro correo/i);
+  });
+
+  it('should offer to verify enrollments and give the contact channels', () => {
+    const result = applyResponsePolicy('Tu correo no está registrado en nuestro sistema.', 'catalog', false);
+    expect(result.answer).toContain('indícame tu correo electrónico registrado');
+    expect(result.answer).toContain('0274-2623898');
+    expect(result.answer).toContain('contactoibime@gmail.com');
+  });
+
+  it('should also fit a blocked general answer that is not about the user (false positive)', () => {
+    // "No se encontró ... curso" coincide con un patrón de la barrera aunque no
+    // hable del usuario: el mensaje sustituto debe servir igual.
+    const result = applyResponsePolicy(
+      'No se encontró información sobre ese curso en nuestra base de conocimientos.',
+      'general',
+      false
+    );
+    expect(result.valid).toBe(false);
+    expect(result.answer).toBe(HALLUCINATION_FALLBACK);
+    expect(result.answer).toContain('Para cualquier otra duda');
   });
 });

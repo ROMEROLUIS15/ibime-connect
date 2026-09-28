@@ -35,7 +35,7 @@ describe('ResponseGuardrail', () => {
         'catalog'
       );
       expect(result.passed).toBe(false);
-      expect(result.safeResponse).toContain('inicia un nuevo chat');
+      expect(result.safeResponse).toContain('indícame tu correo electrónico registrado');
     });
 
     it('should BLOCK "no se encontró tu inscripción" in catalog flow', () => {
@@ -147,7 +147,7 @@ describe('ResponseGuardrail', () => {
     it('should return safe fallback when blocked', () => {
       const result = checkResponseGuardrail('No estás inscrito', 'catalog');
       expect(result.safeResponse).toBe(
-        'Para proteger tu privacidad y procesar una nueva consulta correctamente, por favor inicia un nuevo chat. ¡Estaré encantado de ayudarte con ese otro correo!'
+        'Para no darte información que no pueda confirmar, prefiero verificarla primero. Si tu consulta es sobre tus inscripciones, indícame tu correo electrónico registrado y la reviso en nuestro sistema. Para cualquier otra duda, puedes contactarnos al 0274-2623898 o a contactoibime@gmail.com.'
       );
     });
   });
