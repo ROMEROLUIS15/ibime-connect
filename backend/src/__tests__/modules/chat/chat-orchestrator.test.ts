@@ -127,6 +127,69 @@ describe('ChatOrchestrator', () => {
       );
     });
 
+    it('should use the most recent phone after a failed attempt (user corrects a typo)', async () => {
+      // Conversación real: primer teléfono mal escrito → not_verified → el usuario
+      // manda el correcto. Antes se unían los mensajes y "0412... 0412..." se leía
+      // como un solo número de 22 dígitos: se descartaba y el bot pedía el teléfono en bucle.
+      vi.spyOn(ToolRegistry.prototype, 'executeTool').mockResolvedValue(verified(['Taller A']));
+
+      const result = await orchestrator.process({
+        userMessage: '04127654321',
+        conversationHistory: [
+          { role: 'user', text: 'verificame email' },
+          { role: 'assistant', text: 'Por favor, indícame tu correo electrónico registrado.' },
+          { role: 'user', text: 'ana@test.com' },
+          { role: 'assistant', text: '¿Me confirmas el número de teléfono con el que te registraste?' },
+          { role: 'user', text: '04121234567' },
+          {
+            role: 'assistant',
+            text: 'No encontré inscripciones que coincidan. Contáctanos al 0274-2623898.',
+          },
+        ],
+      });
+
+      expect(result.answer).toContain('Taller A');
+      expect(ToolRegistry.prototype.executeTool).toHaveBeenCalledWith(
+        'consultar_inscripciones',
+        JSON.stringify({ email: 'ana@test.com', phone: '04127654321' })
+      );
+    });
+
+    it('should keep using the latest phone when the user repeats it in consecutive messages', async () => {
+      vi.spyOn(ToolRegistry.prototype, 'executeTool').mockResolvedValue(NOT_VERIFIED);
+
+      await orchestrator.process({
+        userMessage: '04127654321',
+        conversationHistory: [
+          { role: 'user', text: 'ana@test.com' },
+          { role: 'user', text: '04121234567' },
+          { role: 'user', text: '04127654321' },
+        ],
+      });
+
+      expect(ToolRegistry.prototype.executeTool).toHaveBeenCalledWith(
+        'consultar_inscripciones',
+        JSON.stringify({ email: 'ana@test.com', phone: '04127654321' })
+      );
+    });
+
+    it('should fall back to an earlier phone when the latest messages have none', async () => {
+      vi.spyOn(ToolRegistry.prototype, 'executeTool').mockResolvedValue(verified(['Taller A']));
+
+      await orchestrator.process({
+        userMessage: 'En que cursos estoy inscrito?',
+        conversationHistory: [
+          { role: 'user', text: 'ana@test.com' },
+          { role: 'user', text: 'mi telefono es 04121234567' },
+        ],
+      });
+
+      expect(ToolRegistry.prototype.executeTool).toHaveBeenCalledWith(
+        'consultar_inscripciones',
+        JSON.stringify({ email: 'ana@test.com', phone: '04121234567' })
+      );
+    });
+
     it('should return a GENERIC message (no PII, no existence leak) when not verified', async () => {
       vi.spyOn(ToolRegistry.prototype, 'executeTool').mockResolvedValue(NOT_VERIFIED);
 
