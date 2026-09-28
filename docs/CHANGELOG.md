@@ -20,7 +20,7 @@ Releases #185 y #188.
 - Totales: **525** unit (469 backend + 56 frontend), **18** E2E.
 
 #### 📝 Documentación
-- Conteos de tests actualizados en `README.md`, `docs/CODE_QUALITY.md` y `CLAUDE.md`; `CLAUDE.md` suma las secciones de estructura y tests del frontend. Este changelog se pone al día desde la 2.6.1.
+- Conteos de tests actualizados en `README.md`, `docs/CODE_QUALITY.md` y la guía de desarrollo del repositorio, que además suma las secciones de estructura y tests del frontend. Este changelog se pone al día desde la 2.6.1.
 
 ---
 
@@ -103,7 +103,7 @@ Releases #92 y #94.
 
 - **Carrusel de eventos y contacto** (#91): se elimina el desborde horizontal en 320–1024 px. Las flechas del carrusel quedan dentro del contenedor en md/lg y el correo de contacto ya no estira la columna.
 - **`README.md`**: sección "Red bibliotecaria por ejes" con la tabla de los 5 ejes.
-- **`.gitignore`** (#93): se quita la entrada obsoleta que ignoraba `CLAUDE.md`.
+- **`.gitignore`** (#93): se quita la entrada obsoleta que ignoraba la guía de desarrollo del repositorio.
 
 ---
 
@@ -169,7 +169,7 @@ Refinamiento del sistema visual para un registro más **institucional, moderno y
 - `--destructive` (rojo semántico de error) intacto: no es color de marca.
 
 #### 📝 Documentación
-- Corrección de datos desactualizados en `README.md` y `docs/`: puertos de dev (frontend `4000`, backend `3000`), conteo de tests (**384** backend + **35** frontend = **419**), badge de `lint-staged` (v17), cadencia del heartbeat (cada 6h). `CLAUDE.md` incorporado a la rama principal.
+- Corrección de datos desactualizados en `README.md` y `docs/`: puertos de dev (frontend `4000`, backend `3000`), conteo de tests (**384** backend + **35** frontend = **419**), badge de `lint-staged` (v17), cadencia del heartbeat (cada 6h). La guía de desarrollo del repositorio se incorpora a la rama principal.
 
 ---
 
