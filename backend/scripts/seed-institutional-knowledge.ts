@@ -5,7 +5,9 @@
  * Koha (n8n) con el catálogo. Hasta que esa integración cargue datos reales,
  * este seed inserta la información institucional base (servicios, horarios,
  * contacto, Koha, alfabetización digital) — los mismos hechos del system
- * prompt — para que RAG recupere y fundamente respuestas con fuentes.
+ * prompt — para que RAG recupere y fundamente respuestas con fuentes. Las
+ * entradas de Libro Hablado y de donaciones resumen las páginas /libro-hablado
+ * y /donation-criteria del sitio.
  *
  * Idempotente: borra sus propias entradas (por título) antes de reinsertar.
  *
@@ -56,6 +58,18 @@ const ENTRIES: SeedEntry[] = [
     title: 'Alfabetización Digital - Talleres gratuitos',
     content:
       'El IBIME ofrece el programa de Alfabetización Digital: talleres gratuitos de computación y uso de internet para la comunidad, orientados a desarrollar habilidades digitales básicas. Para conocer los talleres vigentes y cómo inscribirse, comunícate al 0274-2623898 o a contactoibime@gmail.com.',
+  },
+  {
+    category: 'servicio',
+    title: 'Libro Hablado - Programa de audiolibros',
+    content:
+      'Libro Hablado es el programa de audiolibros del IBIME. Hace accesible la lectura para personas con discapacidad visual o dificultades de lectura y para toda la comunidad merideña. Ofrece grabaciones profesionales de obras de autores venezolanos, literatura universal, textos educativos y material de interés cultural, todas gratuitas. Para saber cómo acceder a los audiolibros, comunícate al 0274-2623898 o a contactoibime@gmail.com.',
+  },
+  {
+    category: 'tramite',
+    title: 'Donación de libros al IBIME - Criterios y proceso',
+    content:
+      'El IBIME recibe donaciones de libros y materiales bibliográficos: libros y folletos, revistas, materiales audiovisuales, documentos digitales y material de referencia. Deben estar en buen estado: sin roturas ni páginas faltantes, sin humedad, moho ni daños por insectos, y con páginas legibles. Se prefieren contenidos educativos y culturales, obras de interés general o académico y publicaciones actualizadas. Para donar: revisa que tus materiales cumplan los criterios, organízalos por categorías, entrégalos en la biblioteca más cercana y recibe una constancia de donación. El equipo técnico evalúa cada donación y puede aceptarla o rechazarla. Más información: 0274-2623898 o contactoibime@gmail.com.',
   },
 ];
 
