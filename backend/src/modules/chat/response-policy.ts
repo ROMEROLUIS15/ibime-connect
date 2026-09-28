@@ -39,12 +39,6 @@ export function getIntentFallback(intent: ChatIntent): string {
 }
 
 /**
- * Hallucination-specific fallback — used when guardrail blocks a response.
- * This message is neutral and safe for any flow.
- */
-const HALLUCINATION_FALLBACK = 'Para proteger tu privacidad y procesar una nueva consulta correctamente, por favor inicia un nuevo chat. ¡Estaré encantado de ayudarte con ese otro correo!';
-
-/**
  * Maximum acceptable answer length (characters).
  * Prevents runaway LLM responses.
  */
@@ -116,7 +110,8 @@ export function applyResponsePolicy(
     if (!guardrailResult.passed) {
       return {
         valid: false,
-        answer: HALLUCINATION_FALLBACK,
+        // El texto sustituto lo define la barrera (un solo lugar).
+        answer: guardrailResult.safeResponse ?? FALLBACKS[intent],
         reason: guardrailResult.reason,
       };
     }

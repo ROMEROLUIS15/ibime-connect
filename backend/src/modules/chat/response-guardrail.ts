@@ -41,8 +41,14 @@ const USER_STATE_PATTERNS = [
 
 /**
  * Safe fallback when a hallucination is detected.
+ *
+ * Sirve para los dos casos que bloquea la barrera: una afirmación inventada sobre
+ * el usuario ("no estás inscrito") y una respuesta general que coincide con un
+ * patrón sin hablar del usuario ("no se encontró información sobre ese curso").
+ * No es el texto de la barrera de privacidad (segundo correo en la sesión), que
+ * vive en el orquestador.
  */
-const SAFE_FALLBACK = 'Para proteger tu privacidad y procesar una nueva consulta correctamente, por favor inicia un nuevo chat. ¡Estaré encantado de ayudarte con ese otro correo!';
+const SAFE_FALLBACK = 'Para no darte información que no pueda confirmar, prefiero verificarla primero. Si tu consulta es sobre tus inscripciones, indícame tu correo electrónico registrado y la reviso en nuestro sistema. Para cualquier otra duda, puedes contactarnos al 0274-2623898 o a contactoibime@gmail.com.';
 
 /**
  * Check if the response is from a registration flow (where DB data was explicitly provided).
