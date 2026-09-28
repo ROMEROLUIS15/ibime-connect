@@ -57,41 +57,33 @@ export class SentimentAnalyzerService {
    * Método síncrono puro — nunca bloquea el flujo principal.
    *
    * Reglas (umbral de frustración: score >= 2):
-   *   1. Mayúsculas sostenidas: >70% del texto en caps → +2
-   *   2. Patrón de alta señal coincidente → +2 por patrón
-   *   3. Patrón de señal media coincidente → +1 por patrón
-   *   4. Abuso de signos (!!! o ???): → +2
+   *   1. Patrón de alta señal coincidente → +2 por patrón
+   *   2. Patrón de señal media coincidente → +1 por patrón
+   *   3. Abuso de signos (!!! o ???): → +2
+   *
+   * Escribir en mayúsculas no suma puntos: muchas personas escriben todo en
+   * mayúsculas sin estar molestas, y el resultado no debe depender de cómo se
+   * escribe. Todos los patrones ignoran mayúsculas y minúsculas.
    */
   analyzeMessage(userMessage: string): SentimentResult {
     let score = 0;
     const msg = userMessage.trim();
 
-    // ── Regla 1: Mayúsculas sostenidas ───────────────────────────────────────
-    if (msg.length > 6) {
-      const letters = msg.replace(/[^a-zA-Z]/g, '');
-      if (letters.length > 0) {
-        const upperCount = (msg.match(/[A-Z]/g) ?? []).length;
-        if (upperCount / letters.length > 0.7) {
-          score += 2;
-        }
-      }
-    }
-
-    // ── Regla 2: Patrones de alta señal ──────────────────────────────────────
+    // ── Regla 1: Patrones de alta señal ──────────────────────────────────────
     for (const pattern of HIGH_SIGNAL_PATTERNS) {
       if (pattern.test(msg)) {
         score += 2;
       }
     }
 
-    // ── Regla 3: Patrones de señal media ─────────────────────────────────────
+    // ── Regla 2: Patrones de señal media ─────────────────────────────────────
     for (const pattern of MEDIUM_SIGNAL_PATTERNS) {
       if (pattern.test(msg)) {
         score += 1;
       }
     }
 
-    // ── Regla 4: Abuso de signos de exclamación o interrogación ──────────────
+    // ── Regla 3: Abuso de signos de exclamación o interrogación ──────────────
     if (/[!?]{3,}/.test(msg)) {
       score += 2;
     }
