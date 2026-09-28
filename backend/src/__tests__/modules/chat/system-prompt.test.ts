@@ -17,4 +17,17 @@ describe('CHAT_SYSTEM_PROMPT', () => {
     // Dato retirado del sitio en agosto de 2026: no debe volver al asistente.
     expect(CHAT_SYSTEM_PROMPT).not.toMatch(/distritos|71 puntos de lectura/i);
   });
+
+  it('does not tell the model to use tools, because it is never given any', () => {
+    // La consulta de inscripciones la hace el código (rama A del orquestador), no el
+    // modelo. Si el prompt ordena usar una herramienta que no se envía, el modelo intenta
+    // llamarla y Groq rechaza la petición (tool_use_failed, visto en producción el 2026-09-25).
+    expect(CHAT_SYSTEM_PROMPT).not.toContain('consultar_inscripciones');
+    expect(CHAT_SYSTEM_PROMPT).not.toMatch(/herramienta/i);
+  });
+
+  it('still tells the model to ask for the registered email and never guess enrollments', () => {
+    expect(CHAT_SYSTEM_PROMPT).toContain('indícame tu correo electrónico registrado');
+    expect(CHAT_SYSTEM_PROMPT).toContain('NUNCA inventes, asumas o adivines información sobre inscripciones');
+  });
 });
