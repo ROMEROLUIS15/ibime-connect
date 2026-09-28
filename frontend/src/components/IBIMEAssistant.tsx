@@ -29,6 +29,7 @@ import { AskAssistantUseCase, type AskAssistantInput } from '@/application/use-c
 import { BackendAssistantAdapter } from '@/infrastructure/adapters/BackendAssistantAdapter';
 import { AssistantLauncher } from '@/components/assistant/AssistantLauncher';
 import { createSessionId } from '@/lib/session-id';
+import { splitInlineBold } from '@/lib/inline-bold';
 import type { ChatMessage, KnowledgeMatch } from '@shared/types/domain';
 import owlMascot from '@/assets/buho_8-removebg-preview.webp';
 
@@ -147,7 +148,14 @@ function MessageBubble({ message }: MessageBubbleProps): JSX.Element {
           whiteSpace: 'pre-line' as const,
         }}
       >
-        <p style={{ margin: 0 }}>{message.text}</p>
+        <p style={{ margin: 0 }}>
+          {/* El modelo marca énfasis con **texto**: se muestra en negrita, sin asteriscos. */}
+          {isUser
+            ? message.text
+            : splitInlineBold(message.text).map((segment, index) =>
+                segment.bold ? <strong key={index}>{segment.text}</strong> : segment.text,
+              )}
+        </p>
         {!isUser && message.sources !== undefined && (
           <SourceBadges sources={message.sources} />
         )}
