@@ -135,7 +135,7 @@ Backend → Render (`render.yaml`), frontend → Vercel. `main` is production an
 
 Render builds with `rootDir: backend` — that constraint is what forces the shared/zod copy hack above, and it means anything outside `backend/` (except the `shared/` files pulled in at build time) does not exist at runtime. `render.yaml` pins `NODE_VERSION` 22.11.0 and `PORT` 10000, and it is the mirror of the backend `.env`: a new **required** env var in `env.config.ts` must be added there too or the next deploy boot-throws.
 
-The old **on-prem** deployment (the gitignored root `DEPLOYMENT.md`: a self-hosted Debian server, `192.168.0.41`, public domain `www.ibime.gob.ve`) is being retired (2026-09) — don't plan work against it; Render + Vercel are the targets. The Koha catalogue link still points at that host (`http://www.ibime.gob.ve:8000/` in `pages/KohaPage.tsx` and `system-prompt.ts`, pinned by `system-prompt.test.ts`), so it needs a new URL when the server goes away.
+The old **on-prem** deployment (the gitignored root `DEPLOYMENT.md`: a self-hosted Debian server, `192.168.0.41`, public domain `www.ibime.gob.ve`) is being retired (2026-09) — don't plan work against it; Render + Vercel are the targets. The Koha public catalogue is **not** part of that retirement: it stays at `http://www.ibime.gob.ve:8000/` (confirmed 2026-09-28), linked from `pages/KohaPage.tsx` and `system-prompt.ts` and pinned by `system-prompt.test.ts` — keep those links as they are.
 
 Database schema lives in `supabase/migrations/` (RLS hardening, pgvector/RAG setup, data-retention functions). Migrations are append-only and timestamp-ordered — add a new file, never edit a shipped one.
 
