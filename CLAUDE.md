@@ -66,7 +66,7 @@ Path aliases (declared in both `vite.config.ts` and `vitest.config.ts` — add n
 - `lib/supabase.ts` is the **single** lazily-created Supabase client — never import the auto-generated `integrations/supabase/client.ts` directly. `integrations/supabase/types.ts` is generated; treat it as read-only.
 - `lib/session-id.ts` mints the chat `sessionId` (UUID v4). The backend uses it as the authoritative Redis key for the Privacy Gate, so a missing/invalid one silently downgrades that gate to the weaker history-hash fallback.
 
-Conventions: Tailwind only (no CSS modules/styled-components), shadcn/ui primitives from `components/ui/` first, functional components + hooks. UI copy and most inline comments are **Spanish** — match the surrounding file. `lovable-tagger` runs only in `mode === 'development'` (the project was scaffolded with Lovable); it's not part of the production build.
+Conventions: Tailwind only (no CSS modules/styled-components), shadcn/ui primitives from `components/ui/` first, functional components + hooks. UI copy and most inline comments are **Spanish** — match the surrounding file. The component-tagger plugin in `vite.config.ts` comes from the initial template and runs only in `mode === 'development'`; it's not part of the production build.
 
 ## Frontend tests
 
@@ -135,13 +135,13 @@ Backend → Render (`render.yaml`), frontend → Vercel. `main` is production an
 
 Render builds with `rootDir: backend` — that constraint is what forces the shared/zod copy hack above, and it means anything outside `backend/` (except the `shared/` files pulled in at build time) does not exist at runtime. `render.yaml` pins `NODE_VERSION` 22.11.0 and `PORT` 10000, and it is the mirror of the backend `.env`: a new **required** env var in `env.config.ts` must be added there too or the next deploy boot-throws.
 
-The old **on-prem** deployment (the gitignored root `DEPLOYMENT.md`: a self-hosted Debian server, `192.168.0.41`, public domain `www.ibime.gob.ve`) is being retired (2026-09) — don't plan work against it; Render + Vercel are the targets. The Koha public catalogue is **not** part of that retirement: it stays at `http://www.ibime.gob.ve:8000/` (confirmed 2026-09-28), linked from `pages/KohaPage.tsx` and `system-prompt.ts` and pinned by `system-prompt.test.ts` — keep those links as they are.
+Today production is only Render + Vercel + Supabase. `www.ibime.gob.ve` still serves the **legacy** institutional site (static pages + PHP, not this stack), which is going away: the plan agreed with the IBIME is to move this platform to a self-hosted server under that domain, replacing the free cloud tiers. The gitignored root `DEPLOYMENT.md` sketches that setup (Debian, Apache, PM2, local Redis). The Koha public catalogue is **not** part of that change: it stays at `http://www.ibime.gob.ve:8000/` (confirmed 2026-09-28), linked from `pages/KohaPage.tsx` and `system-prompt.ts` and pinned by `system-prompt.test.ts` — keep those links as they are.
 
 Database schema lives in `supabase/migrations/` (RLS hardening, pgvector/RAG setup, data-retention functions). Migrations are append-only and timestamp-ordered — add a new file, never edit a shipped one.
 
 ## MCP servers (local dev tooling)
 
-Up to five servers (`playwright`, `redis`, `render`, `vercel`, `supabase`) are wired for this repo at **local scope** in the active Claude config — `~/.claude.json`, or `$CLAUDE_CONFIG_DIR/.claude.json` when that variable is set (check which one before assuming a server is missing). Both `.claude.json` and `.mcp.json` are gitignored, so this config never travels with the repo — it has to be rebuilt per machine. None of it touches the build or the runtime. The full recipe and its gotchas live in the `mcp-setup` skill (`.claude/skills/mcp-setup/SKILL.md`).
+Up to five servers (`playwright`, `redis`, `render`, `vercel`, `supabase`) are wired for this repo at **local scope** in the active tool config — `~/.claude.json`, or `$CLAUDE_CONFIG_DIR/.claude.json` when that variable is set (check which one before assuming a server is missing). Both `.claude.json` and `.mcp.json` are gitignored, so this config never travels with the repo — it has to be rebuilt per machine. None of it touches the build or the runtime. The full recipe and its gotchas live in the `mcp-setup` skill (`.claude/skills/mcp-setup/SKILL.md`).
 
 ## Conventions worth keeping
 
