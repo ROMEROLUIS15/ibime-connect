@@ -5,6 +5,8 @@ import type { RAGService } from '../../../services/rag.service.js';
 import { ToolRegistry } from '../../../services/tools.service.js';
 import { getIntentFallback } from '../../../modules/chat/response-policy.js';
 import { CHAT_SYSTEM_PROMPT } from '../../../modules/chat/system-prompt.js';
+import { logger } from '../../../infrastructure/logger/index.js';
+import type { SessionMemoryService } from '../../../services/session-memory.service.js';
 
 // --- Fixtures -----------------------------------------------------------------
 
@@ -237,6 +239,60 @@ describe('ChatOrchestrator', () => {
       });
 
       expect(result.answer).toContain('problema técnico');
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  describe('logs never contain a full email (PII)', () => {
+    /** Todo lo que el flujo escribió en los logs, serializado para buscar el correo. */
+    const loggedText = (...spies: Array<ReturnType<typeof vi.spyOn>>) =>
+      JSON.stringify(spies.flatMap((spy) => spy.mock.calls));
+
+    it('should mask the email in every log of the registration flow', async () => {
+      const infoSpy = vi.spyOn(logger, 'info');
+      const warnSpy = vi.spyOn(logger, 'warn');
+      const errorSpy = vi.spyOn(logger, 'error');
+      // Con memoria de sesión, para cubrir también el log de "email saved".
+      const sessionMemory = {
+        getSessionContext: vi.fn().mockResolvedValue(null),
+        saveSessionContext: vi.fn().mockResolvedValue(undefined),
+      };
+      const withSession = new ChatOrchestrator(
+        mockLLMProvider,
+        mockRAGService,
+        sessionMemory as unknown as SessionMemoryService
+      );
+
+      await withSession.process({
+        userMessage: 'ana.perez@test.com',
+        conversationHistory: [],
+        sessionId: '3f2b8c1e-5d4a-4c6b-9e7f-1a2b3c4d5e6f',
+      });
+      await orchestrator.process({
+        userMessage: '04121234567',
+        conversationHistory: [{ role: 'user', text: 'ana.perez@test.com' }],
+      });
+
+      const logged = loggedText(infoSpy, warnSpy, errorSpy);
+      expect(sessionMemory.saveSessionContext).toHaveBeenCalled();
+      expect(logged).not.toContain('ana.perez@test.com');
+      expect(logged).toContain('a***@test.com');
+    });
+
+    it('should mask both emails when the privacy gate blocks a second one', async () => {
+      const infoSpy = vi.spyOn(logger, 'info');
+      const warnSpy = vi.spyOn(logger, 'warn');
+
+      const result = await orchestrator.process({
+        userMessage: 'y el de otro.correo@test.com?',
+        conversationHistory: [{ role: 'user', text: 'ana.perez@test.com' }],
+      });
+
+      expect(result.answer).toContain('inicia un nuevo chat');
+      const logged = loggedText(infoSpy, warnSpy);
+      expect(logged).not.toContain('ana.perez@test.com');
+      expect(logged).not.toContain('otro.correo@test.com');
+      expect(logged).toContain('o***@test.com');
     });
   });
 

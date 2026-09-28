@@ -3,6 +3,7 @@ import { contextLogger } from '../logger/index.js';
 import type { ILLMProvider, LLMMessage, LLMResponse, ITool } from '../../domain/interfaces/index.js';
 import { groqRateLimiter } from './groq-rate-limiter.js';
 import { wrapLLM } from '../observability/tracing.js';
+import { maskPiiInText } from '../../utils/pii.util.js';
 
 /**
  * GroqProvider — LLM inference via Groq API (OpenAI-compatible).
@@ -142,7 +143,10 @@ export class GroqProvider implements ILLMProvider {
       }
 
       if (!response.ok) {
-        const errorBody = await response.text();
+        // Groq puede repetir en el cuerpo lo que el modelo intentó generar (p. ej.
+        // `failed_generation` con el correo del usuario). Este texto va a los logs
+        // y, dentro del Error, a Sentry: se enmascaran correos y teléfonos.
+        const errorBody = maskPiiInText(await response.text());
         logger.error(`Groq API error (${response.status})`, { error: errorBody, duration });
         throw new Error(`Groq API Error (${response.status}): ${errorBody}`);
       }
