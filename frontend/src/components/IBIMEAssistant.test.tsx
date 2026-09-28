@@ -96,3 +96,33 @@ describe('IBIMEAssistant — foco de la caja de texto', () => {
     expect(input).toHaveValue('Segunda pregunta');
   });
 });
+
+describe('IBIMEAssistant — respuesta del backend sin texto', () => {
+  beforeEach(() => {
+    Element.prototype.scrollIntoView = vi.fn();
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('no rompe el chat si la respuesta llega sin `answer` y muestra un aviso', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        headers: { get: () => null },
+        json: async () => ({ response: 'Campo con otro nombre' }),
+      }),
+    );
+    const input = await openAssistant();
+
+    fireEvent.change(input, { target: { value: 'Hola' } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+
+    expect(await screen.findByText('Respuesta vacía del servidor.')).toBeInTheDocument();
+    expect(screen.getByRole('dialog', { name: 'Asistente Virtual IBIME' })).toBeInTheDocument();
+    expect(screen.getByText('Hola')).toBeInTheDocument();
+  });
+});
