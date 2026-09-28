@@ -205,12 +205,11 @@ Servicio síncrono puro (`@singleton()`), sin I/O, latencia <1ms. Opera **antes*
 
 | Regla | Señal detectada | Puntos |
 |:---|:---|:---:|
-| **Caps sostenidas** | >70% del texto en mayúsculas (mensaje >6 chars) | +2 |
 | **Alta señal** | `pésimo`, `no funciona`, `horrible`, `harto`, `no sirve`, etc. | +2 c/u |
 | **Señal media** | `error`, `ayuda`, `humano`, `no entiendo`, `urgente`, etc. | +1 c/u |
 | **Abuso de signos** | `!!!` o `???` (3+ consecutivos) | +2 |
 
-**Umbral de frustración: score ≥ 2.**
+**Umbral de frustración: score ≥ 2.** Escribir en mayúsculas no suma puntos: el resultado es el mismo en minúsculas, MAYÚSCULAS o mezcla.
 
 Cuando `isFrustrated = true`, el sistema inyecta al inicio del `systemPrompt` en Branch B, catalog y general:
 > *"ALERTA DE FRUSTRACIÓN: El usuario está experimentando problemas o molestia. Adopta un tono de máxima empatía humana, sé breve, valida su frustración de inmediato, y recuérdale con total cortesía que si lo prefiere puede llamarnos directamente al 0274-2623898 para asistencia manual."*
@@ -387,7 +386,7 @@ ibime-connect/
 | Response Guardrail | `response-guardrail.test.ts` | 18 | Hallucination blocking |
 | Response Policy | `response-policy.test.ts` | 25 | Estructural + guardrail + fallbacks |
 | Chat Orchestrator | `chat-orchestrator.test.ts` | 20 | Branch A/B, Privacy Gate, routing, sentiment |
-| **Sentiment Analyzer** | **`sentiment-analyzer.service.test.ts`** | **13** | **4 reglas heurísticas, combinaciones, falsos positivos** |
+| **Sentiment Analyzer** | **`sentiment-analyzer.service.test.ts`** | **33** | **3 reglas heurísticas, combinaciones, falsos positivos, mismo resultado con cualquier uso de mayúsculas** |
 | RAG Service | `rag.service.test.ts` | 3 | Threshold, cache, error handling |
 | Groq Provider | `groq.provider.test.ts` | 18 | API calls, tokens, error cases |
 | Registration | `registration.service.test.ts` | 10 | DB insert/query |

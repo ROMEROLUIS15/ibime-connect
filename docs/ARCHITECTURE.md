@@ -34,7 +34,7 @@ flowchart TD
 
     D --> E{IntentClassifier\nRegex — sin LLM\nPrioridad 0: email regex}
 
-    D --> SA[SentimentAnalyzerService\nSíncrono puro - 4 reglas - lt1ms\nisFrustrated: bool + score]
+    D --> SA[SentimentAnalyzerService\nSíncrono puro - 3 reglas - lt1ms\nisFrustrated: bool + score]
 
     E -->|registration| PG[Privacy Gate\nRedis fuente autoritativa\nsessionId → SHA-256 hash fallback]
 
@@ -118,23 +118,21 @@ getSessionContext(effectiveSessionId)
 
 Función **pura y síncrona** sin I/O. Ejecuta en <1ms. Jamás bloquea Branch A. El orquestador solo consume `{ isFrustrated: boolean, score: number }`.
 
-### 4 Reglas Heurísticas
+### 3 Reglas Heurísticas
 
 ```typescript
 // Umbral de frustración: score >= 2
+// Escribir en mayúsculas no suma puntos: todos los patrones ignoran mayúsculas/minúsculas.
 
-// Regla 1: Mayúsculas sostenidas (>70% letras en caps, msg >6 chars) → +2
-// Ejemplo: "NO ENTIENDO NADA" → score +2 → isFrustrated: true
-
-// Regla 2: Patrones de alta señal → +2 c/u
+// Regla 1: Patrones de alta señal → +2 c/u
 // 'pésimo' | 'es un asco' | 'horrible' | 'terrible' | 'mal servicio'
 // 'harto'  | 'no funciona' | 'no sirve' | 'desesperado'
 
-// Regla 3: Patrones de señal media → +1 c/u
+// Regla 2: Patrones de señal media → +1 c/u
 // 'humano' | 'ayuda' | 'error' | 'no entiendo' | 'no puedo' | 'urgente'
 // Nota: 'ayuda' solo = score 1 (no frustrado). Necesita otra señal.
 
-// Regla 4: Abuso de signos (3+) → +2
+// Regla 3: Abuso de signos (3+) → +2
 // '!!!' | '???' → score +2 → isFrustrated: true
 ```
 
@@ -176,7 +174,7 @@ handleGeneralFallback  → EMPATHY_ALERT + CHAT_SYSTEM_PROMPT + Nota
 | Archivo | Rol |
 |:---|:---|
 | `session-memory.service.ts` | Estado de sesión autoritativo via Redis. TTL: 30 min. |
-| `sentiment-analyzer.service.ts` | Análisis emocional síncrono. 4 reglas heurísticas. |
+| `sentiment-analyzer.service.ts` | Análisis emocional síncrono. 3 reglas heurísticas. |
 
 ---
 

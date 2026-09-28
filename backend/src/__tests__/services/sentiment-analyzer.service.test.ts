@@ -1,13 +1,12 @@
 /**
  * Tests for SentimentAnalyzerService
  *
- * Validates the 4 heuristic rules:
- *   1. Sustained uppercase (>70% of letters in caps, message >6 chars)
- *   2. High-signal frustration patterns (score +2 each)
- *   3. Medium-signal patterns (score +1 each)
- *   4. Punctuation abuse (3+ consecutive ! or ?)
+ * Validates the 3 heuristic rules:
+ *   1. High-signal frustration patterns (score +2 each)
+ *   2. Medium-signal patterns (score +1 each)
+ *   3. Punctuation abuse (3+ consecutive ! or ?)
  *
- * Frustration threshold: score >= 2
+ * Frustration threshold: score >= 2. Letter case never changes the result.
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
@@ -20,30 +19,9 @@ describe('SentimentAnalyzerService', () => {
     analyzer = new SentimentAnalyzerService();
   });
 
-  // ─── Rule 1: Uppercase ratio ───────────────────────────────────────────────
+  // ─── Rule 1: High-signal patterns ─────────────────────────────────────────
 
-  describe('Rule 1 — Sustained uppercase', () => {
-    it('flags ALL-CAPS long message as frustrated (score +2)', () => {
-      const result = analyzer.analyzeMessage('NO ENTIENDO NADA DE ESTO');
-      expect(result.isFrustrated).toBe(true);
-      expect(result.score).toBeGreaterThanOrEqual(2);
-    });
-
-    it('does not flag short ALL-CAPS message (<=6 chars)', () => {
-      // "HOLA" is 4 chars — rule requires >6
-      const result = analyzer.analyzeMessage('HOLA');
-      expect(result.score).toBeLessThan(2); // caps rule doesn't fire
-    });
-
-    it('does not flag mixed-case polite message', () => {
-      const result = analyzer.analyzeMessage('Buenos días, ¿cuáles son los horarios?');
-      expect(result.isFrustrated).toBe(false);
-    });
-  });
-
-  // ─── Rule 2: High-signal patterns ─────────────────────────────────────────
-
-  describe('Rule 2 — High-signal frustration patterns (+2 each)', () => {
+  describe('Rule 1 — High-signal frustration patterns (+2 each)', () => {
     it.each([
       ['pésimo servicio', 'pésimo'],
       ['esto es un asco', 'es un asco'],
@@ -60,9 +38,9 @@ describe('SentimentAnalyzerService', () => {
     });
   });
 
-  // ─── Rule 3: Medium-signal patterns ───────────────────────────────────────
+  // ─── Rule 2: Medium-signal patterns ───────────────────────────────────────
 
-  describe('Rule 3 — Medium-signal patterns (+1 each, need combination)', () => {
+  describe('Rule 2 — Medium-signal patterns (+1 each, need combination)', () => {
     it('single "ayuda" alone does NOT trigger frustration (score 1, threshold 2)', () => {
       const result = analyzer.analyzeMessage('necesito ayuda');
       expect(result.isFrustrated).toBe(false);
@@ -92,9 +70,9 @@ describe('SentimentAnalyzerService', () => {
     });
   });
 
-  // ─── Rule 4: Punctuation abuse ─────────────────────────────────────────────
+  // ─── Rule 3: Punctuation abuse ─────────────────────────────────────────────
 
-  describe('Rule 4 — Punctuation abuse (3+ consecutive !/?)', () => {
+  describe('Rule 3 — Punctuation abuse (3+ consecutive !/?)', () => {
     it('"!!!" triggers frustration alone (score +2)', () => {
       const result = analyzer.analyzeMessage('¿Cuándo responden???');
       expect(result.isFrustrated).toBe(true);
@@ -117,18 +95,53 @@ describe('SentimentAnalyzerService', () => {
   // ─── Combinations ──────────────────────────────────────────────────────────
 
   describe('Combined signals', () => {
-    it('caps + high-signal = high score', () => {
+    it('an ALL-CAPS complaint is still detected by its words', () => {
       const result = analyzer.analyzeMessage('NO FUNCIONA PARA NADA');
-      // caps (+2) + "no funciona" (+2) = 4
-      expect(result.score).toBeGreaterThanOrEqual(4);
+      // "no funciona" (+2); the uppercase itself adds nothing
+      expect(result.score).toBe(2);
       expect(result.isFrustrated).toBe(true);
     });
 
-    it('caps + punctuation abuse = frustrated', () => {
-      const result = analyzer.analyzeMessage('RESPONDAN POR FAVOR!!!');
-      // caps (+2) + !!! (+2) + "por favor" (+1) = 5
+    it('an accented ALL-CAPS complaint is detected too', () => {
+      const result = analyzer.analyzeMessage('PÉSIMO SERVICIO');
+      // "pésimo" (+2) matches "PÉSIMO"; the uppercase adds nothing
+      expect(result.score).toBe(2);
       expect(result.isFrustrated).toBe(true);
-      expect(result.score).toBeGreaterThanOrEqual(2);
+    });
+
+    it('punctuation abuse + medium signal = frustrated', () => {
+      const result = analyzer.analyzeMessage('RESPONDAN POR FAVOR!!!');
+      // !!! (+2) + "por favor" (+1) = 3
+      expect(result.score).toBe(3);
+      expect(result.isFrustrated).toBe(true);
+    });
+  });
+
+  // ─── Letter case ──────────────────────────────────────────────────────────
+
+  describe('Letter case does not change the result', () => {
+    // Muchas personas escriben todo en mayúsculas sin estar molestas: el tono de
+    // la respuesta no debe depender de cómo se escribe, solo de lo que se dice.
+    const variantes = (texto: string) => [texto.toLowerCase(), texto.toUpperCase(), texto];
+
+    it.each([
+      ['¿Cuál es el horario de atención?'],
+      ['¿Dónde puedo buscar un libro en el catálogo en línea?'],
+      ['Quiero ver mis inscripciones, mi correo es Juan.Perez@Gmail.com'],
+      ['No funciona el sistema'],
+      ['Pésimo servicio'],
+      ['Hay un error y no entiendo qué pasó'],
+      ['Respondan por favor!!!'],
+    ])('"%s" → same score in lowercase, UPPERCASE and mixed case', (texto) => {
+      const [minusculas, mayusculas, mixta] = variantes(texto).map((t) => analyzer.analyzeMessage(t));
+      expect(mayusculas).toEqual(minusculas);
+      expect(mixta).toEqual(minusculas);
+    });
+
+    it('an ALL-CAPS neutral question is not flagged as frustrated', () => {
+      const result = analyzer.analyzeMessage('¿CUÁL ES EL HORARIO DE ATENCIÓN?');
+      expect(result.isFrustrated).toBe(false);
+      expect(result.score).toBe(0);
     });
   });
 
