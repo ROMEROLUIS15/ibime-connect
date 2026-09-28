@@ -141,7 +141,7 @@ Database schema lives in `supabase/migrations/` (RLS hardening, pgvector/RAG set
 
 ## MCP servers (local dev tooling)
 
-Up to five servers (`playwright`, `redis`, `render`, `vercel`, `supabase`) are wired for this repo at **local scope** in the active Claude config — `~/.claude.json`, or `$CLAUDE_CONFIG_DIR/.claude.json` when that variable is set (check which one before assuming a server is missing). Both `.claude.json` and `.mcp.json` are gitignored, so this config never travels with the repo — it has to be rebuilt per machine. None of it touches the build or the runtime. The full recipe and its gotchas live in the `mcp-setup` skill (`.claude/skills/mcp-setup/SKILL.md`).
+Up to five servers (`playwright`, `redis`, `render`, `vercel`, `supabase`) are wired for this repo at **local scope** in the active tool config — `~/.claude.json`, or `$CLAUDE_CONFIG_DIR/.claude.json` when that variable is set (check which one before assuming a server is missing). Both `.claude.json` and `.mcp.json` are gitignored, so this config never travels with the repo — it has to be rebuilt per machine. None of it touches the build or the runtime. The full recipe and its gotchas live in the `mcp-setup` skill (`.claude/skills/mcp-setup/SKILL.md`).
 
 ## Conventions worth keeping
 
