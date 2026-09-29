@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 // Mock fetch globally
 const mockFetch = vi.fn();
-global.fetch = mockFetch as unknown as typeof fetch;
+globalThis.fetch = mockFetch as unknown as typeof fetch;
 
 describe('api-url utilities', () => {
   beforeEach(() => {
@@ -82,8 +82,7 @@ describe('api-url utilities', () => {
       const { apiFetch } = await import('../../lib/api-url.js');
       const result = await apiFetch<void>('contact', { method: 'POST', body: '{}' });
 
-      expect(result.ok).toBe(true);
-      expect(result.data).toBeUndefined();
+      expect(result).toEqual({ ok: true, data: undefined });
     });
 
     it('should handle empty response (content-length 0)', async () => {
@@ -97,8 +96,7 @@ describe('api-url utilities', () => {
       const { apiFetch } = await import('../../lib/api-url.js');
       const result = await apiFetch<void>('test', { method: 'POST', body: '{}' });
 
-      expect(result.ok).toBe(true);
-      expect(result.data).toBeUndefined();
+      expect(result).toEqual({ ok: true, data: undefined });
     });
 
     it('should merge Content-Type header with custom headers', async () => {
