@@ -1,3 +1,5 @@
+import { maskPiiInText } from '../../utils/pii.util.js';
+
 /**
  * Base class for application errors.
  * Allows precise HTTP status codes and avoids exposing internal details to clients.
@@ -51,21 +53,38 @@ export class InternalServerError extends AppError {
 }
 
 /**
+ * Keeps only what identifies a database failure, without personal data.
+ * Postgres echoes the offending values in `details` ("Failing row contains (…)",
+ * "Key (email, …)=(…)"), so it is dropped; `message` and `hint` are masked.
+ */
+function sanitizeDbError(error: unknown): Record<string, unknown> {
+  if (typeof error !== 'object' || error === null) {
+    return { message: maskPiiInText(String(error)) };
+  }
+  const { code, message, hint } = error as { code?: unknown; message?: unknown; hint?: unknown };
+  const sanitized: Record<string, unknown> = {};
+  if (code !== undefined) sanitized.code = code;
+  if (message !== undefined) sanitized.message = typeof message === 'string' ? maskPiiInText(message) : message;
+  if (hint !== undefined && hint !== null) sanitized.hint = typeof hint === 'string' ? maskPiiInText(hint) : hint;
+  return sanitized;
+}
+
+/**
  * Wraps a Supabase error into an InternalServerError with structured logging.
  *
- * @param logger - The context logger to use
- * @param error - The Supabase error object
- * @param data - Additional data from the Supabase response
+ * @param logger - A pino-style logger (`error(obj, msg)`), e.g. `logger.child({ requestId })`
+ * @param error - The Supabase error object (logged without `details`, masked)
+ * @param context - Safe context for the log. Never the raw user input: mask it first (see pii.util)
  * @param operation - Human-readable operation description (e.g., 'inserting contact message')
  */
 export function handleSupabaseError(
   logger: { error: (ctx: Record<string, unknown>, msg: string) => void },
   error: unknown,
-  data: unknown,
+  context: Record<string, unknown>,
   operation: string
 ): never {
   logger.error(
-    { supabaseError: error, responseData: data },
+    { supabaseError: sanitizeDbError(error), context },
     `Database error while ${operation}`
   );
   throw new InternalServerError(`Error al ${operation}`);

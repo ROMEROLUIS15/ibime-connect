@@ -4,6 +4,8 @@ const mocks = vi.hoisted(() => ({
   mockUpsert: vi.fn(),
   mockEq: vi.fn(),
   mockSelect: vi.fn().mockReturnValue({ eq: vi.fn() }),
+  mockLogError: vi.fn(),
+  mockChild: vi.fn(),
 }));
 
 vi.mock('../../config/supabase.config.js', () => ({
@@ -13,6 +15,11 @@ vi.mock('../../config/supabase.config.js', () => ({
       select: mocks.mockSelect,
     }),
   },
+}));
+
+vi.mock('../../infrastructure/logger/index.js', () => ({
+  logger: { error: mocks.mockLogError, child: mocks.mockChild },
+  contextLogger: () => ({ error: mocks.mockLogError }),
 }));
 
 import { RegistrationService } from '../../services/registration.service.js';
@@ -32,6 +39,7 @@ describe('RegistrationService', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.mockEq.mockReset();
+    mocks.mockChild.mockReturnValue({ error: mocks.mockLogError });
   });
 
   describe('register', () => {
@@ -81,6 +89,33 @@ describe('RegistrationService', () => {
       await expect(RegistrationService.register(REGISTRANT)).rejects.toThrow(
         'Error al registering for course'
       );
+    });
+
+    it('should not log the registrant personal data when the upsert fails', async () => {
+      // Arrange — Postgres repite la fila que falló en `details`
+      mocks.mockUpsert.mockResolvedValueOnce({
+        error: {
+          code: '23514',
+          message: 'new row for relation "course_registrations" violates check constraint',
+          details: `Failing row contains (${REGISTRANT.name}, ${REGISTRANT.email}, ${REGISTRANT.phone}).`,
+        },
+      });
+
+      // Act
+      await expect(RegistrationService.register(REGISTRANT, 'req-456')).rejects.toThrow(
+        'Error al registering for course'
+      );
+
+      // Assert — el requestId va en el logger hijo y el texto como mensaje
+      expect(mocks.mockChild).toHaveBeenCalledWith({ requestId: 'req-456' });
+      expect(mocks.mockLogError).toHaveBeenCalledTimes(1);
+      const [logged, message] = mocks.mockLogError.mock.calls[0];
+      expect(message).toBe('Database error while registering for course');
+      expect(logged.context).toEqual({ email: 'm***@test.com', courseName: REGISTRANT.courseName });
+      const serialized = JSON.stringify(mocks.mockLogError.mock.calls);
+      expect(serialized).not.toContain(REGISTRANT.name);
+      expect(serialized).not.toContain(REGISTRANT.email);
+      expect(serialized).not.toContain('1234567');
     });
 
     it('should resolve successfully when an optional requestId is provided', async () => {
@@ -146,6 +181,23 @@ describe('RegistrationService', () => {
       await expect(RegistrationService.findByEmail('test@test.com')).rejects.toThrow(
         'Error al finding registrations by email'
       );
+    });
+
+    it('should log the email masked when the query fails', async () => {
+      // Arrange — el chat consulta sin requestId, con el logger raíz
+      mocks.mockSelect.mockReturnValueOnce({ eq: mocks.mockEq });
+      mocks.mockEq.mockResolvedValueOnce({ data: null, error: { message: 'Query failed' } });
+
+      // Act
+      await expect(RegistrationService.findByEmail('juan.perez@test.com')).rejects.toThrow(
+        'Error al finding registrations by email'
+      );
+
+      // Assert
+      const [logged, message] = mocks.mockLogError.mock.calls[0];
+      expect(message).toBe('Database error while finding registrations by email');
+      expect(logged.context).toEqual({ email: 'j***@test.com' });
+      expect(JSON.stringify(mocks.mockLogError.mock.calls)).not.toContain('juan.perez@test.com');
     });
 
     it('should resolve successfully when an optional requestId is provided', async () => {
