@@ -2,6 +2,8 @@
 
 const mocks = vi.hoisted(() => ({
   mockInsert: vi.fn(),
+  mockLogError: vi.fn(),
+  mockChild: vi.fn(),
 }));
 
 vi.mock('../../config/supabase.config.js', () => ({
@@ -10,6 +12,11 @@ vi.mock('../../config/supabase.config.js', () => ({
       insert: mocks.mockInsert,
     }),
   },
+}));
+
+vi.mock('../../infrastructure/logger/index.js', () => ({
+  logger: { error: mocks.mockLogError, child: mocks.mockChild },
+  contextLogger: () => ({ error: mocks.mockLogError }),
 }));
 
 import { ContactService } from '../../services/contact.service.js';
@@ -27,6 +34,7 @@ const CONTACT_MESSAGE = {
 describe('ContactService', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.mockChild.mockReturnValue({ error: mocks.mockLogError });
   });
 
   describe('createMessage', () => {
@@ -64,6 +72,32 @@ describe('ContactService', () => {
       await expect(
         ContactService.createMessage(CONTACT_MESSAGE)
       ).rejects.toThrow('Error al inserting contact message');
+    });
+
+    it('should not log the sender name, email or message when the insert fails', async () => {
+      // Arrange — Postgres repite la fila que falló en `details`
+      mocks.mockInsert.mockResolvedValueOnce({
+        error: {
+          code: '23502',
+          message: 'null value in column "created_at" of relation "contact_messages" violates not-null constraint',
+          details: `Failing row contains (${CONTACT_MESSAGE.name}, ${CONTACT_MESSAGE.email}, ${CONTACT_MESSAGE.message}).`,
+        },
+      });
+
+      // Act
+      await expect(ContactService.createMessage(CONTACT_MESSAGE, 'req-123')).rejects.toThrow(
+        'Error al inserting contact message'
+      );
+
+      // Assert — el requestId va en el logger hijo y el texto como mensaje
+      expect(mocks.mockChild).toHaveBeenCalledWith({ requestId: 'req-123' });
+      const [logged, message] = mocks.mockLogError.mock.calls[0];
+      expect(message).toBe('Database error while inserting contact message');
+      expect(logged.context).toEqual({ email: 'j***@test.com' });
+      const serialized = JSON.stringify(mocks.mockLogError.mock.calls);
+      expect(serialized).not.toContain(CONTACT_MESSAGE.name);
+      expect(serialized).not.toContain(CONTACT_MESSAGE.email);
+      expect(serialized).not.toContain(CONTACT_MESSAGE.message);
     });
 
     it('should call insert once even when an optional requestId is provided', async () => {
