@@ -99,16 +99,52 @@ describe('AppError classes', () => {
     it('should log error and throw InternalServerError', () => {
       const mockLogger = { error: vi.fn() };
       const supabaseError = { message: 'Constraint violation', code: '23505' };
-      const data = { email: 'test@test.com' };
+      const context = { email: 't***@test.com' };
 
-      expect(() => handleSupabaseError(mockLogger, supabaseError, data, 'inserting user')).toThrow(
+      expect(() => handleSupabaseError(mockLogger, supabaseError, context, 'inserting user')).toThrow(
         InternalServerError
       );
 
       expect(mockLogger.error).toHaveBeenCalledWith(
-        { supabaseError, responseData: data },
+        { supabaseError: { code: '23505', message: 'Constraint violation' }, context },
         'Database error while inserting user'
       );
+    });
+
+    it('should drop the error details and mask emails and phones, which Postgres can echo from the failing row', () => {
+      const mockLogger = { error: vi.fn() };
+      const supabaseError = {
+        code: '23514',
+        message: 'new row for relation "course_registrations" violates check constraint',
+        details: 'Failing row contains (Maria Lopez, maria@test.com, +58 412 1234567).',
+        hint: 'Revise maria@test.com o el 04121234567',
+      };
+
+      expect(() => handleSupabaseError(mockLogger, supabaseError, {}, 'registering for course')).toThrow(
+        InternalServerError
+      );
+
+      const [logged] = mockLogger.error.mock.calls[0];
+      expect(logged.supabaseError).toEqual({
+        code: '23514',
+        message: 'new row for relation "course_registrations" violates check constraint',
+        hint: 'Revise m***@test.com o el ***67',
+      });
+      const serialized = JSON.stringify(logged);
+      expect(serialized).not.toContain('Maria Lopez');
+      expect(serialized).not.toContain('maria@test.com');
+      expect(serialized).not.toContain('1234567');
+    });
+
+    it('should log a non-object error as a masked message', () => {
+      const mockLogger = { error: vi.fn() };
+
+      expect(() =>
+        handleSupabaseError(mockLogger, 'timeout for maria@test.com', {}, 'registering for course')
+      ).toThrow(InternalServerError);
+
+      const [logged] = mockLogger.error.mock.calls[0];
+      expect(logged.supabaseError).toEqual({ message: 'timeout for m***@test.com' });
     });
 
     it('should include operation description in error message', () => {

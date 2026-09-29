@@ -1,6 +1,7 @@
 import { supabaseClient } from '../config/supabase.config.js';
-import { contextLogger, logger } from '../infrastructure/logger/index.js';
+import { logger } from '../infrastructure/logger/index.js';
 import { handleSupabaseError } from '../domain/errors/app-error.js';
+import { maskEmail } from '../utils/pii.util.js';
 
 export interface CourseRegistration {
   name: string;
@@ -11,7 +12,7 @@ export interface CourseRegistration {
 
 export class RegistrationService {
   static async register(data: CourseRegistration, requestId?: string) {
-    const log = requestId ? contextLogger(requestId) : logger;
+    const log = requestId ? logger.child({ requestId }) : logger;
 
     // upsert idempotente: si la persona ya está inscrita en ese curso (mismo
     // email + course_name), no crea un duplicado (ON CONFLICT DO NOTHING) y
@@ -30,14 +31,19 @@ export class RegistrationService {
       );
 
     if (error) {
-      handleSupabaseError(log as any, error, data, 'registering for course');
+      handleSupabaseError(
+        log,
+        error,
+        { email: maskEmail(data.email), courseName: data.courseName },
+        'registering for course'
+      );
     }
 
     return { success: true };
   }
 
   static async findByEmail(email: string, requestId?: string) {
-    const log = requestId ? contextLogger(requestId) : logger;
+    const log = requestId ? logger.child({ requestId }) : logger;
     const normalizedEmail = email.trim().toLowerCase();
 
     const { data, error } = await supabaseClient
@@ -46,7 +52,7 @@ export class RegistrationService {
       .eq('email', normalizedEmail);
 
     if (error) {
-      handleSupabaseError(log as any, error, { email }, 'finding registrations by email');
+      handleSupabaseError(log, error, { email: maskEmail(email) }, 'finding registrations by email');
     }
 
     return data || [];
