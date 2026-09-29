@@ -21,7 +21,7 @@ export function useFocusTrap(
       const elements = container.querySelectorAll<HTMLElement>(
         'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
       );
-      return Array.from(elements).filter((el) => !el.disabled && el.tabIndex >= 0);
+      return Array.from(elements).filter((el) => !el.matches(':disabled') && el.tabIndex >= 0);
     };
 
     const handleKeyDown = (e: KeyboardEvent) => {
