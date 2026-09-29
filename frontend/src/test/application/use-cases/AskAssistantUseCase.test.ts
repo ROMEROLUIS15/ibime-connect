@@ -115,8 +115,8 @@ describe('AskAssistantUseCase', () => {
         data: { answer: 'OK', sources: [] },
       });
 
-      const longHistory = Array.from({ length: 100 }, (_, i) => ({
-        role: i % 2 === 0 ? 'user' : 'assistant' as const,
+      const longHistory: Array<{ role: 'user' | 'assistant'; text: string }> = Array.from({ length: 100 }, (_, i) => ({
+        role: i % 2 === 0 ? 'user' : 'assistant',
         text: `Message ${i}`,
       }));
 
