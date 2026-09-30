@@ -26,7 +26,7 @@ npx vitest run -t "name of the test" --prefix backend
 Frontend-specific:
 
 ```bash
-npm run test --prefix frontend                # all frontend tests (68, jsdom)
+npm run test --prefix frontend                # all frontend tests (81, jsdom)
 npm run build --prefix frontend               # vite build
 cd frontend && npx vitest run src/components/ServicesSection.test.tsx   # single file
 cd frontend && npx vitest run -t "name of the test"                     # single test
@@ -125,7 +125,7 @@ Husky v9: `pre-commit` runs lint-staged (eslint --fix on staged files); `pre-pus
 
 Backend coverage is **gated**, not just reported: `vitest.config.ts` fails the run below 82% statements / 74% branches / 78% functions / 82% lines. Those thresholds are pinned a few points under actual coverage on purpose (to absorb the flake) — raise them when coverage improves, don't lower them to make a run pass. The frontend has no coverage gate.
 
-Current suite sizes: **488 backend + 68 frontend** unit tests and **18** Playwright tests. `README.md` (badge, stack table, suite table, pyramid) and `docs/CODE_QUALITY.md` repeat these numbers — update them together when the counts change.
+Current suite sizes: **488 backend + 81 frontend** unit tests and **18** Playwright tests. `README.md` (badge, stack table, suite table, pyramid) and `docs/CODE_QUALITY.md` repeat these numbers — update them together when the counts change.
 
 Three GitHub Actions workflows (`ci.yml`, `e2e.yml`, `heartbeat.yml`); only the last needs explaining. `heartbeat.yml` is a cron every 6h that wakes the Render backend and pings Supabase to keep the free tiers from sleeping — not a quality gate, so don't "fix" it by deleting it. The **real** Render keep-alive is an UptimeRobot HTTP monitor every 14 min, configured outside this repo; nothing in the tree points to it.
 
