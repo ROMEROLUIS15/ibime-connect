@@ -24,7 +24,9 @@
     --secondary-foreground: 0 0% 100%;
 
     --muted: 210 30% 96%;
-    --muted-foreground: 215 20% 40%;
+    /* Texto secundario: el mismo tono que --foreground al 80 % sobre blanco (#3C485B).
+       Antes 215 20% 40%, que se leía demasiado claro. */
+    --muted-foreground: 217 21% 30%;
 
     --accent: 207 55% 40%; /* Steel Blue "Acero" #2E6B9E */
     --accent-foreground: 0 0% 100%;
