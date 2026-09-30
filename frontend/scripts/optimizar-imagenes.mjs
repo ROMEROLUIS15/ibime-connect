@@ -52,6 +52,8 @@ const IMAGENES = [
   ['ESPACIO BPC 5.jpg', FOTO],
   ['ESPACIO BPC 6.jpg', FOTO],
   ['ESPACIO BPC 7.jpg', FOTO],
+  ['fondo editoria 1.jpg', FOTO],
+  ['fondo editoria 2.jpg', FOTO],
   ['logo-ibime.png', LOGO, 480],
   ['buho_8-removebg-preview.png', LOGO, 256],
   ['logo-gobernacion.png', LOGO, 160],
