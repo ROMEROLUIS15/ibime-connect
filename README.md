@@ -15,7 +15,7 @@
 [![Supabase](https://img.shields.io/badge/Supabase-pgvector-3ECF8E?style=flat-square&logo=supabase&logoColor=white)](https://supabase.com/)
 [![Redis](https://img.shields.io/badge/Redis-Cache_+_Session-DC382D?style=flat-square&logo=redis&logoColor=white)](https://redis.io/)
 [![Groq](https://img.shields.io/badge/Groq-GPT_OSS_20B-F55036?style=flat-square)](https://groq.com/)
-[![Vitest](https://img.shields.io/badge/Vitest-556_Tests-6E9F18?style=flat-square&logo=vitest&logoColor=white)](https://vitest.dev/)
+[![Vitest](https://img.shields.io/badge/Vitest-569_Tests-6E9F18?style=flat-square&logo=vitest&logoColor=white)](https://vitest.dev/)
 [![Playwright](https://img.shields.io/badge/Playwright-E2E-2EAD33?style=flat-square&logo=playwright&logoColor=white)](https://playwright.dev/)
 [![Deployed on Vercel](https://img.shields.io/badge/Frontend-Vercel-000000?style=flat-square&logo=vercel)](https://vercel.com/)
 [![Deployed on Render](https://img.shields.io/badge/Backend-Render-46E3B7?style=flat-square&logo=render&logoColor=black)](https://render.com/)
@@ -63,7 +63,7 @@ La sección **Servicios** presenta la red por los **5 ejes** del estado Mérida,
 | **IA — Inferencia** | Groq Cloud (`openai/gpt-oss-20b`, configurable vía `GROQ_MODEL`) |
 | **Validación** | Zod (esquemas compartidos frontend ↔ backend, incluyendo `sessionId`) |
 | **Observabilidad** | Pino (logs JSON + `requestId`), Sentry (errores 500 + alerta de cuota Groq), LangSmith (trazas del chat) |
-| **Testing** | Vitest (556 tests: 488 backend + 68 frontend), Playwright (18 E2E) |
+| **Testing** | Vitest (569 tests: 488 backend + 81 frontend), Playwright (18 E2E) |
 | **Calidad de Código** | Husky v9 + lint-staged + ESLint (pre-commit & pre-push hooks) + Quality Gate completo |
 | **CI/CD** | GitHub Actions (+ `npm audit`), Dependabot, Vercel CD, Render CD |
 
@@ -236,7 +236,7 @@ ibime-connect/
 ├── 📁 .github/
 │   ├── dependabot.yml              ← Actualizaciones semanales agrupadas (raíz, back, front, actions)
 │   └── workflows/
-│       ├── ci.yml                  ← CI (Node 22): npm audit + Lint + Typecheck + 556 Vitest
+│       ├── ci.yml                  ← CI (Node 22): npm audit + Lint + Typecheck + 569 Vitest
 │       ├── e2e.yml                 ← E2E: Playwright (Chromium automations)
 │       └── heartbeat.yml           ← Cron: ping Supabase + Render cada 6h
 │
@@ -375,7 +375,7 @@ ibime-connect/
           ╠══════════════════════╣
           ║  Integration Tests   ║  ← Smoke tests HTTP (supertest)
           ╠══════════════════════╣
-          ║   Unit Tests (556)    ║  ← Vitest — lógica, servicios, policy layer
+          ║   Unit Tests (569)    ║  ← Vitest — lógica, servicios, policy layer
           ╚══════════════════════╝
 ```
 
@@ -453,11 +453,11 @@ ESLint con auto-fix exclusivamente sobre archivos en staging.
 ```
 [1/3] ESLint       → npm run lint       (frontend + backend)
 [2/3] TypeScript   → tsc --noEmit
-[3/3] Vitest       → vitest run         (556 tests: 488 back + 68 front)
+[3/3] Vitest       → vitest run         (569 tests: 488 back + 81 front)
 ```
 
 ### CI/CD (GitHub Actions)
-1. **`ci.yml`**: Quality Gate rápido (~40s) — lint + 556 tests (488 back + 68 front).
+1. **`ci.yml`**: Quality Gate rápido (~40s) — lint + 569 tests (488 back + 81 front).
 2. **`e2e.yml`**: Playwright E2E con Chromium (~3-4 min).
 
 > 📄 Documentación completa: [`CODE_QUALITY.md`](./docs/CODE_QUALITY.md)
