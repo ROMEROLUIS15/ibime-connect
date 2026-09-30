@@ -35,10 +35,10 @@ describe('FondoEditorialPage', () => {
     expect(document.getElementById('catalogo')).not.toBeNull();
   });
 
-  it('muestra todos los libros por defecto', () => {
+  it('muestra todos los libros por defecto, sin el conteo (ya lo dice la descripción)', () => {
     renderPage();
     expect(catalogItems()).toHaveLength(CATALOG.length);
-    expect(screen.getByText('Mostrando 46 libros')).toBeInTheDocument();
+    expect(screen.queryByText(/^Mostrando/)).toBeNull();
   });
 
   it('cada enlace Descargar PDF apunta al PDF de su libro y abre en pestaña nueva', () => {
