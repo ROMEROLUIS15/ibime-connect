@@ -266,6 +266,7 @@ const FondoEditorialPage = () => {
                 <h2 className="text-3xl md:text-4xl font-display font-bold text-foreground mb-2">
                   Carmen Delia <span className="text-gradient">Bencomo</span>
                 </h2>
+                <p className="text-lg font-medium text-foreground/70 mb-1">({CARMEN_DELIA_BENCOMO.lifespan})</p>
                 <p className="text-muted-foreground mb-6">La autora que da nombre al Fondo</p>
                 <div className="space-y-4 text-muted-foreground mb-6">
                   {CARMEN_DELIA_BENCOMO.summary.map((paragraph) => (
