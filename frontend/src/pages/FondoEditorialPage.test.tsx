@@ -76,6 +76,12 @@ describe('FondoEditorialPage', () => {
     );
   });
 
+  it('muestra el lugar y el año de nacimiento y de muerte de Carmen Delia Bencomo', () => {
+    renderPage();
+    // 12/10/2002 según el Centro Nacional del Libro (el blog también da 2003, por error).
+    expect(screen.getByText('(Tovar, 1923 – La Guaira, 2002)')).toBeInTheDocument();
+  });
+
   it('no muestra las publicaciones inventadas anteriores', () => {
     renderPage();
     for (const title of [

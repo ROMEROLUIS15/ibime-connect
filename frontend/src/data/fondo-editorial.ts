@@ -18,8 +18,11 @@
  * - La portada de cada libro es `src/assets/fondo-editorial/<id>.webp`, generada
  *   con `scripts/portadas-fondo-editorial.mjs`. Un libro nuevo necesita su
  *   entrada en ese script.
- * - La fecha de muerte de Carmen Delia Bencomo no se publica: el blog da dos
- *   distintas (12/10/2002 y 12-13/10/2003).
+ * - Carmen Delia Bencomo murió en La Guaira el 12/10/2002. El blog también da
+ *   12-13/10/2003, pero el año lo descartan el Centro Nacional del Libro
+ *   (cenal.gob.ve/?page_id=20155: "el 12 de octubre de 2002") y el "In
+ *   memoriam" del Boletín de la Academia Nacional de la Historia (vol. 86,
+ *   n.º 341, enero-marzo de 2003).
  */
 
 export type CollectionId = 'infantil-juvenil' | 'biblioteca-cdb' | 'historia-patrimonio' | 'cimientos' | 'otras';
@@ -581,6 +584,7 @@ export const FONDO_EDITORIAL = {
 } as const;
 
 export const CARMEN_DELIA_BENCOMO = {
+  lifespan: 'Tovar, 1923 – La Guaira, 2002',
   summary: [
     'Nació en Tovar, estado Mérida, Venezuela, el 5 de julio de 1923. Poeta, narradora de cuentos y obras de teatro para niños y jóvenes, es una de las pioneras de la literatura infantil en Venezuela.',
     'Fue directora fundadora del Instituto Zuliano de Cultura y coordinadora de Cultura de la Gobernación del Estado Mérida. Colaboró en publicaciones como la Revista Shell, la Revista Nacional de Cultura, Tricolor y El tren de colores (Mérida, 1984-85).',
