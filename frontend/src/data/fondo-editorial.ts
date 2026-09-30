@@ -609,6 +609,10 @@ export const BIENAL = {
 } as const;
 
 export const CONTACT = {
+  /** Frase de la página de contacto del blog (con la coma que pide la oración). */
+  intro: 'Si deseas hablarnos de un libro o actividad, no dudes en escribirnos.',
+  /** Invitación del blog: "¡Suscríbete! Recibe nuestros libros en tu correo." */
+  subscribe: 'Suscríbete en el blog y recibe nuestros libros en tu correo',
   address:
     'Sector Glorias Patrias, calle 01 Los Eucaliptos, entre avenidas Tulio Febres y Gonzalo Picón. Mérida, estado Mérida 5101, Venezuela.',
   email: 'fondoeditorialcdb@gmail.com',
