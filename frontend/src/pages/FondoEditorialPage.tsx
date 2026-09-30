@@ -36,8 +36,34 @@ import {
 } from '@/data/fondo-editorial';
 import fotoFondoEditorial1 from '@/assets/fondo editoria 1.webp';
 import fotoFondoEditorial2 from '@/assets/fondo editoria 2.webp';
+import colibri from '@/assets/colibri-fondo-editorial.webp';
 
 type Filter = 'todos' | CollectionId;
+
+type Lado = 'izquierda' | 'derecha';
+
+// Decoración de fondo: el colibrí del Fondo Editorial, muy tenue, asomando por un costado de la
+// sección sobre manchas difusas azul y amarilla (sus colores). La sección debe tener
+// `relative isolate overflow-hidden` (textura-papel + overflow-hidden) para quedar detrás del contenido.
+const ColibriDecorativo = ({ lado, arriba }: { lado: Lado; arriba: string }) => (
+  <div
+    aria-hidden="true"
+    className={`pointer-events-none absolute -z-10 ${lado === 'izquierda' ? '-left-24 lg:-left-28' : '-right-24 lg:-right-28'}`}
+    style={{ top: arriba }}
+  >
+    <div className="absolute inset-0 m-auto h-[120%] w-[120%] rounded-full bg-accent/15 blur-3xl" />
+    <div
+      className={`absolute bottom-0 h-1/2 w-1/2 rounded-full bg-yellow-300/25 blur-3xl ${lado === 'izquierda' ? 'right-0' : 'left-0'}`}
+    />
+    <img
+      src={colibri}
+      alt=""
+      loading="lazy"
+      decoding="async"
+      className={`relative w-64 md:w-80 lg:w-[26rem] opacity-[0.12] ${lado === 'derecha' ? '-scale-x-100' : ''}`}
+    />
+  </div>
+);
 
 // Un icono por servicio, en el orden de FONDO_EDITORIAL.services.
 const SERVICE_ICONS = [BookText, GraduationCap, BookOpen];
@@ -105,7 +131,7 @@ const BookCard = ({ book }: { book: Book }) => {
               href={book.coloringPdfUrl}
               {...EXTERNAL}
               aria-label={`Versión para colorear de ${book.title} (se abre en una pestaña nueva)`}
-              className="inline-flex items-center text-sm font-medium text-primary hover:underline"
+              className="inline-flex min-h-7 items-center text-sm font-medium text-primary hover:underline"
             >
               <Palette className="w-4 h-4 mr-1.5" aria-hidden="true" />
               Versión para colorear
@@ -115,7 +141,7 @@ const BookCard = ({ book }: { book: Book }) => {
             href={book.postUrl}
             {...EXTERNAL}
             aria-label={`Ficha en el blog de ${book.title} (se abre en una pestaña nueva)`}
-            className="inline-flex items-center text-sm text-foreground/80 hover:text-primary hover:underline"
+            className="inline-flex min-h-7 items-center text-sm text-foreground/80 hover:text-primary hover:underline"
           >
             Ficha en el blog
             <ExternalLink className="w-3.5 h-3.5 ml-1" aria-hidden="true" />
@@ -186,7 +212,8 @@ const FondoEditorialPage = () => {
         </section>
 
         {/* Quiénes somos */}
-        <section className="py-20 section-pattern">
+        <section className="py-20 section-pattern textura-papel overflow-hidden">
+          <ColibriDecorativo lado="izquierda" arriba="3rem" />
           <div className="container mx-auto px-4">
             {/* Título a la izquierda y los párrafos juntos a la derecha (mismo esquema que Contacto) */}
             <div className="grid lg:grid-cols-12 gap-6 lg:gap-12 items-start mb-16 lg:mb-24">
@@ -242,7 +269,8 @@ const FondoEditorialPage = () => {
         </section>
 
         {/* Nuestro trabajo editorial */}
-        <section className="py-20 bg-muted/30">
+        <section className="py-20 bg-muted/30 textura-papel overflow-hidden">
+          <ColibriDecorativo lado="derecha" arriba="1rem" />
           <div className="container mx-auto px-4">
             <h2 className="text-3xl md:text-4xl font-display font-bold text-foreground mb-12">
               Nuestro <span className="text-gradient">Trabajo Editorial</span>
@@ -265,7 +293,9 @@ const FondoEditorialPage = () => {
         </section>
 
         {/* Catálogo: scroll-mt-24 compensa la barra de navegación fija */}
-        <section id="catalogo" className="py-20 section-pattern scroll-mt-24">
+        <section id="catalogo" className="py-20 section-pattern textura-papel overflow-hidden scroll-mt-24">
+          {/* Solo arriba: más abajo las tarjetas de los libros lo taparían */}
+          <ColibriDecorativo lado="izquierda" arriba="2rem" />
           <div className="container mx-auto px-4">
             {/* Título y descripción a la izquierda; el conteo, a la derecha en escritorio */}
             <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-2 md:gap-6 mb-6">
@@ -277,10 +307,11 @@ const FondoEditorialPage = () => {
                   {CATALOG.length} libros disponibles para descargar en PDF desde el blog del Fondo Editorial.
                 </p>
               </div>
+              {/* Solo se ve al buscar o filtrar: con los 46 libros repetiría la descripción.
+                  La región viva queda siempre en el DOM para anunciar los cambios. */}
               <p aria-live="polite" className="text-sm font-medium text-foreground/80 md:shrink-0">
-                {visibleBooks.length === CATALOG.length
-                  ? `Mostrando ${visibleBooks.length} libros`
-                  : `Mostrando ${visibleBooks.length} de ${CATALOG.length} libros`}
+                {visibleBooks.length < CATALOG.length &&
+                  `Mostrando ${visibleBooks.length} de ${CATALOG.length} libros`}
               </p>
             </div>
 
@@ -296,7 +327,8 @@ const FondoEditorialPage = () => {
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 aria-label="Buscar en el catálogo"
-                placeholder="Buscar por título, autor o ilustrador…"
+                // Corto a propósito: "Buscar por título, autor o ilustrador…" se cortaba en móviles de 360–412 px
+                placeholder="Título, autor o ilustrador…"
                 className="h-12 pl-11 pr-11 text-base bg-card border-2 border-accent/60 shadow-sm hover:border-accent focus-visible:border-accent [&::-webkit-search-cancel-button]:appearance-none"
               />
               {query && (
@@ -359,7 +391,9 @@ const FondoEditorialPage = () => {
         </section>
 
         {/* Carmen Delia Bencomo y Bienal */}
-        <section className="py-20 bg-muted/30">
+        <section className="py-20 bg-muted/30 textura-papel overflow-hidden">
+          {/* En el espacio libre bajo la tarjeta de la Bienal */}
+          <ColibriDecorativo lado="derecha" arriba="45%" />
           <div className="container mx-auto px-4">
             <div className="grid lg:grid-cols-2 gap-12">
               <div>

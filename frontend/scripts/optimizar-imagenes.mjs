@@ -57,6 +57,8 @@ const IMAGENES = [
   ['logo-ibime.png', LOGO, 480],
   ['buho_8-removebg-preview.png', LOGO, 256],
   ['logo-gobernacion.png', LOGO, 160],
+  // Colibrí del Fondo Editorial (ícono de su blog): marca de agua de la página, se muestra hasta ~450 px.
+  ['colibri-fondo-editorial.png', LOGO],
 ];
 
 const kb = (bytes) => `${Math.round(bytes / 1024)} KB`;

@@ -180,6 +180,27 @@
       radial-gradient(circle at 40% 80%, hsl(var(--ebime-lightblue) / 0.03) 0%, transparent 50%);
   }
 
+  /* Grano de papel muy suave para secciones claras (Fondo Editorial). Es una capa por encima
+     del fondo de la sección y por debajo del contenido, así que las tarjetas quedan limpias.
+     Ruido SVG en escala de grises dentro del CSS: no descarga ninguna imagen. */
+  .textura-papel {
+    position: relative;
+    isolation: isolate;
+  }
+
+  .textura-papel::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
+    background-size: 240px 240px;
+    /* Medido con Playwright: con 0.07 el grano no se ve; 0.3 se nota sin oscurecer el fondo. */
+    opacity: 0.3;
+    mix-blend-mode: multiply;
+  }
+
   .badge-institutional {
     @apply inline-flex items-center px-3 py-1 rounded-full text-sm font-medium;
     background: hsl(var(--accent) / 0.10);
