@@ -8,11 +8,11 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { AXES, type Axis, type Library as LibraryEntry } from '@/data/library-network';
-import ejeMetropolitano from '@/assets/eje-metropolitano.png';
-import ejeMocoties from '@/assets/eje-mocoties.png';
-import ejePanamericano from '@/assets/eje-panamericano.png';
-import ejeParamo from '@/assets/eje-paramo.png';
-import ejePueblosSur from '@/assets/eje-pueblos-del-sur.png';
+import ejeMetropolitano from '@/assets/servicios/eje-metropolitano.png';
+import ejeMocoties from '@/assets/servicios/eje-mocoties.png';
+import ejePanamericano from '@/assets/servicios/eje-panamericano.png';
+import ejeParamo from '@/assets/servicios/eje-paramo.png';
+import ejePueblosSur from '@/assets/servicios/eje-pueblos-del-sur.png';
 
 /** Presentación de cada eje: mapa y degradado institucional del recuadro. */
 const axisPresentation: Record<number, { image: string; color: string }> = {

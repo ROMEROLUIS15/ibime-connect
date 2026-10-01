@@ -1,9 +1,9 @@
 import { Calendar, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import libraryActivity from '@/assets/library-activity.webp';
-import communityEvent from '@/assets/community-event.webp';
-import donaciones from '@/assets/donaciones.webp';
+import libraryActivity from '@/assets/compartidas/library-activity.webp';
+import communityEvent from '@/assets/compartidas/community-event.webp';
+import donaciones from '@/assets/noticias/donaciones.webp';
 
 // Las fechas se calculan al render como "hoy - daysAgo" para que nunca queden
 // atrasadas (misma lógica que la nota destacada, que usa la fecha de hoy).

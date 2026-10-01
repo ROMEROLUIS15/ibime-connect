@@ -4,7 +4,7 @@
  * Directorio de la red bibliotecaria del estado Mérida.
  *
  * FUENTE ÚNICA DE VERDAD: los mapas institucionales de cada eje
- * (`src/assets/eje-*.png`). Cada entrada se transcribe del rótulo impreso en
+ * (`src/assets/servicios/eje-*.png`). Cada entrada se transcribe del rótulo impreso en
  * el mapa correspondiente: nombre oficial de la biblioteca, la localidad
  * junto a la que aparece y el municipio en cuya región está dibujada.
  *
