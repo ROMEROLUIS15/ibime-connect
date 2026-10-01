@@ -13,15 +13,15 @@ import {
 } from "@/components/ui/dialog";
 import { Calendar, MapPin, Users, ArrowLeft, ArrowRight } from "lucide-react";
 
-import plan1 from "@/assets/plan 1.jpeg";
-import plan2 from "@/assets/plan 2.jpeg";
-import plan3 from "@/assets/plan 3.jpeg";
-import plan4 from "@/assets/plan 4.jpeg";
-import plan5 from "@/assets/plan 5.jpeg";
-import plan6 from "@/assets/plan 6.jpeg";
-import plan7 from "@/assets/plan 7.jpeg";
-import plan8 from "@/assets/plan 8.jpeg";
-import plan9 from "@/assets/plan 9.jpeg";
+import plan1 from "@/assets/plan-vacacional/plan 1.jpeg";
+import plan2 from "@/assets/plan-vacacional/plan 2.jpeg";
+import plan3 from "@/assets/plan-vacacional/plan 3.jpeg";
+import plan4 from "@/assets/plan-vacacional/plan 4.jpeg";
+import plan5 from "@/assets/plan-vacacional/plan 5.jpeg";
+import plan6 from "@/assets/plan-vacacional/plan 6.jpeg";
+import plan7 from "@/assets/plan-vacacional/plan 7.jpeg";
+import plan8 from "@/assets/plan-vacacional/plan 8.jpeg";
+import plan9 from "@/assets/plan-vacacional/plan 9.jpeg";
 
 interface Photo {
   id: number;

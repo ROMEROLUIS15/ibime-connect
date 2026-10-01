@@ -12,10 +12,10 @@ import { ChevronLeft, ChevronRight, Calendar, MapPin } from 'lucide-react';
 import type { Event } from '@shared/types/domain';
 import { RegistrationModal } from './RegistrationModal';
 
-import eventLiterary from '@/assets/event-literary.webp';
-import eventChildren from '@/assets/event-children.webp';
-import eventDigital from '@/assets/event-digital.webp';
-import cursoBraille from '@/assets/Curso Braille.webp';
+import eventLiterary from '@/assets/eventos/event-literary.webp';
+import eventChildren from '@/assets/eventos/event-children.webp';
+import eventDigital from '@/assets/eventos/event-digital.webp';
+import cursoBraille from '@/assets/eventos/Curso Braille.webp';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 

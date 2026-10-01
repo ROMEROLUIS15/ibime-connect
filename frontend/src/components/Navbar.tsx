@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { Menu, X, ChevronDown } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import logoIBIME from '@/assets/logo-ibime.webp';
-import gobernadorLogo from '@/assets/logo-gobernacion.webp';
+import logoIBIME from '@/assets/marca/logo-ibime.webp';
+import gobernadorLogo from '@/assets/marca/logo-gobernacion.webp';
 
 const useHashNavigation = () => {
   const navigate = useNavigate();

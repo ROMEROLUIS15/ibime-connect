@@ -31,7 +31,7 @@ import { AssistantLauncher } from '@/components/assistant/AssistantLauncher';
 import { createSessionId } from '@/lib/session-id';
 import { splitInlineBold } from '@/lib/inline-bold';
 import type { ChatMessage, KnowledgeMatch } from '@shared/types/domain';
-import owlMascot from '@/assets/buho_8-removebg-preview.webp';
+import owlMascot from '@/assets/asistente/buho_8-removebg-preview.webp';
 
 // ─── Assets ───────────────────────────────────────────────────────────────────
 
