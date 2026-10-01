@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
-import fachadaIbime from '@/assets/fachada-ibime.webp';
-import libraryActivity from '@/assets/library-activity.webp';
-import communityEvent from '@/assets/cultura-para-todos.webp';
+import fachadaIbime from '@/assets/hero/fachada-ibime.webp';
+import libraryActivity from '@/assets/compartidas/library-activity.webp';
+import communityEvent from '@/assets/hero/cultura-para-todos.webp';
 
 // Unified institutional accent from new color palette (Steel Blue "Acero")
 const IBIME_ACCENT = '#2E6B9E';

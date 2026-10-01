@@ -34,9 +34,9 @@ import {
   type Book,
   type CollectionId,
 } from '@/data/fondo-editorial';
-import fotoFondoEditorial1 from '@/assets/fondo editoria 1.webp';
-import fotoFondoEditorial2 from '@/assets/fondo editoria 2.webp';
-import colibri from '@/assets/colibri-fondo-editorial.webp';
+import fotoFondoEditorial1 from '@/assets/fondo-editorial/pagina/fondo editoria 1.webp';
+import fotoFondoEditorial2 from '@/assets/fondo-editorial/pagina/fondo editoria 2.webp';
+import colibri from '@/assets/fondo-editorial/pagina/colibri-fondo-editorial.webp';
 
 type Filter = 'todos' | CollectionId;
 

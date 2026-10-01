@@ -7,15 +7,15 @@ import {
   CarouselPrevious,
   type CarouselApi,
 } from '@/components/ui/carousel';
-import libraryBuilding from '@/assets/library-building.webp';
-import communityEvent from '@/assets/community-event.webp';
-import espacio1 from '@/assets/ESPACIO BPC 1.webp';
-import espacio2 from '@/assets/ESPACIO BPC 2.webp';
-import espacio3 from '@/assets/ESPACIO BPC 3.webp';
-import espacio4 from '@/assets/ESPACIO BPC 4.webp';
-import espacio5 from '@/assets/ESPACIO BPC 5.webp';
-import espacio6 from '@/assets/ESPACIO BPC 6.webp';
-import espacio7 from '@/assets/ESPACIO BPC 7.webp';
+import libraryBuilding from '@/assets/galeria/library-building.webp';
+import communityEvent from '@/assets/compartidas/community-event.webp';
+import espacio1 from '@/assets/galeria/ESPACIO BPC 1.webp';
+import espacio2 from '@/assets/galeria/ESPACIO BPC 2.webp';
+import espacio3 from '@/assets/galeria/ESPACIO BPC 3.webp';
+import espacio4 from '@/assets/galeria/ESPACIO BPC 4.webp';
+import espacio5 from '@/assets/galeria/ESPACIO BPC 5.webp';
+import espacio6 from '@/assets/galeria/ESPACIO BPC 6.webp';
+import espacio7 from '@/assets/galeria/ESPACIO BPC 7.webp';
 
 const AUTOPLAY_MS = 3500;
 

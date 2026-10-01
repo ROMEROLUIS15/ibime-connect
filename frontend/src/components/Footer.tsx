@@ -1,5 +1,5 @@
 import { Facebook, Instagram, MapPin, Phone, Mail } from 'lucide-react';
-import logoIBIME from '@/assets/logo-ibime.webp';
+import logoIBIME from '@/assets/marca/logo-ibime.webp';
 
 const quickLinks = [
   { label: 'IBIME', href: '#ibime' },
