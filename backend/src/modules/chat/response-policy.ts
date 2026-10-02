@@ -17,6 +17,11 @@ export interface PolicyValidationResult {
   valid: boolean;
   answer: string;
   reason: string | null;
+  /**
+   * Set only when a long, non-DB-backed answer was cut to its last complete
+   * sentence: the original length (chars) before trimming. The answer stays valid.
+   */
+  trimmedFrom?: number;
 }
 
 /**
@@ -54,7 +59,8 @@ const MIN_ANSWER_LENGTH = 10;
  * Run the full response policy check.
  *
  * Order of validation:
- *   1. Structural checks (empty, too short, too long)
+ *   1. Structural checks (empty, too short, too long). A too-long LLM answer is
+ *      trimmed to its last complete sentence; a DB-backed one falls back
  *   2. Guardrail pattern check (hallucination detection)
  *   3. If any check fails → return intent-specific fallback
  *
@@ -68,6 +74,8 @@ export function applyResponsePolicy(
   intent: ChatIntent,
   isDbBacked: boolean
 ): PolicyValidationResult {
+  let trimmedFrom: number | undefined;
+
   // ─── 1. Structural validation ──────────────────────────────────────────
 
   if (!answer || answer.trim() === '') {
@@ -87,11 +95,22 @@ export function applyResponsePolicy(
   }
 
   if (answer.length > MAX_ANSWER_LENGTH) {
-    return {
-      valid: false,
-      answer: FALLBACKS[intent],
-      reason: `Response too long (${answer.length} chars, maximum ${MAX_ANSWER_LENGTH})`,
-    };
+    // Only LLM drafts are trimmed. DB-backed answers (e.g. a list of
+    // registrations) are never cut: trimming could hide an entry unnoticed.
+    const trimmed = isDbBacked
+      ? ''
+      : trimToLastCompleteSentence(answer.slice(0, MAX_ANSWER_LENGTH)).trim();
+
+    if (trimmed.length < MIN_ANSWER_LENGTH) {
+      return {
+        valid: false,
+        answer: FALLBACKS[intent],
+        reason: `Response too long (${answer.length} chars, maximum ${MAX_ANSWER_LENGTH})`,
+      };
+    }
+
+    trimmedFrom = answer.trim().length;
+    answer = trimmed;
   }
 
   // ─── 2. Guardrail check (hallucination detection) ─────────────────────
@@ -123,6 +142,7 @@ export function applyResponsePolicy(
     valid: true,
     answer: answer.trim(),
     reason: null,
+    ...(trimmedFrom !== undefined && { trimmedFrom }),
   };
 }
 
