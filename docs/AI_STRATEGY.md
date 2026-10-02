@@ -254,7 +254,7 @@ if (maxSimilarity < RAGService.MIN_VALID_THRESHOLD) {
 ### 🛡️ Capa 3 — ResponseGuardrail (Post-LLM)
 **Módulo**: `response-guardrail.ts`
 
-Motor de regex que detecta y bloquea **alucinaciones de estado de usuario**. Patrones monitoreados:
+Motor de regex que detecta y bloquea **alucinaciones de estado de usuario** y **afirmaciones inventadas de fondos** (ver abajo). Patrones de estado de usuario monitoreados:
 
 ```
 - "no estás inscrito" / "no estás registrado"

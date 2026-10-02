@@ -15,7 +15,7 @@
 [![Supabase](https://img.shields.io/badge/Supabase-pgvector-3ECF8E?style=flat-square&logo=supabase&logoColor=white)](https://supabase.com/)
 [![Redis](https://img.shields.io/badge/Redis-Cache_+_Session-DC382D?style=flat-square&logo=redis&logoColor=white)](https://redis.io/)
 [![Groq](https://img.shields.io/badge/Groq-GPT_OSS_20B-F55036?style=flat-square)](https://groq.com/)
-[![Vitest](https://img.shields.io/badge/Vitest-626_Tests-6E9F18?style=flat-square&logo=vitest&logoColor=white)](https://vitest.dev/)
+[![Vitest](https://img.shields.io/badge/Vitest-643_Tests-6E9F18?style=flat-square&logo=vitest&logoColor=white)](https://vitest.dev/)
 [![Playwright](https://img.shields.io/badge/Playwright-E2E-2EAD33?style=flat-square&logo=playwright&logoColor=white)](https://playwright.dev/)
 [![Deployed on Vercel](https://img.shields.io/badge/Frontend-Vercel-000000?style=flat-square&logo=vercel)](https://vercel.com/)
 [![Deployed on Render](https://img.shields.io/badge/Backend-Render-46E3B7?style=flat-square&logo=render&logoColor=black)](https://render.com/)
@@ -63,7 +63,7 @@ La sección **Servicios** presenta la red por los **5 ejes** del estado Mérida,
 | **IA — Inferencia** | Groq Cloud (`openai/gpt-oss-20b`, configurable vía `GROQ_MODEL`) |
 | **Validación** | Zod (esquemas compartidos frontend ↔ backend, incluyendo `sessionId`) |
 | **Observabilidad** | Pino (logs JSON + `requestId`), Sentry (errores 500 + alerta de cuota Groq), LangSmith (trazas del chat) |
-| **Testing** | Vitest (626 tests: 530 backend + 96 frontend), Playwright (18 E2E) |
+| **Testing** | Vitest (643 tests: 547 backend + 96 frontend), Playwright (18 E2E) |
 | **Calidad de Código** | Husky v9 + lint-staged + ESLint (pre-commit & pre-push hooks) + Quality Gate completo |
 | **CI/CD** | GitHub Actions (+ `npm audit`), Dependabot, Vercel CD, Render CD |
 
@@ -236,7 +236,7 @@ ibime-connect/
 ├── 📁 .github/
 │   ├── dependabot.yml              ← Actualizaciones semanales agrupadas (raíz, back, front, actions)
 │   └── workflows/
-│       ├── ci.yml                  ← CI (Node 22): npm audit + Lint + Typecheck + 626 Vitest
+│       ├── ci.yml                  ← CI (Node 22): npm audit + Lint + Typecheck + 643 Vitest
 │       ├── e2e.yml                 ← E2E: Playwright (Chromium automations)
 │       └── heartbeat.yml           ← Cron: ping Supabase + Render cada 6h
 │
@@ -304,7 +304,7 @@ ibime-connect/
 │   │   │   └── tools/
 │   │   │       └── check_registration.tool.ts
 │   │   │
-│   │   └── 📁 __tests__/            ← 530 unit tests
+│   │   └── 📁 __tests__/            ← 547 unit tests
 │   │       ├── setup.ts             ← [NUEVO] Polyfill reflect-metadata para tsyringe/Vitest
 │   │       ├── api.integration.test.ts
 │   │       ├── domain/errors/app-error.test.ts
@@ -375,7 +375,7 @@ ibime-connect/
           ╠══════════════════════╣
           ║  Integration Tests   ║  ← Smoke tests HTTP (supertest)
           ╠══════════════════════╣
-          ║   Unit Tests (626)    ║  ← Vitest — lógica, servicios, policy layer
+          ║   Unit Tests (643)    ║  ← Vitest — lógica, servicios, policy layer
           ╚══════════════════════╝
 ```
 
@@ -384,14 +384,15 @@ ibime-connect/
 | Intent Classifier | `intent-classifier.test.ts` | 29 | Regex + Prioridad 0 (email en cualquier mensaje) |
 | Email Validator | `email-validator.test.ts` | 17 | RFC format, normalización |
 | Response Guardrail | `response-guardrail.test.ts` | 18 | Hallucination blocking |
-| Response Policy | `response-policy.test.ts` | 46 | Estructural + guardrail + fallbacks + recorte a la última frase completa |
-| Chat Orchestrator | `chat-orchestrator.test.ts` | 39 | Branch A/B, Privacy Gate, routing, sentiment, respuestas cortadas |
+| Guardrail de fondos | `response-guardrail-holdings.test.ts` | 9 | Bloquea "tenemos el libro X" sin fuente del Fondo Editorial; respuestas reales #6, #12, #26, #27, #30, #36, #40 |
+| Response Policy | `response-policy.test.ts` | 49 | Estructural + guardrail + fallbacks + recorte a la última frase completa + afirmaciones de fondos sin fuente |
+| Chat Orchestrator | `chat-orchestrator.test.ts` | 41 | Branch A/B, Privacy Gate, routing, sentiment, respuestas cortadas |
 | **Sentiment Analyzer** | **`sentiment-analyzer.service.test.ts`** | **33** | **3 reglas heurísticas, combinaciones, falsos positivos, mismo resultado con cualquier uso de mayúsculas** |
 | RAG Service | `rag.service.test.ts` | 10 | Threshold, cache, error handling |
 | Groq Provider | `groq.provider.test.ts` | 26 | API calls, tokens, reasoning_effort, error cases |
 | Registration | `registration.service.test.ts` | 12 | DB insert/query |
-| Fondo Editorial (seed RAG) | `fondo-editorial-seed.test.ts` | 9 | 51 entradas, títulos únicos, fichas con autoría y PDF, sin dominio de Vercel |
-| **Total backend** | | **530** | **100% passing, 0 errores TypeScript** |
+| Fondo Editorial (seed RAG) | `fondo-editorial-seed.test.ts` | 11 | 51 entradas, títulos únicos, fichas con autoría y PDF, sin dominio de Vercel |
+| **Total backend** | | **547** | **100% passing, 0 errores TypeScript** |
 
 ```bash
 # Ejecutar todos los unit tests
@@ -458,7 +459,7 @@ ESLint con auto-fix exclusivamente sobre archivos en staging.
 ```
 
 ### CI/CD (GitHub Actions)
-1. **`ci.yml`**: Quality Gate rápido (~40s) — lint + 626 tests (530 back + 96 front).
+1. **`ci.yml`**: Quality Gate rápido (~40s) — lint + 643 tests (547 back + 96 front).
 2. **`e2e.yml`**: Playwright E2E con Chromium (~3-4 min).
 
 > 📄 Documentación completa: [`CODE_QUALITY.md`](./docs/CODE_QUALITY.md)
