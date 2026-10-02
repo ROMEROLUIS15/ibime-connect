@@ -56,7 +56,7 @@ ChatOrchestrator.process()
 Todo output (LLM o determinista)
   ↓
 ResponsePolicy — ÚLTIMA CAPA ANTES DEL OUTPUT
-  ├─ 1. Validación estructural (vacío / <10 char / >1500 char)
+  ├─ 1. Validación estructural (vacío / <10 char / >1500 char: recorta a la última frase)
   ├─ 2. Guardrail (si !isDbBacked) → checkResponseGuardrail()
   │       Si intent='registration' + !isDbBacked → forzar flow 'general' en guardrail
   └─ 3. Fallback por intent si cualquier check falla
@@ -276,7 +276,7 @@ La fuente de verdad final del output. Orden de validación:
 ```
 1. Estructural: vacío → fallback por intent
 2. Estructural: < 10 caracteres → fallback por intent
-3. Estructural: > 1500 caracteres → fallback por intent
+3. Estructural: > 1500 caracteres → si la respuesta es del modelo (!isDbBacked), se recorta a la última frase completa dentro del límite (y se registra un aviso); si queda < 10 caracteres, o si es de la base de datos (isDbBacked), fallback por intent
 4. Si !isDbBacked:
      guardrailFlow = (intent === 'registration') ? 'general' : intent
      checkResponseGuardrail(answer, guardrailFlow)
