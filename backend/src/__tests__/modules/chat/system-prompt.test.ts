@@ -30,4 +30,9 @@ describe('CHAT_SYSTEM_PROMPT', () => {
     expect(CHAT_SYSTEM_PROMPT).toContain('indícame tu correo electrónico registrado');
     expect(CHAT_SYSTEM_PROMPT).toContain('NUNCA inventes, asumas o adivines información sobre inscripciones');
   });
+
+  it('forbids claiming the IBIME holds a specific book unless it is in the retrieved context', () => {
+    expect(CHAT_SYSTEM_PROMPT).toContain('NUNCA afirmes que el IBIME o sus bibliotecas tienen un libro');
+    expect(CHAT_SYSTEM_PROMPT).toMatch(/disponible[^\n]*Koha/);
+  });
 });

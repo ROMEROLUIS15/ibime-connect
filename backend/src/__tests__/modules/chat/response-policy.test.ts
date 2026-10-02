@@ -370,3 +370,22 @@ describe('trimToLastCompleteSentence', () => {
     )).toBe('');
   });
 });
+
+describe('applyResponsePolicy: holdings claims', () => {
+  const claim = 'En las bibliotecas del IBIME contamos con una amplia colección de obras de Gabriel García Márquez. Puedes buscarlas en Koha.';
+
+  it('replaces a holdings claim with the Koha response when there is no Fondo source', () => {
+    const r = applyResponsePolicy(claim, 'general', false);
+    expect(r.valid).toBe(false);
+    expect(r.answer).toContain('http://www.ibime.gob.ve:8000/');
+    expect(r.reason).toContain('Unsupported holdings claim');
+  });
+
+  it('keeps the claim when a Fondo source is present', () => {
+    expect(applyResponsePolicy(claim, 'general', false, { hasFondoEditorialSource: true }).valid).toBe(true);
+  });
+
+  it('does not check DB-backed answers', () => {
+    expect(applyResponsePolicy(claim, 'registration', true).valid).toBe(true);
+  });
+});

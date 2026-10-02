@@ -106,3 +106,15 @@ function institutionalEntries(): SeedEntry[] {
 export function buildFondoEditorialSeed(): SeedEntry[] {
   return [...institutionalEntries(), indexEntry(), ...CATALOG.map(bookEntry)];
 }
+
+let fondoTitles: Set<string> | undefined;
+
+/**
+ * Indica si un título de fuente recuperada pertenece al Fondo Editorial. El RPC del
+ * RAG no devuelve la categoría, así que se decide por los títulos que genera el seed
+ * (quedan sincronizados con lo que se carga en la knowledge_base).
+ */
+export function isFondoEditorialTitle(title: string): boolean {
+  fondoTitles ??= new Set(buildFondoEditorialSeed().map((e) => e.title));
+  return fondoTitles.has(title);
+}
