@@ -1,6 +1,6 @@
 import { ENV } from '../../config/env.config.js';
 import { contextLogger } from '../logger/index.js';
-import type { ILLMProvider, LLMMessage, LLMResponse, ITool } from '../../domain/interfaces/index.js';
+import type { ILLMProvider, LLMMessage, LLMResponse, LLMGenerateOptions } from '../../domain/interfaces/index.js';
 import { groqRateLimiter } from './groq-rate-limiter.js';
 import { wrapLLM } from '../observability/tracing.js';
 import { maskPiiInText } from '../../utils/pii.util.js';
@@ -25,7 +25,7 @@ export class GroqProvider implements ILLMProvider {
   generateAnswer = wrapLLM(
     async (
       messages: LLMMessage[],
-      options?: { temperature?: number; maxTokens?: number; tools?: ITool[] },
+      options?: LLMGenerateOptions,
       requestId?: string
     ): Promise<LLMResponse> => {
       return this._generateAnswer(messages, options, requestId);
@@ -36,7 +36,7 @@ export class GroqProvider implements ILLMProvider {
 
   private async _generateAnswer(
     messages: LLMMessage[],
-    options?: { temperature?: number; maxTokens?: number; tools?: ITool[] },
+    options?: LLMGenerateOptions,
     requestId?: string
   ): Promise<LLMResponse> {
     const logger = contextLogger(requestId);
@@ -89,6 +89,11 @@ export class GroqProvider implements ILLMProvider {
       max_tokens: options?.maxTokens ?? 350,
       top_p: 0.9,
     };
+
+    // GROQ_MODEL es configurable y otros modelos pueden rechazar el campo.
+    if (options?.reasoningEffort && GroqProvider.MODEL.includes('gpt-oss')) {
+      payload.reasoning_effort = options.reasoningEffort;
+    }
 
     if (hasTools) {
       payload.tools = options!.tools!.map(t => ({
@@ -206,7 +211,16 @@ export class GroqProvider implements ILLMProvider {
     }
 
     const tokensUsed = data?.usage?.total_tokens ?? 0;
-    logger.info('LLM answer generated', { duration, tokensUsed, toolCallsCount: toolCalls?.length });
+    const finishReason = data?.choices?.[0]?.finish_reason;
+    logger.info('LLM answer generated', {
+      duration,
+      tokensUsed,
+      toolCallsCount: toolCalls?.length,
+      finishReason,
+      promptTokens: data?.usage?.prompt_tokens,
+      completionTokens: data?.usage?.completion_tokens,
+      reasoningTokens: data?.usage?.completion_tokens_details?.reasoning_tokens,
+    });
 
     // ── Post-call: record actual usage in the sliding window ──────────────
     await groqRateLimiter.recordUsage(tokensUsed);
@@ -216,7 +230,7 @@ export class GroqProvider implements ILLMProvider {
       tokensUsed,
       model: GroqProvider.MODEL,
       toolCalls,
-      finishReason: data?.choices?.[0]?.finish_reason,
+      finishReason,
     };
   }
 }

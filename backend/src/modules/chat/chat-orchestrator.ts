@@ -19,11 +19,11 @@
  */
 
 import type { ChatResponse } from '@shared/types/domain.js';
-import type { ILLMProvider, LLMMessage } from '../../domain/interfaces/index.js';
+import type { ILLMProvider, LLMMessage, LLMResponse } from '../../domain/interfaces/index.js';
 import { inject, injectable } from 'tsyringe';
 import { createHash } from 'crypto';
 import { classifyIntent } from './intent-classifier.js';
-import { applyResponsePolicy, getIntentFallback, type ChatIntent as PolicyIntent } from './response-policy.js';
+import { applyResponsePolicy, getIntentFallback, trimToLastCompleteSentence, type ChatIntent as PolicyIntent } from './response-policy.js';
 import { contextLogger } from '../../infrastructure/logger/index.js';
 import { wrapChain } from '../../infrastructure/observability/tracing.js';
 import { CHAT_SYSTEM_PROMPT } from './system-prompt.js';
@@ -45,6 +45,17 @@ export interface ChatOrchestratorInput {
 const maskOptionalEmail = (email: string | null): string | null => (email === null ? null : maskEmail(email));
 
 /** Fallback hardcoded para cuando el LLM no devuelve nada al pedir el email */
+/**
+ * Output budgets (max_tokens). With reasoning models the reasoning tokens count
+ * against this limit, so a tight budget can be spent before the visible answer
+ * starts. 600 covers the longest answer the policy admits (1500 chars ≈ 400
+ * tokens) plus low-effort reasoning; Branch B only asks for the email.
+ */
+const RAG_FLOW_MAX_TOKENS = 600;
+const BRANCH_B_MAX_TOKENS = 300;
+/** Low reasoning effort: the answer is drafted from retrieved context, not deduced. */
+const CHAT_REASONING_EFFORT = 'low' as const;
+
 const ASK_FOR_EMAIL_FALLBACK =
   '¡Claro que sí! Con mucho gusto te ayudo a verificar tus inscripciones. Por favor, indícame tu correo electrónico registrado para buscarlo en nuestro sistema.';
 
@@ -372,11 +383,11 @@ export class ChatOrchestrator {
 
     const response = await this.llmProvider.generateAnswer(
       messages,
-      { temperature: 0.2, maxTokens: 200 },
+      { temperature: 0.2, maxTokens: BRANCH_B_MAX_TOKENS, reasoningEffort: CHAT_REASONING_EFFORT },
       requestId
     );
 
-    const answer = response.content || ASK_FOR_EMAIL_FALLBACK;
+    const answer = this.trimIfTruncated(response, 'registration', logger) || ASK_FOR_EMAIL_FALLBACK;
     return this.applyPolicy(answer, 'registration', ragResult.sources, response.tokensUsed, false, logger);
   }
 
@@ -431,10 +442,11 @@ export class ChatOrchestrator {
 
     const response = await this.llmProvider.generateAnswer(messages, {
       temperature: 0.3,
-      maxTokens: 350,
+      maxTokens: RAG_FLOW_MAX_TOKENS,
+      reasoningEffort: CHAT_REASONING_EFFORT,
     }, requestId);
 
-    const answer = response.content || '';
+    const answer = this.trimIfTruncated(response, 'catalog', logger);
     return this.applyPolicy(answer, 'catalog', ragResult.sources, response.tokensUsed, false, logger);
   }
 
@@ -492,10 +504,11 @@ export class ChatOrchestrator {
 
     const response = await this.llmProvider.generateAnswer(messages, {
       temperature: 0.3,
-      maxTokens: 350,
+      maxTokens: RAG_FLOW_MAX_TOKENS,
+      reasoningEffort: CHAT_REASONING_EFFORT,
     }, requestId);
 
-    const answer = response.content || '';
+    const answer = this.trimIfTruncated(response, 'general', logger);
     return this.applyPolicy(answer, 'general', ragResult.sources, response.tokensUsed, false, logger);
   }
 
@@ -540,11 +553,37 @@ export class ChatOrchestrator {
 
     const response = await this.llmProvider.generateAnswer(messages, {
       temperature: 0.3,
-      maxTokens: 300,
+      maxTokens: RAG_FLOW_MAX_TOKENS,
+      reasoningEffort: CHAT_REASONING_EFFORT,
     }, requestId);
 
-    const answer = response.content || '';
+    const answer = this.trimIfTruncated(response, 'general-fallback', logger);
     return this.applyPolicy(answer, 'general', [], response.tokensUsed, false, logger);
+  }
+
+  // ─── Truncation handling ────────────────────────────────────────────────
+  /**
+   * Returns the LLM answer text. If the provider stopped at the token limit
+   * (finishReason 'length') the answer is cut mid-sentence: keep it only up to
+   * its last complete sentence (possibly '', which the ResponsePolicy then
+   * replaces with its per-intent fallback). Logs sizes only, never the text.
+   */
+  private trimIfTruncated(
+    response: LLMResponse,
+    flow: string,
+    logger: ReturnType<typeof contextLogger>
+  ): string {
+    const answer = response.content || '';
+    if (response.finishReason !== 'length') return answer;
+
+    const trimmed = trimToLastCompleteSentence(answer);
+    logger.warn('LLM answer truncated by max tokens', {
+      flow,
+      originalLength: answer.length,
+      trimmedLength: trimmed.length,
+      tokensUsed: response.tokensUsed,
+    });
+    return trimmed;
   }
 
   // ─── ResponsePolicy wrapper ─────────────────────────────────────────────

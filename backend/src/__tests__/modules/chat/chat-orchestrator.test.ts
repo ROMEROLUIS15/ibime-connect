@@ -475,4 +475,102 @@ describe('ChatOrchestrator', () => {
       expect(mockRAGService.retrieveContext).toHaveBeenCalled();
     });
   });
+
+  // ---------------------------------------------------------------------------
+  describe('output budget and truncated answers', () => {
+    const CATALOG_MSG = 'Que cursos tienen?';
+    const GENERAL_MSG = 'Cual es el horario de la biblioteca?';
+    const REGISTRATION_MSG = 'En que cursos estoy inscrito?';
+
+    const llmOptions = () => vi.mocked(mockLLMProvider.generateAnswer).mock.calls[0][1];
+
+    it.each([
+      ['catalog (RAG hit)', CATALOG_MSG, true, 600],
+      ['general (RAG hit)', GENERAL_MSG, true, 600],
+      ['general fallback (RAG miss)', GENERAL_MSG, false, 600],
+      ['registration branch B', REGISTRATION_MSG, false, 300],
+    ])('should request low reasoning effort and the right budget in the %s flow', async (_flow, message, ragHit, maxTokens) => {
+      vi.mocked(mockRAGService.retrieveContext).mockResolvedValue(
+        (ragHit ? RAG_HIT : RAG_MISS) as unknown as Awaited<ReturnType<RAGService['retrieveContext']>>
+      );
+
+      await orchestrator.process({ userMessage: message, conversationHistory: [] });
+
+      expect(mockLLMProvider.generateAnswer).toHaveBeenCalledTimes(1);
+      expect(llmOptions()).toMatchObject({ reasoningEffort: 'low', maxTokens });
+    });
+
+    it('should trim a truncated answer to its last complete sentence and log a warning without message text', async () => {
+      const warnSpy = vi.spyOn(logger, 'warn');
+      vi.mocked(mockLLMProvider.generateAnswer).mockResolvedValue({
+        ...LLM_RESPONSE,
+        content: 'Tenemos varios talleres de lectura disponibles. Puedes inscribirte en el de Pyth',
+        finishReason: 'length',
+      });
+
+      const result = await orchestrator.process({ userMessage: CATALOG_MSG, conversationHistory: [] });
+
+      expect(result.answer).toBe('Tenemos varios talleres de lectura disponibles.');
+      const call = warnSpy.mock.calls.find((c) => c[1] === 'LLM answer truncated by max tokens');
+      expect(call?.[0]).toMatchObject({
+        flow: 'catalog',
+        originalLength: 80,
+        trimmedLength: 47,
+        tokensUsed: 50,
+      });
+      expect(JSON.stringify(call)).not.toContain('talleres');
+    });
+
+    it('should end in the policy fallback when a truncated answer has no complete sentence', async () => {
+      vi.mocked(mockLLMProvider.generateAnswer).mockResolvedValue({
+        ...LLM_RESPONSE,
+        content: 'Puedes descargar **“Cocuyos de cristal”** en formato PDF de manera gratuita a través de la Biblioteca Digital Carmen Delia',
+        finishReason: 'length',
+      });
+
+      const result = await orchestrator.process({ userMessage: CATALOG_MSG, conversationHistory: [] });
+
+      expect(result.answer).toBe(getIntentFallback('catalog'));
+    });
+
+    it('should trim truncated answers in the general fallback flow too', async () => {
+      vi.mocked(mockRAGService.retrieveContext).mockResolvedValue(RAG_MISS);
+      vi.mocked(mockLLMProvider.generateAnswer).mockResolvedValue({
+        ...LLM_RESPONSE,
+        content: 'Atendemos de lunes a viernes. El sabado abrimos has',
+        finishReason: 'length',
+      });
+
+      const result = await orchestrator.process({ userMessage: GENERAL_MSG, conversationHistory: [] });
+
+      expect(result.answer).toBe('Atendemos de lunes a viernes.');
+    });
+
+    it('should ask for the email when a truncated branch B answer has no complete sentence', async () => {
+      vi.mocked(mockRAGService.retrieveContext).mockResolvedValue(RAG_MISS);
+      vi.mocked(mockLLMProvider.generateAnswer).mockResolvedValue({
+        ...LLM_RESPONSE,
+        content: 'Con gusto te ayudo a revisar tus inscripciones, solo necesito que me indiques tu',
+        finishReason: 'length',
+      });
+
+      const result = await orchestrator.process({ userMessage: REGISTRATION_MSG, conversationHistory: [] });
+
+      expect(result.answer).toBe(getIntentFallback('registration'));
+    });
+
+    it('should leave a normal (finishReason "stop") answer unchanged and not warn', async () => {
+      const warnSpy = vi.spyOn(logger, 'warn');
+      vi.mocked(mockLLMProvider.generateAnswer).mockResolvedValue({
+        ...LLM_RESPONSE,
+        content: 'Tenemos varios talleres. Escribenos para mas informacion sobre el de Pyth',
+        finishReason: 'stop',
+      });
+
+      const result = await orchestrator.process({ userMessage: CATALOG_MSG, conversationHistory: [] });
+
+      expect(result.answer).toBe('Tenemos varios talleres. Escribenos para mas informacion sobre el de Pyth');
+      expect(warnSpy.mock.calls.some((c) => c[1] === 'LLM answer truncated by max tokens')).toBe(false);
+    });
+  });
 });

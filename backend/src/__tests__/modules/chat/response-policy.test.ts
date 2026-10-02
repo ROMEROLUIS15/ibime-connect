@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { applyResponsePolicy } from '../../../modules/chat/response-policy.js';
+import { applyResponsePolicy, trimToLastCompleteSentence } from '../../../modules/chat/response-policy.js';
 
 // ─── Constants mirrored from response-policy.ts ─────────────────────────────
 const MIN_ANSWER_LENGTH = 10;
@@ -251,5 +251,84 @@ describe('ResponsePolicy — guardrail fallback message', () => {
     expect(result.valid).toBe(false);
     expect(result.answer).toBe(HALLUCINATION_FALLBACK);
     expect(result.answer).toContain('Para cualquier otra duda');
+  });
+});
+
+// ─── trimToLastCompleteSentence ──────────────────────────────────────────────
+describe('trimToLastCompleteSentence', () => {
+  it('should cut after the last sentence terminator and drop the dangling fragment', () => {
+    expect(trimToLastCompleteSentence('Hola, soy el asistente. Puedes inscribirte en el taller de Py'))
+      .toBe('Hola, soy el asistente.');
+  });
+
+  it('should return the text unchanged when it already ends on a sentence boundary', () => {
+    expect(trimToLastCompleteSentence('Primera frase. Segunda frase.')).toBe('Primera frase. Segunda frase.');
+  });
+
+  it.each([
+    ['!', '¡Bienvenido a IBIME! Tenemos cursos que ya empi'],
+    ['?', '¿Quieres más información? Escríbenos a la direc'],
+    ['…', 'Hay muchos libros… y además hay mu'],
+  ])('should treat "%s" as a sentence terminator', (terminator, text) => {
+    const result = trimToLastCompleteSentence(text);
+    expect(result.endsWith(terminator)).toBe(true);
+  });
+
+  it('should keep closing characters that follow the terminator', () => {
+    expect(trimToLastCompleteSentence('Es gratis (sin costo). Luego puedes desc'))
+      .toBe('Es gratis (sin costo).');
+    expect(trimToLastCompleteSentence('Lee **el libro completo.** Después ha'))
+      .toBe('Lee **el libro completo.**');
+    expect(trimToLastCompleteSentence('Dijo “vamos a leer.” Luego se fu'))
+      .toBe('Dijo “vamos a leer.”');
+  });
+
+  it('should not treat dots inside URLs, emails or numbers as boundaries', () => {
+    expect(trimToLastCompleteSentence('Descarga el PDF en https://x.wordpress.com/a.pdf'))
+      .toBe('');
+    expect(trimToLastCompleteSentence('Escríbenos. Nuestro correo es contactoibime@gmail.com'))
+      .toBe('Escríbenos.');
+    expect(trimToLastCompleteSentence('Llámanos. El teléfono es 0274-2623898'))
+      .toBe('Llámanos.');
+    expect(trimToLastCompleteSentence('Listo. La nota mínima es 3.5'))
+      .toBe('Listo.');
+  });
+
+  it('should accept a sentence that ends with a URL followed by a period', () => {
+    expect(trimToLastCompleteSentence('Descárgalo en https://x.wordpress.com/a.pdf. Tambi'))
+      .toBe('Descárgalo en https://x.wordpress.com/a.pdf.');
+  });
+
+  it('should cut at the last complete line when it is later than the last sentence end', () => {
+    expect(trimToLastCompleteSentence('Estos son los cursos.\n- Taller de Python\n- Taller de Ja'))
+      .toBe('Estos son los cursos.\n- Taller de Python');
+  });
+
+  it('should not end on a dangling colon', () => {
+    expect(trimToLastCompleteSentence('Te cuento. Los cursos disponibles son:\n- Taller de Pyth'))
+      .toBe('Te cuento.');
+    expect(trimToLastCompleteSentence('Te cuento. Los cursos son: Pyth'))
+      .toBe('Te cuento.');
+  });
+
+  it('should not leave a bare list number as the last "sentence"', () => {
+    expect(trimToLastCompleteSentence('Pasos:\n1. Inscríbete\n2.'))
+      .toBe('Pasos:\n1. Inscríbete');
+  });
+
+  it('should trim trailing whitespace', () => {
+    expect(trimToLastCompleteSentence('Frase completa.   \n  ')).toBe('Frase completa.');
+  });
+
+  it('should return an empty string when there is no boundary', () => {
+    expect(trimToLastCompleteSentence('')).toBe('');
+    expect(trimToLastCompleteSentence('   ')).toBe('');
+    expect(trimToLastCompleteSentence('sin ningun fin de frase')).toBe('');
+  });
+
+  it('should return an empty string for the real production truncation (Cocuyos de cristal)', () => {
+    expect(trimToLastCompleteSentence(
+      'Puedes descargar **“Cocuyos de cristal”** en formato PDF de manera gratuita a través de la Biblioteca Digital Carmen Delia'
+    )).toBe('');
   });
 });
