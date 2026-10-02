@@ -341,4 +341,80 @@ describe('GroqProvider', () => {
       await expect(provider.generateAnswer(SAMPLE_MESSAGES)).rejects.toThrow('Network error');
     });
   });
+
+  describe('generateAnswer — reasoning effort', () => {
+    const sentBody = () => JSON.parse(mockFetch.mock.calls[0][1].body);
+
+    it('should send reasoning_effort when requested and the model is gpt-oss', async () => {
+      mockFetch.mockResolvedValueOnce({ ok: true, json: async () => buildGroqResponse() });
+
+      await provider.generateAnswer(SAMPLE_MESSAGES, { reasoningEffort: 'low' });
+
+      expect(sentBody().reasoning_effort).toBe('low');
+    });
+
+    it('should not send reasoning_effort when the caller does not ask for it', async () => {
+      mockFetch.mockResolvedValueOnce({ ok: true, json: async () => buildGroqResponse() });
+
+      await provider.generateAnswer(SAMPLE_MESSAGES);
+
+      expect(sentBody()).not.toHaveProperty('reasoning_effort');
+    });
+
+    it('should not send reasoning_effort when the configured model is not gpt-oss', async () => {
+      vi.resetModules();
+      vi.doMock('../../../config/env.config.js', () => ({
+        ENV: { GROQ_API_KEY: 'test-groq-key', GROQ_MODEL: 'llama-3.3-70b-versatile' },
+      }));
+      const { GroqProvider: OtherModelProvider } = await import(
+        '../../../infrastructure/providers/groq.provider.js'
+      );
+      mockFetch.mockResolvedValueOnce({ ok: true, json: async () => buildGroqResponse() });
+
+      await new OtherModelProvider().generateAnswer(SAMPLE_MESSAGES, { reasoningEffort: 'low' });
+
+      expect(sentBody()).not.toHaveProperty('reasoning_effort');
+      vi.doUnmock('../../../config/env.config.js');
+      vi.resetModules();
+    });
+  });
+
+  describe('generateAnswer — usage logging', () => {
+    it('should log finishReason and the token breakdown without message content', async () => {
+      const infoSpy = vi.spyOn(logger, 'info');
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          choices: [{ message: { content: 'secreto-del-usuario' }, finish_reason: 'length' }],
+          usage: {
+            total_tokens: 1699,
+            prompt_tokens: 1349,
+            completion_tokens: 350,
+            completion_tokens_details: { reasoning_tokens: 315 },
+          },
+        }),
+      });
+
+      await provider.generateAnswer(SAMPLE_MESSAGES);
+
+      const call = infoSpy.mock.calls.find((c) => c[1] === 'LLM answer generated');
+      expect(call?.[0]).toMatchObject({
+        finishReason: 'length',
+        promptTokens: 1349,
+        completionTokens: 350,
+        reasoningTokens: 315,
+      });
+      expect(JSON.stringify(call)).not.toContain('secreto-del-usuario');
+    });
+
+    it('should leave reasoningTokens undefined when Groq does not report it', async () => {
+      const infoSpy = vi.spyOn(logger, 'info');
+      mockFetch.mockResolvedValueOnce({ ok: true, json: async () => buildGroqResponse() });
+
+      await provider.generateAnswer(SAMPLE_MESSAGES);
+
+      const call = infoSpy.mock.calls.find((c) => c[1] === 'LLM answer generated');
+      expect((call?.[0] as Record<string, unknown>).reasoningTokens).toBeUndefined();
+    });
+  });
 });

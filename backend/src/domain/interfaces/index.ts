@@ -10,10 +10,21 @@ export interface IKnowledgeRepository {
   matchKnowledge(queryEmbedding: number[], matchCount: number, matchThreshold: number, requestId?: string): Promise<KnowledgeMatch[]>;
 }
 
+export interface LLMGenerateOptions {
+  temperature?: number;
+  maxTokens?: number;
+  tools?: ITool[];
+  /**
+   * Esfuerzo de razonamiento (modelos de razonamiento como gpt-oss). Los tokens de
+   * razonamiento cuentan contra maxTokens; un esfuerzo bajo deja presupuesto para la respuesta.
+   */
+  reasoningEffort?: 'low' | 'medium' | 'high';
+}
+
 export interface ILLMProvider {
   generateAnswer(
     messages: LLMMessage[],
-    options?: { temperature?: number; maxTokens?: number; tools?: ITool[] },
+    options?: LLMGenerateOptions,
     requestId?: string
   ): Promise<LLMResponse>;
 }
