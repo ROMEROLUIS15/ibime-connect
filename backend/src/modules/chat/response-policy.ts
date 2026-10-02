@@ -125,3 +125,44 @@ export function applyResponsePolicy(
     reason: null,
   };
 }
+
+/**
+ * Sentence terminator (., !, ?, …) plus any closing characters (parentheses,
+ * markdown emphasis, quotes), only when followed by whitespace or end of text.
+ * The lookahead keeps dots inside URLs, emails and numbers (a.pdf, 3.5) from
+ * counting as boundaries.
+ */
+const SENTENCE_END = /[.!?…]+[)\]*_»"'”’]*(?=\s|$)/g;
+
+/**
+ * Trims a truncated answer (finishReason === 'length') back to its last
+ * complete sentence or complete line, whichever comes later.
+ *
+ * - A bare list number ("2.") is not a sentence end.
+ * - The result never ends on a dangling ":" (it falls back to the previous boundary).
+ * - Returns '' when there is no boundary, so the ResponsePolicy applies its fallback.
+ */
+export function trimToLastCompleteSentence(text: string): string {
+  const source = text.trimEnd();
+  if (!source) return '';
+
+  let cut = -1;
+
+  for (const match of source.matchAll(SENTENCE_END)) {
+    const start = match.index ?? 0;
+    const lineStart = source.lastIndexOf('\n', start - 1) + 1;
+    const isListNumber = /^\s*\d{1,2}$/.test(source.slice(lineStart, start));
+    if (!isListNumber) cut = start + match[0].length;
+  }
+
+  // A newline closes the line before it: everything after the last one is the partial line.
+  const lastNewline = source.lastIndexOf('\n');
+  if (lastNewline > cut) cut = lastNewline;
+
+  if (cut <= 0) return '';
+
+  const trimmed = source.slice(0, cut).trimEnd();
+  // Never end on a dangling colon: drop it and cut again at the previous boundary.
+  if (trimmed.endsWith(':')) return trimToLastCompleteSentence(trimmed.slice(0, -1));
+  return trimmed;
+}
