@@ -56,21 +56,36 @@ const SAFE_FALLBACK = 'Para no darte información que no pueda confirmar, prefie
  */
 export const HOLDINGS_SAFE_RESPONSE = 'No tengo acceso al inventario de las bibliotecas del IBIME. Puedes buscar si un título está disponible en el catálogo en línea (Koha): http://www.ibime.gob.ve:8000/, o preguntar en la biblioteca más cercana.';
 
-const HOLDINGS_NOUNS = String.raw`(?:colecci[oó]n|colecciones|libros?|obras?|t[ií]tulos?|ejemplar(?:es)?)`;
+/** Letra a letra [Xx], para no usar el flag `i` (hace falta distinguir mayúsculas en los nombres propios). */
+const anyCase = (word: string): string => word.replace(/[a-záéíóúñ]/gi, (c) => `[${c.toLowerCase()}${c.toUpperCase()}]`);
+
+// Verbo de posesión: primera persona del plural, o sujeto institucional + verbo, en una misma oración.
+const FIRST_PERSON = String.raw`\b(?:${['contamos', 'disponemos', 'tenemos', 'poseemos'].map(anyCase).join('|')})\b`;
+const INSTITUTION_SUBJECTS = [
+  String.raw`${anyCase('el')}\s+IBIME`,
+  String.raw`${anyCase('la')}\s+${anyCase('red')}(?:\s+${anyCase('bibliotecaria')})?`,
+  String.raw`(?:${anyCase('las')}|${anyCase('nuestras')})\s+${anyCase('bibliotecas')}`,
+];
+const INSTITUTION =
+  String.raw`\b(?:${INSTITUTION_SUBJECTS.join('|')})\b[^.!?\n]*?\b(?:cuentan?\s+con|disponen?\s+de|tienen?|poseen?)\b`;
+const HOLDS = `(?:${FIRST_PERSON}|${INSTITUTION})`;
+const SAME_SENTENCE = String.raw`[^.!?\n]*?`;
+const WORKS = String.raw`\b(?:libros?|obras?|t[ií]tulos?|ejemplar(?:es)?)`;
 
 /**
- * Afirmaciones de que el IBIME o sus bibliotecas poseen libros, obras, colecciones,
- * títulos o ejemplares, dentro de una misma oración (sin . ! ? ni salto de línea):
- *   - primera persona del plural: "contamos con una colección…", "tenemos el título…"
- *   - sujeto institucional: "el IBIME cuenta con obras…", "las bibliotecas tienen libros…"
+ * Afirmaciones de que el IBIME tiene material concreto, dentro de una misma oración
+ * (sin . ! ? ni salto de línea), con verbo de posesión en primera persona del plural
+ * ("contamos", "tenemos"…) o sujeto institucional ("el IBIME cuenta con…"):
+ *   1. una colección DE/SOBRE algo (excepto audiolibros: Libro Hablado)
+ *   2. libros/obras/títulos/ejemplares DE un nombre propio (mayúscula) o SOBRE un tema
+ *   3. un título concreto: "tenemos el libro «X»" / "el libro Cien años…"
+ * Frases genéricas ("acceso a libros", "obras de autores venezolanos", "58 bibliotecas") no coinciden.
  * Solo se aplican si ninguna fuente recuperada es del Fondo Editorial.
  */
 const HOLDINGS_PATTERNS = [
-  new RegExp(String.raw`\b(?:contamos|disponemos|tenemos|poseemos)\b[^.!?\n]*\b${HOLDINGS_NOUNS}\b`, 'i'),
-  new RegExp(
-    String.raw`\b(?:el\s+IBIME|la\s+red(?:\s+bibliotecaria)?|(?:las|nuestras)\s+bibliotecas)\b[^.!?\n]*\b(?:cuentan?\s+con|disponen?\s+de|tienen?|poseen?)\b[^.!?\n]*\b${HOLDINGS_NOUNS}\b`,
-    'i'
-  ),
+  new RegExp(String.raw`${HOLDS}${SAME_SENTENCE}colecci[oó]n(?:es)?\s+(?:de|sobre)\s+(?!audiolibros)`),
+  new RegExp(String.raw`${HOLDS}${SAME_SENTENCE}${WORKS}\s+(?:(?:de|del)\s+[A-ZÁÉÍÓÚÑ]|sobre\s)`),
+  new RegExp(String.raw`${HOLDS}\s+(?:el|la)\s+(?:libro|obra|t[ií]tulo|ejemplar)\s+[«"“*A-ZÁÉÍÓÚÑ]`),
 ];
 
 export interface GuardrailOptions {

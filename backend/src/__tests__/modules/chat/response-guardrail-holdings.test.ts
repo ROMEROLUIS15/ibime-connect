@@ -48,15 +48,27 @@ describe('ResponseGuardrail: holdings claims without a Fondo Editorial source', 
     expect(checkResponseGuardrail(text, 'general', { hasFondoEditorialSource: false }).passed).toBe(true);
   });
 
-  it('catches the institutional-subject and first-person variants', () => {
-    for (const t of [
-      'Nuestras bibliotecas tienen libros de Cervantes en sus estantes.',
-      'La red dispone de ejemplares de esa obra en varias sedes.',
-      'Tenemos el título que buscas en la biblioteca central.',
-      'Poseemos colecciones de poesía venezolana.',
-    ]) {
-      expect(checkResponseGuardrail(t, 'catalog', { hasFondoEditorialSource: false }).passed).toBe(false);
-    }
+  it.each([
+    'Sí, tenemos el libro Cien años de soledad en nuestras bibliotecas.',
+    'Contamos con obras de Gabriel García Márquez.',
+    'Disponemos de libros sobre la historia de Mérida.',
+    'Tenemos el título «Doña Bárbara» en la biblioteca central.',
+    'Nuestras bibliotecas tienen libros de Cervantes en sus estantes.',
+    'El IBIME cuenta con una amplia colección de libros de poesía.',
+    'Poseemos colecciones sobre historia regional.',
+  ])('blocks specific-holdings claim: %s', (text) => {
+    expect(checkResponseGuardrail(text, 'general', { hasFondoEditorialSource: false }).passed).toBe(false);
+  });
+
+  it.each([
+    'La Red Bibliotecaria del IBIME cuenta con 58 bibliotecas públicas que brindan acceso a libros, revistas y recursos a la comunidad.',
+    'El IBIME tiene un catálogo en línea (Koha) donde puedes buscar libros, revistas y recursos digitales: http://www.ibime.gob.ve:8000/',
+    'En el programa Libro Hablado tenemos grabaciones de obras de autores venezolanos, todas gratuitas.',
+    'Con Koha puedes reservar libros y renovar préstamos; las bibliotecas tienen el registro de cada ejemplar.',
+    'En nuestras bibliotecas tienes acceso gratuito a libros y revistas.',
+    'Aceptamos donaciones de libros en buen estado; tenemos criterios claros para recibirlos.',
+    'Contamos con una colección de audiolibros gratuitos para personas con discapacidad visual.',
+  ])('lets a legitimate answer through: %s', (text) => {
+    expect(checkResponseGuardrail(text, 'general', { hasFondoEditorialSource: false }).passed).toBe(true);
   });
 });
-

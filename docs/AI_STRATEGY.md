@@ -264,7 +264,7 @@ Motor de regex que detecta y bloquea **alucinaciones de estado de usuario** y **
 - "no existe inscripción/registro para tu/este"
 ```
 
-Segunda regla (afirmación de fondos): si la respuesta del modelo dice que el IBIME, la red, "nuestras bibliotecas" o "nosotros" (`contamos`/`disponemos`/`tenemos`/`poseemos`, o `cuenta(n) con`/`dispone(n) de`/`tiene(n)`/`posee(n)`) tienen libros, obras, colecciones, títulos o ejemplares, **y ninguna fuente recuperada es del Fondo Editorial** (se decide por los títulos de `buildFondoEditorialSeed()`), se reemplaza por una respuesta fija que remite al catálogo Koha (`HOLDINGS_SAFE_RESPONSE`). Motivo en el log: `Unsupported holdings claim`.
+Segunda regla (afirmación de fondos): si la respuesta del modelo dice que el IBIME, la red, "nuestras bibliotecas" o "nosotros" (`contamos`/`disponemos`/`tenemos`/`poseemos`, o `cuenta(n) con`/`dispone(n) de`/`tiene(n)`/`posee(n)`) tienen una colección de/sobre algo, libros u obras de un autor con nombre propio o sobre un tema, o un título concreto ("tenemos el libro «X»"), **y ninguna fuente recuperada es del Fondo Editorial** (se decide por los títulos de `buildFondoEditorialSeed()`), se reemplaza por una respuesta fija que remite al catálogo Koha (`HOLDINGS_SAFE_RESPONSE`). Motivo en el log: `Unsupported holdings claim`.
 
 El guardrail **se omite** en el flow `registration` con `isDbBacked=true` porque los datos vienen de DB, no del LLM.
 
