@@ -592,4 +592,37 @@ describe('ChatOrchestrator', () => {
       expect(warnSpy.mock.calls.some((c) => c[1] === 'LLM answer truncated by max tokens')).toBe(false);
     });
   });
+
+  describe('holdings claims (Fondo Editorial source flag)', () => {
+    const CLAIM = 'En las bibliotecas del IBIME contamos con una amplia colección de obras de Gabriel García Márquez.';
+    const source = (title: string) => ({ id: '9', category: 'servicio' as const, title, content: 'c', similarity: 0.7 });
+    const ask = () => orchestrator.process({ userMessage: 'Cual es el horario de la biblioteca?', conversationHistory: [] });
+
+    beforeEach(() => {
+      vi.mocked(mockLLMProvider.generateAnswer).mockResolvedValue({ ...LLM_RESPONSE, content: CLAIM });
+    });
+
+    it('replaces the claim when no retrieved source is from the Fondo Editorial, and logs the reason', async () => {
+      const warnSpy = vi.spyOn(logger, 'warn');
+      vi.mocked(mockRAGService.retrieveContext).mockResolvedValue({
+        ...RAG_HIT,
+        sources: [source('Red Bibliotecaria del estado Mérida')],
+      });
+
+      const result = await ask();
+
+      expect(result.answer).toContain('http://www.ibime.gob.ve:8000/');
+      const call = warnSpy.mock.calls.find((c) => c[1] === 'ResponsePolicy BLOCKED response');
+      expect(call?.[0]).toMatchObject({ reason: expect.stringContaining('Unsupported holdings claim') });
+    });
+
+    it('keeps the claim when a retrieved source is a Fondo Editorial document', async () => {
+      vi.mocked(mockRAGService.retrieveContext).mockResolvedValue({
+        ...RAG_HIT,
+        sources: [source('Red Bibliotecaria del estado Mérida'), source('Fondo Editorial Carmen Delia Bencomo - Catálogo de libros')],
+      });
+
+      expect((await ask()).answer).toBe(CLAIM);
+    });
+  });
 });

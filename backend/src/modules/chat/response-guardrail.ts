@@ -51,6 +51,34 @@ const USER_STATE_PATTERNS = [
 const SAFE_FALLBACK = 'Para no darte información que no pueda confirmar, prefiero verificarla primero. Si tu consulta es sobre tus inscripciones, indícame tu correo electrónico registrado y la reviso en nuestro sistema. Para cualquier otra duda, puedes contactarnos al 0274-2623898 o a contactoibime@gmail.com.';
 
 /**
+ * Respuesta sustituta cuando el modelo afirma que el IBIME tiene un libro, obra,
+ * colección o ejemplar sin que el contexto recuperado lo respalde.
+ */
+export const HOLDINGS_SAFE_RESPONSE = 'No tengo acceso al inventario de las bibliotecas del IBIME. Puedes buscar si un título está disponible en el catálogo en línea (Koha): http://www.ibime.gob.ve:8000/, o preguntar en la biblioteca más cercana.';
+
+const HOLDINGS_NOUNS = String.raw`(?:colecci[oó]n|colecciones|libros?|obras?|t[ií]tulos?|ejemplar(?:es)?)`;
+
+/**
+ * Afirmaciones de que el IBIME o sus bibliotecas poseen libros, obras, colecciones,
+ * títulos o ejemplares, dentro de una misma oración (sin . ! ? ni salto de línea):
+ *   - primera persona del plural: "contamos con una colección…", "tenemos el título…"
+ *   - sujeto institucional: "el IBIME cuenta con obras…", "las bibliotecas tienen libros…"
+ * Solo se aplican si ninguna fuente recuperada es del Fondo Editorial.
+ */
+const HOLDINGS_PATTERNS = [
+  new RegExp(String.raw`\b(?:contamos|disponemos|tenemos|poseemos)\b[^.!?\n]*\b${HOLDINGS_NOUNS}\b`, 'i'),
+  new RegExp(
+    String.raw`\b(?:el\s+IBIME|la\s+red(?:\s+bibliotecaria)?|(?:las|nuestras)\s+bibliotecas)\b[^.!?\n]*\b(?:cuentan?\s+con|disponen?\s+de|tienen?|poseen?)\b[^.!?\n]*\b${HOLDINGS_NOUNS}\b`,
+    'i'
+  ),
+];
+
+export interface GuardrailOptions {
+  /** True si alguna fuente recuperada es un documento del Fondo Editorial. */
+  hasFondoEditorialSource?: boolean;
+}
+
+/**
  * Check if the response is from a registration flow (where DB data was explicitly provided).
  * In that case, user-state claims are legitimate because they come from DB data.
  */
@@ -63,11 +91,13 @@ function isRegistrationContext(flow: string): boolean {
  *
  * @param response - The LLM-generated response text
  * @param flow - The flow that produced this response ('registration' | 'catalog' | 'general')
+ * @param options - Retrieval context (see GuardrailOptions)
  * @returns GuardrailResult
  */
 export function checkResponseGuardrail(
   response: string,
-  flow: 'registration' | 'catalog' | 'general'
+  flow: 'registration' | 'catalog' | 'general',
+  options: GuardrailOptions = {}
 ): GuardrailResult {
   if (!response || response.trim() === '') {
     return { passed: false, reason: 'Empty response', safeResponse: SAFE_FALLBACK };
@@ -86,6 +116,18 @@ export function checkResponseGuardrail(
         reason: `Blocked user-state hallucination: pattern "${pattern.source}" matched`,
         safeResponse: SAFE_FALLBACK,
       };
+    }
+  }
+
+  if (!options.hasFondoEditorialSource) {
+    for (const pattern of HOLDINGS_PATTERNS) {
+      if (pattern.test(response)) {
+        return {
+          passed: false,
+          reason: `Unsupported holdings claim: pattern "${pattern.source}" matched`,
+          safeResponse: HOLDINGS_SAFE_RESPONSE,
+        };
+      }
     }
   }
 
