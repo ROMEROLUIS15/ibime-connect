@@ -15,13 +15,14 @@
  * shared/data/fondo-editorial.ts: la misma fuente que la página /fondo-editorial.
  *
  * Orden de trabajo: primero calcula TODOS los embeddings (con reintento ante el
- * 429 de Gemini); solo si todos salieron bien borra las entradas previas por
- * título e inserta las 59 filas en un único insert. Si falta alguno, termina con
- * código distinto de cero sin tocar la base.
+ * 429 de Gemini); si falta alguno, termina con código distinto de cero sin tocar
+ * la base. Después anota los ids de las entradas previas (por título), inserta
+ * las 59 filas en lotes y recién entonces borra las previas por id.
  *
- * Idempotente por título, pero NO transaccional: el delete y el insert son dos
- * llamadas, y si el insert falla tras el delete esas entradas quedan fuera.
- * Respaldar la tabla knowledge_base antes de ejecutarlo contra producción.
+ * Idempotente por título, pero NO transaccional: si un insert o el borrado final
+ * fallan, pueden quedar filas duplicadas (nunca faltantes); volver a ejecutarlo
+ * las reemplaza. Respaldar la tabla knowledge_base antes de ejecutarlo contra
+ * producción.
  *
  * Uso:  npx tsx scripts/seed-institutional-knowledge.ts
  */
@@ -137,22 +138,44 @@ async function main() {
     process.exit(1);
   }
 
-  // 2) Recién ahora se escribe: borra las entradas previas por título y reinserta en lote.
-  const { error: delError } = await supabaseClient.from('knowledge_base').delete().in('title', titles);
-  if (delError) {
-    console.error(`Error limpiando entradas previas; no se insertó nada: ${delError.message}`);
+  // 2) Recién ahora se escribe. Se anotan los ids de las entradas previas (mismos
+  //    títulos), se inserta lo nuevo y solo al final se borran las previas por id:
+  //    si un insert falla, la base conserva lo que tenía.
+  const { data: previas, error: selError } = await supabaseClient
+    .from('knowledge_base')
+    .select('id')
+    .in('title', titles);
+  if (selError) {
+    console.error(`Error leyendo las entradas previas; no se escribió nada: ${selError.message}`);
     process.exit(1);
   }
+  const idsPrevios = (previas ?? []).map((p: { id: number }) => p.id);
 
-  const { error: insError } = await supabaseClient.from('knowledge_base').insert(rows);
-  if (insError) {
-    console.error(
-      `Error insertando el lote (las entradas previas ya se borraron; restaurar desde el respaldo): ${insError.message}`
-    );
-    process.exit(1);
+  // Lotes de 20 filas (~330 KB cada uno) en lugar de un único cuerpo de ~1 MB.
+  const LOTE = 20;
+  for (let i = 0; i < rows.length; i += LOTE) {
+    const { error: insError } = await supabaseClient.from('knowledge_base').insert(rows.slice(i, i + LOTE));
+    if (insError) {
+      console.error(
+        `Error insertando el lote ${i / LOTE + 1}: ${insError.message}. Las entradas previas siguen intactas; ` +
+          'si quedaron filas nuevas duplicadas, volver a ejecutar el seed las reemplaza.'
+      );
+      process.exit(1);
+    }
   }
 
-  console.log(`\nSeed finalizado: ${rows.length} entradas insertadas.`);
+  if (idsPrevios.length > 0) {
+    const { error: delError } = await supabaseClient.from('knowledge_base').delete().in('id', idsPrevios);
+    if (delError) {
+      console.error(
+        `Las ${rows.length} entradas nuevas se insertaron, pero falló el borrado de las ${idsPrevios.length} ` +
+          `previas (quedan duplicadas; volver a ejecutar el seed): ${delError.message}`
+      );
+      process.exit(1);
+    }
+  }
+
+  console.log(`\nSeed finalizado: ${rows.length} entradas insertadas, ${idsPrevios.length} previas reemplazadas.`);
   process.exit(0);
 }
 

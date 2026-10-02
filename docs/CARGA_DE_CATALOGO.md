@@ -247,9 +247,11 @@ npx tsx scripts/seed-institutional-knowledge.ts
   `buildFondoEditorialSeed()` desde `shared/data/fondo-editorial.ts`, la misma fuente
   que la página `/fondo-editorial`.
 - Es **idempotente por título**, pero **no transaccional**: calcula primero todos los
-  embeddings (si alguno falla, termina sin tocar la base) y luego borra las entradas
-  previas e inserta las 59 filas en un solo insert. Si el insert falla tras el delete,
-  esas entradas quedan fuera: **respalda `knowledge_base` antes** de ejecutarlo en producción.
+  embeddings (si alguno falla, termina sin tocar la base); luego anota los ids de las
+  entradas previas, inserta las 59 filas en lotes de 20 y recién al final borra las
+  previas por id. Si algo falla a mitad, pueden quedar filas duplicadas (nunca
+  faltantes) y volver a ejecutarlo las reemplaza. Aun así, **respalda `knowledge_base`
+  antes** de ejecutarlo en producción.
 - Corre **en tu máquina** con la `GEMINI_API_KEY` de `backend/.env` (reintenta ante
   `429` y espera 2,5 s entre filas). Si esa key no funciona, el seed falla.
 - **No invalida la caché RAG:** una pregunta ya respondida puede seguir mostrando el

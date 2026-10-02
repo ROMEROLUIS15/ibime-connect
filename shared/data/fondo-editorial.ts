@@ -1,7 +1,9 @@
 /**
- * frontend/src/data/fondo-editorial.ts
+ * shared/data/fondo-editorial.ts
  *
- * Contenido de la página del Fondo Editorial Carmen Delia Bencomo.
+ * Contenido de la página del Fondo Editorial Carmen Delia Bencomo. Lo leen la
+ * página (frontend/src/data/fondo-editorial.ts, que agrega las portadas) y el
+ * seed del RAG del backend.
  *
  * FUENTES (consultadas el 2026-09-30):
  * - Blog del Fondo, https://carmendeliabencomo.wordpress.com/ (vigente): catálogo,
