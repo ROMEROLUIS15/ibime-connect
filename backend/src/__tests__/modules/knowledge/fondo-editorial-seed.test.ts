@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildFondoEditorialSeed } from '../../../modules/knowledge/fondo-editorial-seed.js';
+import { buildFondoEditorialSeed, isFondoEditorialTitle } from '../../../modules/knowledge/fondo-editorial-seed.js';
 import { CATALOG } from '@shared/data/fondo-editorial.js';
 
 // Títulos de las 8 entradas que ya carga scripts/seed-institutional-knowledge.ts.
@@ -79,5 +79,16 @@ describe('buildFondoEditorialSeed', () => {
       expect(e.title).not.toContain('vercel.app');
       expect(e.content).not.toContain('vercel.app');
     }
+  });
+});
+
+describe('isFondoEditorialTitle', () => {
+  it('recognises every title the seed produces', () => {
+    for (const e of buildFondoEditorialSeed()) expect(isFondoEditorialTitle(e.title)).toBe(true);
+  });
+
+  it('rejects titles of the other knowledge-base documents', () => {
+    for (const t of TITULOS_EXISTENTES) expect(isFondoEditorialTitle(t)).toBe(false);
+    expect(isFondoEditorialTitle('')).toBe(false);
   });
 });

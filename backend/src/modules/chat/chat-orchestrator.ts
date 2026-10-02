@@ -23,6 +23,7 @@ import type { ILLMProvider, LLMMessage, LLMResponse } from '../../domain/interfa
 import { inject, injectable } from 'tsyringe';
 import { createHash } from 'crypto';
 import { classifyIntent } from './intent-classifier.js';
+import { isFondoEditorialTitle } from '../knowledge/fondo-editorial-seed.js';
 import { applyResponsePolicy, getIntentFallback, trimToLastCompleteSentence, type ChatIntent as PolicyIntent } from './response-policy.js';
 import { contextLogger } from '../../infrastructure/logger/index.js';
 import { wrapChain } from '../../infrastructure/observability/tracing.js';
@@ -595,7 +596,9 @@ export class ChatOrchestrator {
     isDbBacked: boolean,
     logger: ReturnType<typeof contextLogger>
   ): ChatResponse {
-    const policyResult = applyResponsePolicy(answer, intent, isDbBacked);
+    const policyResult = applyResponsePolicy(answer, intent, isDbBacked, {
+      hasFondoEditorialSource: sources.some((s) => isFondoEditorialTitle(s?.title)),
+    });
 
     if (!policyResult.valid) {
       logger.warn('ResponsePolicy BLOCKED response', {

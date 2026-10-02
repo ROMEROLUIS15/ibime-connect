@@ -9,7 +9,7 @@
  * The LLM NEVER produces the final output — this policy does.
  */
 
-import { checkResponseGuardrail } from './response-guardrail.js';
+import { checkResponseGuardrail, type GuardrailOptions } from './response-guardrail.js';
 
 export type ChatIntent = 'registration' | 'catalog' | 'general';
 
@@ -67,12 +67,14 @@ const MIN_ANSWER_LENGTH = 10;
  * @param answer - The LLM-generated or deterministic response text
  * @param intent - The classified intent of the user's message
  * @param isDbBacked - Whether the response is backed by verified DB data (registration flow)
+ * @param guardrailOptions - Retrieval context for the guardrail (e.g. a Fondo Editorial source was retrieved)
  * @returns PolicyValidationResult with the final safe answer
  */
 export function applyResponsePolicy(
   answer: string,
   intent: ChatIntent,
-  isDbBacked: boolean
+  isDbBacked: boolean,
+  guardrailOptions: GuardrailOptions = {}
 ): PolicyValidationResult {
   let trimmedFrom: number | undefined;
 
@@ -124,7 +126,7 @@ export function applyResponsePolicy(
 
   if (!isDbBacked) {
     const guardrailFlow = intent === 'registration' ? 'general' : intent;
-    const guardrailResult = checkResponseGuardrail(answer, guardrailFlow);
+    const guardrailResult = checkResponseGuardrail(answer, guardrailFlow, guardrailOptions);
 
     if (!guardrailResult.passed) {
       return {

@@ -155,7 +155,7 @@ handleGeneralFallback  → EMPATHY_ALERT + CHAT_SYSTEM_PROMPT + Nota
 | 1 | **Pre-LLM** | `intent-classifier.ts` | Routing regex. Prioridad 0: detecta emails en cualquier mensaje. |
 | 2 | **Pre-Branch A/B** | `session-memory.service.ts` | Redis como fuente autoritativa del email. Bloquea email-switching. |
 | 3 | **Pre-LLM** | `rag.service.ts` | Fail-hard: similitud < 0.65 → contexto rechazado. |
-| 4 | **Post-LLM** | `response-guardrail.ts` | 10 patrones regex bloquean alucinaciones de user-state. |
+| 4 | **Post-LLM** | `response-guardrail.ts` | 10 patrones regex bloquean alucinaciones de user-state, más 3 de afirmaciones de fondos sin fuente del Fondo Editorial. |
 | 5 | **Post-LLM** | `response-policy.ts` | Última puerta: estructural + guardrail + fallbacks por intent. |
 
 ### Módulos del Motor de Chat
@@ -164,7 +164,7 @@ handleGeneralFallback  → EMPATHY_ALERT + CHAT_SYSTEM_PROMPT + Nota
 |:---|:---|
 | `chat-orchestrator.ts` | Orquestador central. Inyecta sentiment, Privacy Gate, Branch A/B. |
 | `intent-classifier.ts` | Clasificación regex. Prioridad 0: regex email → `registration`. |
-| `response-guardrail.ts` | Post-LLM: 10 patrones regex detectan alucinaciones. |
+| `response-guardrail.ts` | Post-LLM: 10 patrones de user-state y 3 de afirmaciones de fondos sin respaldo. |
 | `response-policy.ts` | Última capa: validación estructural + guardrail + fallbacks. |
 | `system-prompt.ts` | Prompt institucional hardened (sin lógica de negocio). |
 | `email-validator.ts` | Validación RFC antes de cualquier query a DB. |

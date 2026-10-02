@@ -51,6 +51,49 @@ const USER_STATE_PATTERNS = [
 const SAFE_FALLBACK = 'Para no darte información que no pueda confirmar, prefiero verificarla primero. Si tu consulta es sobre tus inscripciones, indícame tu correo electrónico registrado y la reviso en nuestro sistema. Para cualquier otra duda, puedes contactarnos al 0274-2623898 o a contactoibime@gmail.com.';
 
 /**
+ * Respuesta sustituta cuando el modelo afirma que el IBIME tiene un libro, obra,
+ * colección o ejemplar sin que el contexto recuperado lo respalde.
+ */
+export const HOLDINGS_SAFE_RESPONSE = 'No tengo acceso al inventario de las bibliotecas del IBIME. Puedes buscar si un título está disponible en el catálogo en línea (Koha): http://www.ibime.gob.ve:8000/, o preguntar en la biblioteca más cercana.';
+
+/** Letra a letra [Xx], para no usar el flag `i` (hace falta distinguir mayúsculas en los nombres propios). */
+const anyCase = (word: string): string => word.replace(/[a-záéíóúñ]/gi, (c) => `[${c.toLowerCase()}${c.toUpperCase()}]`);
+
+// Verbo de posesión: primera persona del plural, o sujeto institucional + verbo, en una misma oración.
+const FIRST_PERSON = String.raw`\b(?:${['contamos', 'disponemos', 'tenemos', 'poseemos'].map(anyCase).join('|')})\b`;
+const INSTITUTION_SUBJECTS = [
+  String.raw`${anyCase('el')}\s+IBIME`,
+  String.raw`${anyCase('la')}\s+${anyCase('red')}(?:\s+${anyCase('bibliotecaria')})?`,
+  String.raw`(?:${anyCase('las')}|${anyCase('nuestras')})\s+${anyCase('bibliotecas')}`,
+];
+const INSTITUTION =
+  String.raw`\b(?:${INSTITUTION_SUBJECTS.join('|')})\b[^.!?\n]*?\b(?:cuentan?\s+con|disponen?\s+de|tienen?|poseen?)\b`;
+const HOLDS = `(?:${FIRST_PERSON}|${INSTITUTION})`;
+const SAME_SENTENCE = String.raw`[^.!?\n]*?`;
+const WORKS = String.raw`\b(?:libros?|obras?|t[ií]tulos?|ejemplar(?:es)?)`;
+
+/**
+ * Afirmaciones de que el IBIME tiene material concreto, dentro de una misma oración
+ * (sin . ! ? ni salto de línea), con verbo de posesión en primera persona del plural
+ * ("contamos", "tenemos"…) o sujeto institucional ("el IBIME cuenta con…"):
+ *   1. una colección DE/SOBRE algo (excepto audiolibros: Libro Hablado)
+ *   2. libros/obras/títulos/ejemplares DE un nombre propio (mayúscula) o SOBRE un tema
+ *   3. un título concreto: "tenemos el libro «X»" / "el libro Cien años…"
+ * Frases genéricas ("acceso a libros", "obras de autores venezolanos", "58 bibliotecas") no coinciden.
+ * Solo se aplican si ninguna fuente recuperada es del Fondo Editorial.
+ */
+const HOLDINGS_PATTERNS = [
+  new RegExp(String.raw`${HOLDS}${SAME_SENTENCE}colecci[oó]n(?:es)?\s+(?:de|sobre)\s+(?!audiolibros)`),
+  new RegExp(String.raw`${HOLDS}${SAME_SENTENCE}${WORKS}\s+(?:(?:de|del)\s+[A-ZÁÉÍÓÚÑ]|sobre\s)`),
+  new RegExp(String.raw`${HOLDS}\s+(?:el|la)\s+(?:libro|obra|t[ií]tulo|ejemplar)\s+[«"“*A-ZÁÉÍÓÚÑ]`),
+];
+
+export interface GuardrailOptions {
+  /** True si alguna fuente recuperada es un documento del Fondo Editorial. */
+  hasFondoEditorialSource?: boolean;
+}
+
+/**
  * Check if the response is from a registration flow (where DB data was explicitly provided).
  * In that case, user-state claims are legitimate because they come from DB data.
  */
@@ -63,11 +106,13 @@ function isRegistrationContext(flow: string): boolean {
  *
  * @param response - The LLM-generated response text
  * @param flow - The flow that produced this response ('registration' | 'catalog' | 'general')
+ * @param options - Retrieval context (see GuardrailOptions)
  * @returns GuardrailResult
  */
 export function checkResponseGuardrail(
   response: string,
-  flow: 'registration' | 'catalog' | 'general'
+  flow: 'registration' | 'catalog' | 'general',
+  options: GuardrailOptions = {}
 ): GuardrailResult {
   if (!response || response.trim() === '') {
     return { passed: false, reason: 'Empty response', safeResponse: SAFE_FALLBACK };
@@ -86,6 +131,18 @@ export function checkResponseGuardrail(
         reason: `Blocked user-state hallucination: pattern "${pattern.source}" matched`,
         safeResponse: SAFE_FALLBACK,
       };
+    }
+  }
+
+  if (!options.hasFondoEditorialSource) {
+    for (const pattern of HOLDINGS_PATTERNS) {
+      if (pattern.test(response)) {
+        return {
+          passed: false,
+          reason: `Unsupported holdings claim: pattern "${pattern.source}" matched`,
+          safeResponse: HOLDINGS_SAFE_RESPONSE,
+        };
+      }
     }
   }
 
