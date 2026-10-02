@@ -521,6 +521,25 @@ describe('ChatOrchestrator', () => {
       expect(JSON.stringify(call)).not.toContain('talleres');
     });
 
+    it('should deliver a long answer trimmed by the policy and log a warning without message text', async () => {
+      const warnSpy = vi.spyOn(logger, 'warn');
+      const long = 'El Fondo Editorial publica obras de autores merideños. '.repeat(40);
+      vi.mocked(mockLLMProvider.generateAnswer).mockResolvedValue({ ...LLM_RESPONSE, content: long });
+
+      const result = await orchestrator.process({ userMessage: CATALOG_MSG, conversationHistory: [] });
+
+      expect(result.answer.length).toBeLessThanOrEqual(1500);
+      expect(result.answer.endsWith('merideños.')).toBe(true);
+      const call = warnSpy.mock.calls.find((c) => c[1] === 'ResponsePolicy trimmed long response');
+      expect(call?.[0]).toMatchObject({
+        intent: 'catalog',
+        originalLength: long.trimEnd().length,
+        trimmedLength: result.answer.length,
+      });
+      expect(JSON.stringify(call)).not.toContain('Fondo');
+      expect(warnSpy.mock.calls.some((c) => c[1] === 'ResponsePolicy BLOCKED response')).toBe(false);
+    });
+
     it('should end in the policy fallback when a truncated answer has no complete sentence', async () => {
       vi.mocked(mockLLMProvider.generateAnswer).mockResolvedValue({
         ...LLM_RESPONSE,
