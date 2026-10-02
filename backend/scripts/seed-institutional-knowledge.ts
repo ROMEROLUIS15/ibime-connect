@@ -9,12 +9,25 @@
  * entradas de Libro Hablado y de donaciones resumen las páginas /libro-hablado
  * y /donation-criteria del sitio.
  *
- * Idempotente: borra sus propias entradas (por título) antes de reinsertar.
+ * Qué carga: 8 entradas institucionales (escritas aquí) y 51 del Fondo Editorial
+ * Carmen Delia Bencomo (46 fichas de libros, 1 índice del catálogo y 4
+ * institucionales), construidas por buildFondoEditorialSeed() desde
+ * shared/data/fondo-editorial.ts: la misma fuente que la página /fondo-editorial.
+ *
+ * Orden de trabajo: primero calcula TODOS los embeddings (con reintento ante el
+ * 429 de Gemini); solo si todos salieron bien borra las entradas previas por
+ * título e inserta las 59 filas en un único insert. Si falta alguno, termina con
+ * código distinto de cero sin tocar la base.
+ *
+ * Idempotente por título, pero NO transaccional: el delete y el insert son dos
+ * llamadas, y si el insert falla tras el delete esas entradas quedan fuera.
+ * Respaldar la tabla knowledge_base antes de ejecutarlo contra producción.
  *
  * Uso:  npx tsx scripts/seed-institutional-knowledge.ts
  */
 import { EmbeddingService } from '../src/services/embedding.service.js';
 import { supabaseClient } from '../src/config/supabase.config.js';
+import { buildFondoEditorialSeed } from '../src/modules/knowledge/fondo-editorial-seed.js';
 
 interface SeedEntry {
   category: string;
@@ -22,7 +35,7 @@ interface SeedEntry {
   content: string;
 }
 
-const ENTRIES: SeedEntry[] = [
+const INSTITUTIONAL_ENTRIES: SeedEntry[] = [
   {
     category: 'servicio',
     title: 'IBIME - Quiénes somos y misión',
@@ -73,18 +86,11 @@ const ENTRIES: SeedEntry[] = [
   },
 ];
 
+const ENTRIES: SeedEntry[] = [...INSTITUTIONAL_ENTRIES, ...buildFondoEditorialSeed()];
+
 async function main() {
   const embedder = new EmbeddingService();
   const titles = ENTRIES.map((e) => e.title);
-
-  // Idempotencia: elimina entradas previas con estos títulos.
-  const { error: delError } = await supabaseClient
-    .from('knowledge_base')
-    .delete()
-    .in('title', titles);
-  if (delError) {
-    console.error('Error limpiando entradas previas:', delError.message);
-  }
 
   // Reintento con backoff para el 429 (RESOURCE_EXHAUSTED) del free-tier de Gemini.
   const embedWithRetry = async (text: string, attempts = 4): Promise<number[]> => {
@@ -105,35 +111,49 @@ async function main() {
     throw new Error('embedWithRetry agotó reintentos');
   };
 
-  let ok = 0;
-  let fail = 0;
+  // 1) Todos los embeddings primero: si alguno falla, la base queda intacta.
+  const rows: Array<{ title: string; content: string; embedding: string; metadata: Record<string, string> }> = [];
+  const failed: string[] = [];
   for (const entry of ENTRIES) {
     try {
       const embedding = await embedWithRetry(entry.content);
-      const embeddingString = `[${embedding.join(',')}]`;
-      const { error } = await supabaseClient.from('knowledge_base').insert({
+      rows.push({
         title: entry.title,
         content: entry.content,
-        embedding: embeddingString,
+        embedding: `[${embedding.join(',')}]`,
         metadata: { category: entry.category, source: 'institutional-seed' },
       });
-      if (error) {
-        console.error(`✗ ${entry.title}: ${error.message}`);
-        fail++;
-      } else {
-        console.log(`✓ ${entry.title} (${embedding.length}d)`);
-        ok++;
-      }
-      // Pausa entre llamadas para respetar la cuota del free-tier de embeddings.
-      await new Promise((r) => setTimeout(r, 2500));
+      console.log(`✓ embedding ${rows.length}/${ENTRIES.length}: ${entry.title} (${embedding.length}d)`);
     } catch (err) {
       console.error(`✗ ${entry.title}: ${(err as Error).message}`);
-      fail++;
+      failed.push(entry.title);
     }
+    // Pausa entre llamadas para respetar la cuota del free-tier de embeddings.
+    await new Promise((r) => setTimeout(r, 2500));
   }
 
-  console.log(`\nSeed finalizado: ${ok} insertadas, ${fail} con error.`);
-  process.exit(fail > 0 ? 1 : 0);
+  if (failed.length > 0) {
+    console.error(`\nAbortado: ${failed.length} embedding(s) fallaron; no se tocó la base de datos. Reintentar más tarde.`);
+    process.exit(1);
+  }
+
+  // 2) Recién ahora se escribe: borra las entradas previas por título y reinserta en lote.
+  const { error: delError } = await supabaseClient.from('knowledge_base').delete().in('title', titles);
+  if (delError) {
+    console.error(`Error limpiando entradas previas; no se insertó nada: ${delError.message}`);
+    process.exit(1);
+  }
+
+  const { error: insError } = await supabaseClient.from('knowledge_base').insert(rows);
+  if (insError) {
+    console.error(
+      `Error insertando el lote (las entradas previas ya se borraron; restaurar desde el respaldo): ${insError.message}`
+    );
+    process.exit(1);
+  }
+
+  console.log(`\nSeed finalizado: ${rows.length} entradas insertadas.`);
+  process.exit(0);
 }
 
 main();
