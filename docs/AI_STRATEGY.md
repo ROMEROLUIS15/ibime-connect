@@ -50,7 +50,7 @@ ChatOrchestrator.process()
               ├─ ¿Saludo? → respuesta hardcoded (0 tokens, 0 LLM, 0 RAG)
               └─ no saludo → RAGService.retrieveContext()
                     ├─ RAG hit  → LLM genera (temp=0.3, max=600 tokens)
-                    └─ RAG miss → LLM fallback (temp=0.3, max=500 tokens)
+                    └─ RAG miss → LLM fallback (temp=0.3, max=600 tokens)
                           └─ isDbBacked=false
 
 Todo output (LLM o determinista)
@@ -126,7 +126,7 @@ Output final (controlado 100% por Policy — nunca por LLM)
 ```
 
 - **Temperature**: `0.3`
-- **Max tokens**: `600` (RAG hit) / `500` (RAG miss fallback)
+- **Max tokens**: `600` (RAG hit y RAG miss fallback)
 - **isDbBacked**: `false`
 
 ---
@@ -211,13 +211,15 @@ Si el modelo de embeddings cambia, todas las claves previas son automáticamente
 
 ### Parámetros reales de inferencia por flow (v2.3.0)
 
+Todos los flows del chat envían `reasoning_effort: "low"` (solo si `GROQ_MODEL` es un modelo `gpt-oss`; el agente de curación no lo envía). Con modelos de razonamiento, los tokens de razonamiento cuentan contra `max_tokens`: con el esfuerzo por defecto y 350 de salida, una respuesta puede agotarse antes de escribir el enlace. Si aun así `finish_reason` es `length`, el orquestador recorta la respuesta en la última frase completa y registra un aviso (`LLM answer truncated by max tokens`, sin texto del usuario); sin ninguna frase completa, la `ResponsePolicy` aplica su respaldo por intent.
+
 | Flow | Temperatura | Max Tokens | Rol del LLM |
 |:---|:---:|:---:|:---|
 | `registration` (con email) | — | `0` | No se invoca. Branch A: DB directo, formateo determinista. Sin LLM. |
-| `registration` (sin email) | `0.2` | `200` | Branch B: Solo pide el email al usuario. No accede a DB. |
-| `catalog` (RAG) | `0.3` | `350` | Genera desde contexto RAG acotado. |
-| `general` (RAG hit) | `0.3` | `350` | Responde con conocimiento institucional. |
-| `general` (RAG miss / fallback) | `0.3` | `300` | Genera con nota de ausencia de contexto. |
+| `registration` (sin email) | `0.2` | `300` | Branch B: Solo pide el email al usuario. No accede a DB. |
+| `catalog` (RAG) | `0.3` | `600` | Genera desde contexto RAG acotado. |
+| `general` (RAG hit) | `0.3` | `600` | Responde con conocimiento institucional. |
+| `general` (RAG miss / fallback) | `0.3` | `600` | Genera con nota de ausencia de contexto. |
 | `general` (saludo) | — | `0` | No se invoca. Respuesta hardcoded contextual. |
 
 ---
@@ -391,10 +393,10 @@ Request del usuario
 | Flow | Temperatura | Max Tokens | Cambio |
 |:---|:---:|:---:|:---:|
 | `registration` (con email) | — | `0` | Sin cambio — Branch A sin LLM |
-| `registration` (sin email) | `0.2` | **200** | ↓ de 400 (Branch B pide email) |
-| `catalog` (RAG) | `0.3` | **350** | ↓ de 600 |
-| `general` (RAG hit) | `0.3` | **350** | ↓ de 600 |
-| `general` (RAG miss / fallback) | `0.3` | **300** | ↓ de 500 |
+| `registration` (sin email) | `0.2` | **300** | ↑ de 200 (el razonamiento cuenta contra el límite) |
+| `catalog` (RAG) | `0.3` | **600** | ↑ de 350 (el razonamiento cuenta contra el límite) |
+| `general` (RAG hit) | `0.3` | **600** | ↑ de 350 (ídem) |
+| `general` (RAG miss / fallback) | `0.3` | **600** | ↑ de 300 (ídem) |
 | `general` (saludo) | — | `0` | Sin cambio |
 
 ### Cálculo de capacidad (medido en producción, 2026-07-09)
@@ -406,7 +408,7 @@ Los `Max Tokens` de la tabla anterior acotan **solo la salida**. Lo que Groq cob
 | Respuesta RAG (medido) | ~1,512 | ~15,120 TPM | ❌ 236% del umbral operativo (6,400) |
 | Saludo (sin LLM) | `0` | `0` | ✅ No consume cuota |
 
-Con 6,400 TPM operativos, el techo real es de **~4 respuestas RAG por minuto**, no 10 usuarios simultáneos. Y con 200,000 tokens/día, de **~132 respuestas diarias**.
+Con 6,400 TPM operativos, el techo real era de **~4 respuestas RAG por minuto** (medido con 350 de salida; el pre-chequeo del limitador estima entrada + `maxTokens`, así que con 600 de salida son ~2,100 por pedido y entran **~3 por minuto**), no 10 usuarios simultáneos. Y con 200,000 tokens/día, de **~132 respuestas diarias**.
 
 > **El corpus mueve este número.** Los ~1,512 tokens corresponden a un contexto RAG de **un solo chunk**: el `MIN_VALID_THRESHOLD = 0.65` de `rag.service.ts` descarta el resto, pese a que `matchCount` es 5. Si se puebla la base de conocimientos y pasan los cinco, el coste por respuesta sube hacia los ~3,100 tokens y el techo diario cae hacia ~64. Mejorar el RAG y ampliar la cuota son el mismo presupuesto.
 
