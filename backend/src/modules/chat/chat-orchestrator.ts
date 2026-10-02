@@ -606,6 +606,14 @@ export class ChatOrchestrator {
       });
     }
 
+    if (policyResult.trimmedFrom !== undefined) {
+      logger.warn('ResponsePolicy trimmed long response', {
+        intent,
+        originalLength: policyResult.trimmedFrom,
+        trimmedLength: policyResult.answer.length,
+      });
+    }
+
     return { answer: policyResult.answer, sources, tokensUsed };
   }
 

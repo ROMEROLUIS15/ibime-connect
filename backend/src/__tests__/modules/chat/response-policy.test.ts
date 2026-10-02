@@ -54,12 +54,50 @@ describe('ResponsePolicy — structural validation', () => {
   });
 
   describe('too long response', () => {
-    it(`should reject response longer than ${MAX_ANSWER_LENGTH} chars`, () => {
+    it(`should fall back when a response over ${MAX_ANSWER_LENGTH} chars has no sentence boundary`, () => {
       const tooLong = 'a'.repeat(MAX_ANSWER_LENGTH + 1);
       const result = applyResponsePolicy(tooLong, 'general', false);
       expect(result.valid).toBe(false);
       expect(result.answer).toBe(FALLBACKS.general);
       expect(result.reason).toMatch(/long/i);
+    });
+
+    it('should trim a long LLM answer to its last complete sentence and keep it valid', () => {
+      const long = 'El Fondo Editorial publica obras de autores merideños. '.repeat(40);
+      expect(long.length).toBeGreaterThan(MAX_ANSWER_LENGTH);
+      const result = applyResponsePolicy(long, 'catalog', false);
+      expect(result.valid).toBe(true);
+      expect(result.reason).toBeNull();
+      expect(result.answer.length).toBeLessThanOrEqual(MAX_ANSWER_LENGTH);
+      expect(result.answer.endsWith('merideños.')).toBe(true);
+      expect(result.trimmedFrom).toBe(long.trim().length);
+    });
+
+    it('should cut a long numbered list at a line boundary', () => {
+      const lines = Array.from({ length: 60 }, (_, i) => `${i + 1}. Libro número ${i + 1} del Fondo Editorial`);
+      const list = lines.join('\n');
+      expect(list.length).toBeGreaterThan(MAX_ANSWER_LENGTH);
+      const result = applyResponsePolicy(list, 'catalog', false);
+      expect(result.valid).toBe(true);
+      expect(result.answer.length).toBeLessThanOrEqual(MAX_ANSWER_LENGTH);
+      const kept = result.answer.split('\n');
+      expect(kept.every((line, i) => line === lines[i])).toBe(true);
+    });
+
+    it('should still run the guardrail on the trimmed text', () => {
+      const long = 'No estás inscrito en ningún curso. ' + 'El IBIME ofrece servicios bibliotecarios. '.repeat(40);
+      const result = applyResponsePolicy(long, 'general', false);
+      expect(result.valid).toBe(false);
+      expect(result.answer).toBe(HALLUCINATION_FALLBACK);
+    });
+
+    it('should not trim DB-backed answers: too long still falls back', () => {
+      const long = 'Tienes una inscripción verificada en el curso de lectura. '.repeat(40);
+      const result = applyResponsePolicy(long, 'registration', true);
+      expect(result.valid).toBe(false);
+      expect(result.answer).toBe(FALLBACKS.registration);
+      expect(result.reason).toMatch(/long/i);
+      expect(result.trimmedFrom).toBeUndefined();
     });
 
     it(`should accept response at exactly ${MAX_ANSWER_LENGTH} chars`, () => {
