@@ -28,7 +28,7 @@ El sistema actúa en tres fases de defensa. Garantiza que el código defectuoso 
 │    │     ├─► Instalación con --legacy-peer-deps                         │
 │    │     ├─► npm audit --audit-level=high (back + front, no bloqueante) │
 │    │     ├─► Simulación de Entorno (Dummy Env Vars)                     │
-│    │     ├─► Quality Gate Remoto (584 tests: 488 back + 96 front)       │
+│    │     ├─► Quality Gate Remoto (593 tests: 497 back + 96 front)       │
 │    │     └─► Cobertura del backend con umbrales + reporte HTML          │
 │    │                                                                    │
 │    └─► .github/workflows/e2e.yml (Pesado: ~3m)                          │

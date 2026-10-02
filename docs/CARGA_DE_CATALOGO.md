@@ -230,8 +230,9 @@ Si la curación falla, el conflicto dice la causa (los del corrector llevan el p
 ### Método 3 — Script de seed (información institucional base)
 
 Para la información fija de la institución (servicios, horarios, contacto, Koha,
-alfabetización digital). Ya fue ejecutado para sembrar la base inicial (6 filas,
-`metadata.source = institutional-seed`).
+alfabetización digital) y también para el Fondo
+Editorial Carmen Delia Bencomo. Ya fue ejecutado para sembrar la base inicial
+(`metadata.source = institutional-seed`).
 
 - **Archivo:** `backend/scripts/seed-institutional-knowledge.ts`
 - **Ejecutar** (desde `backend/`, con el `.env` configurado):
@@ -241,13 +242,21 @@ cd backend
 npx tsx scripts/seed-institutional-knowledge.ts
 ```
 
-- Es **idempotente**: borra sus propias entradas (por título) y las reinserta.
+- Carga 59 entradas: las 8 institucionales del propio script y 51 del Fondo Editorial
+  (46 fichas de libros, 1 índice del catálogo y 4 institucionales), que construye
+  `buildFondoEditorialSeed()` desde `shared/data/fondo-editorial.ts`, la misma fuente
+  que la página `/fondo-editorial`.
+- Es **idempotente por título**, pero **no transaccional**: calcula primero todos los
+  embeddings (si alguno falla, termina sin tocar la base) y luego borra las entradas
+  previas e inserta las 59 filas en un solo insert. Si el insert falla tras el delete,
+  esas entradas quedan fuera: **respalda `knowledge_base` antes** de ejecutarlo en producción.
 - Corre **en tu máquina** con la `GEMINI_API_KEY` de `backend/.env` (reintenta ante
   `429` y espera 2,5 s entre filas). Si esa key no funciona, el seed falla.
 - **No invalida la caché RAG:** una pregunta ya respondida puede seguir mostrando el
   contenido anterior hasta 1 hora.
-- Para añadir o ajustar contenido institucional, edita el arreglo `ENTRIES` del
-  script y vuelve a ejecutarlo.
+- Para añadir o ajustar contenido institucional, edita el arreglo
+  `INSTITUTIONAL_ENTRIES` del script (o, para el Fondo Editorial, `shared/data/fondo-editorial.ts`)
+  y vuelve a ejecutarlo.
 
 ---
 
