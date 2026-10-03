@@ -53,15 +53,19 @@ function bookEntry(book: Book): SeedEntry {
 }
 
 function indexEntry(): SeedEntry {
+  // Cada título va entre «»: varios llevan un punto interno ("El leñador y otras
+  // obras. Tomo I") y, sin delimitarlos, el modelo los partía en dos.
   const groups = COLLECTIONS.map((c) => {
-    const titles = CATALOG.filter((b) => b.collections.includes(c.id)).map((b) => b.title);
+    const titles = CATALOG.filter((b) => b.collections.includes(c.id)).map((b) => `«${b.title}»`);
     const name = c.id === 'otras' ? 'Otras publicaciones, fuera de colección' : c.label;
     return `${name} (${titles.length}): ${titles.join('; ')}.`;
   });
+  // La remisión a la página va antes de las listas: una respuesta larga se recorta
+  // al final, y así la mención al catálogo completo no se pierde con el recorte.
   const content =
     `El ${FONDO} tiene ${CATALOG.length} libros publicados, todos gratuitos para leer y descargar en PDF. ` +
-    `Están organizados por colección (algunos libros están en dos colecciones). ${groups.join(' ')} ` +
-    'El catálogo completo, con buscador, portadas y descargas, está en la sección Fondo Editorial del sitio web del IBIME.';
+    'El catálogo completo, con buscador, portadas y descargas, está en la sección Fondo Editorial del sitio web del IBIME. ' +
+    `Están organizados por colección (algunos libros están en dos colecciones). ${groups.join(' ')}`;
   return { category: CATEGORY, title: 'Fondo Editorial Carmen Delia Bencomo - Catálogo de libros', content };
 }
 
