@@ -172,7 +172,7 @@ recuperación llama igual al LLM con el contexto vacío. La `ResponsePolicy` sol
 respuesta si es estructuralmente inválida o si dispara el guardrail de estado de usuario; una
 invención plausible sobre cursos o libros pasa.
 
-Contradice lo que documentan `CLAUDE.md` y [`AI_STRATEGY.md`](./AI_STRATEGY.md)
+Contradice lo que documentan `AGENTS.md` y [`AI_STRATEGY.md`](./AI_STRATEGY.md)
 («catalog → RAG con fail-hard → LLM»), y es precisamente la rama donde inventar datos es más
 caro para la institución.
 
