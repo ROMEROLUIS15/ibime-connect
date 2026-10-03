@@ -53,6 +53,17 @@ describe('buildFondoEditorialSeed', () => {
     for (const book of CATALOG) expect(indice!.content).toContain(book.title);
   });
 
+  it('el índice encierra cada título entre «» para que los puntos internos no lo partan', () => {
+    for (const book of CATALOG) expect(indice!.content).toContain(`«${book.title}»`);
+  });
+
+  it('el índice remite a la sección del sitio antes de la primera colección', () => {
+    const remision = indice!.content.indexOf('está en la sección Fondo Editorial del sitio web del IBIME');
+    const primeraColeccion = indice!.content.indexOf('Infantil y juvenil (');
+    expect(remision).toBeGreaterThan(-1);
+    expect(remision).toBeLessThan(primeraColeccion);
+  });
+
   it('incluye las 4 entradas institucionales', () => {
     const titulos = entries.map((e) => e.title);
     expect(titulos).toContain('Fondo Editorial Carmen Delia Bencomo - Quiénes somos');
