@@ -55,6 +55,10 @@ odd/
 .claude.json
 .mcp.json
 
+# Salida del servidor MCP de Playwright (instantáneas .yml, capturas y registros
+# de consola): la crea en la raíz del repo al usar la herramienta de navegador.
+.playwright-mcp/
+
 # Generated reports (don't count towards GitHub language stats)
 playwright-report/
 test-results/
