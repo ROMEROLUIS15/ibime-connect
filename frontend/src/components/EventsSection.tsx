@@ -23,6 +23,9 @@ import cursoBraille from '@/assets/eventos/Curso Braille.webp';
 
 const CAROUSEL_INTERVAL_MS = 5_000;
 
+// Espacio no separable: evita que «a. m.» y «p. m.» se partan entre líneas.
+const NBSP = String.fromCharCode(160);
+
 
 
 // ─── Main Component ───────────────────────────────────────────────────────────
@@ -68,10 +71,10 @@ export function EventsSection(): JSX.Element {
       {
         id: 4,
         image: cursoBraille,
-        title: 'Curso de Lectoescritura en Braille',
-        date: `15 ${capitalizedMonth} ${year}`,
-        location: 'Sede Principal IBIME',
-        description: 'Aprende el sistema de lectura y escritura táctil para personas con discapacidad visual. Un espacio de inclusión y aprendizaje para todos.',
+        title: 'Taller Método Braille: El Braille y la comunicación táctil',
+        date: `13 de octubre al 6 de noviembre de 2026, de 9:00${NBSP}a.${NBSP}m. a 12:00${NBSP}p.${NBSP}m.`,
+        location: 'Biblioteca Pública Central Estadal Simón Bolívar',
+        description: '12 clases. Aprende el sistema de lectura y escritura táctil para personas con discapacidad visual. Un espacio de inclusión y aprendizaje para todos.',
       },
     ];
   }, []);
@@ -136,11 +139,11 @@ export function EventsSection(): JSX.Element {
                         {event.title}
                       </h3>
                       <div className="flex items-center gap-2 text-ibime-green mb-2">
-                        <Calendar className="w-5 h-5" aria-hidden="true" />
+                        <Calendar className="w-5 h-5 shrink-0" aria-hidden="true" />
                         <span className="font-medium">{event.date}</span>
                       </div>
                       <div className="flex items-center gap-2 text-muted-foreground mb-4">
-                        <MapPin className="w-5 h-5" aria-hidden="true" />
+                        <MapPin className="w-5 h-5 shrink-0" aria-hidden="true" />
                         <span>{event.location}</span>
                       </div>
                       <p className="text-foreground/80 leading-relaxed mb-6">{event.description}</p>
