@@ -43,6 +43,10 @@ test.describe('Formularios IBIME', () => {
     await page.locator('#reg-email').fill('e2e_events@test.com');
     await page.locator('#reg-phone').fill('+58 412 5555555');
 
+    // Alejar el cursor: tras el clic en "Inscribirse" puede quedar justo en el borde de
+    // "Confirmar", y el efecto hover de btn-hero (translate + scale) lo hace parpadear.
+    await page.mouse.move(0, 0);
+
     // Confirmar
     await page.getByRole('button', { name: /Confirmar Inscripción/i }).click();
 
