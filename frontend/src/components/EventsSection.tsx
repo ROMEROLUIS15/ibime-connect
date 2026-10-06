@@ -125,7 +125,7 @@ export function EventsSection(): JSX.Element {
             >
               {EVENTS.map((event, idx) => (
                 <div key={event.id} className="w-full flex-shrink-0" role="listitem">
-                  <div className="grid md:grid-cols-2 gap-0 bg-card text-foreground rounded-2xl overflow-hidden shadow-institutional">
+                  <div className="h-full grid grid-rows-[auto_1fr] md:grid-rows-1 md:grid-cols-2 gap-0 bg-card text-foreground rounded-2xl overflow-hidden shadow-institutional">
                     <div className="aspect-video md:aspect-auto">
                       <img
                         src={event.image}
