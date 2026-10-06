@@ -111,8 +111,9 @@ export function RegistrationModal({ event, onClose }: RegistrationModalProps): J
         <h3 id="registration-title" className="text-xl font-display font-bold text-foreground mb-1">
           Inscripción
         </h3>
-        <p className="text-sm text-muted-foreground mb-5">
-          {event.title} — {event.date}
+        {/* Un solo renglón: así todos los modales miden lo mismo; la fecha ya está en la tarjeta. */}
+        <p className="text-sm text-muted-foreground mb-5 truncate" title={event.title}>
+          {event.title}
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-4" noValidate>
