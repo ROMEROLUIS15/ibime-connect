@@ -57,6 +57,7 @@ const menuItems: MenuItem[] = [
   },
   { label: 'Koha',          href: '/koha' },
   { label: 'Libro Hablado', href: '/libro-hablado' },
+  { label: 'SID',           href: '/sid' },
   { label: 'Contacto',      href: '#contacto' },
 ];
 
