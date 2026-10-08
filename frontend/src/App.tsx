@@ -9,6 +9,7 @@ import NotFound from "./pages/NotFound";
 import KohaPage from "./pages/KohaPage";
 import LibroHabladoPage from "./pages/LibroHabladoPage";
 import FondoEditorialPage from "./pages/FondoEditorialPage";
+import SidPage from "./pages/SidPage";
 import DonationCriteriaPage from "./pages/DonationCriteriaPage";
 import { IBIMEAssistant } from "./components/IBIMEAssistant"; // 1. Importación
 
@@ -26,6 +27,7 @@ const App = () => (
           <Route path="/koha" element={<KohaPage />} />
           <Route path="/libro-hablado" element={<LibroHabladoPage />} />
           <Route path="/fondo-editorial" element={<FondoEditorialPage />} />
+          <Route path="/sid" element={<SidPage />} />
           <Route path="/donation-criteria" element={<DonationCriteriaPage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
