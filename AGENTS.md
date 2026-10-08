@@ -26,7 +26,7 @@ npx vitest run -t "name of the test" --prefix backend
 Frontend-specific:
 
 ```bash
-npm run test --prefix frontend                # all frontend tests (96, jsdom)
+npm run test --prefix frontend                # all frontend tests (100, jsdom)
 npm run build --prefix frontend               # vite build
 cd frontend && npx vitest run src/components/ServicesSection.test.tsx   # single file
 cd frontend && npx vitest run -t "name of the test"                     # single test
@@ -59,7 +59,7 @@ Both sides are pinned to **zod 3** (unified 2026-07): frontend and backend share
 
 Path aliases (declared in both `vite.config.ts` and `vitest.config.ts` — add new ones to **both** or tests break): `@/*` → `frontend/src/*`, `@shared/*` → `shared/*`.
 
-- **Routing** is a small SPA in `App.tsx`: `/`, `/koha`, `/libro-hablado`, `/fondo-editorial`, `/donation-criteria`, `*`. `<IBIMEAssistant />` is mounted **outside `<Routes>`** on purpose so the chat floats over every route and survives navigation — don't move it into a route. `<ScrollToTop />` sits inside `<BrowserRouter>` to reset scroll on route change.
+- **Routing** is a small SPA in `App.tsx`: `/`, `/koha`, `/libro-hablado`, `/fondo-editorial`, `/sid`, `/donation-criteria`, `*`. `<IBIMEAssistant />` is mounted **outside `<Routes>`** on purpose so the chat floats over every route and survives navigation — don't move it into a route. `<ScrollToTop />` sits inside `<BrowserRouter>` to reset scroll on route change.
 - `pages/Index.tsx` is a one-page composition: `Navbar` → the `components/*Section.tsx` blocks in fixed order (Hero, AboutIBIME, CulturalVideos, MissionVision, News, PlanVacacional, Gallery, Events, Services, VisitorCounter, Contact) → `Footer` + `FloatingButtons`. New landing content is usually a new `*Section` component slotted into `Index`, not a new route.
 - **All backend HTTP goes through `lib/api-url.ts`** (`buildApiUrl` / `apiFetch`), which returns the typed `ApiResult<T>` from `@shared/types/domain` instead of throwing. `VITE_API_URL` wins in production; otherwise it falls back to `http://localhost:3000/api`. Don't call `fetch` directly in a component or service.
 - `services/` (`contact.service.ts`, `events.service.ts`) are thin `apiFetch` wrappers re-exported through `services/index.ts`; components import from `@/services`.
@@ -125,7 +125,7 @@ Husky v9: `pre-commit` runs lint-staged (eslint --fix on staged files); `pre-pus
 
 Backend coverage is **gated**, not just reported: `vitest.config.ts` fails the run below 82% statements / 74% branches / 78% functions / 82% lines. Those thresholds are pinned a few points under actual coverage on purpose (to absorb the flake) — raise them when coverage improves, don't lower them to make a run pass. The frontend has no coverage gate.
 
-Current suite sizes: **562 backend + 96 frontend** unit tests and **18** Playwright tests. `README.md` (badge, stack table, suite table, pyramid) and `docs/CODE_QUALITY.md` repeat these numbers — update them together when the counts change.
+Current suite sizes: **562 backend + 100 frontend** unit tests and **18** Playwright tests. `README.md` (badge, stack table, suite table, pyramid) and `docs/CODE_QUALITY.md` repeat these numbers — update them together when the counts change.
 
 Three GitHub Actions workflows (`ci.yml`, `e2e.yml`, `heartbeat.yml`); only the last needs explaining. `heartbeat.yml` is a cron every 6h that wakes the Render backend and pings Supabase to keep the free tiers from sleeping — not a quality gate, so don't "fix" it by deleting it. The **real** Render keep-alive is an UptimeRobot HTTP monitor every 14 min, configured outside this repo; nothing in the tree points to it.
 
