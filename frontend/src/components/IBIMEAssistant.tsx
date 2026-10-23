@@ -103,6 +103,24 @@ const SendIcon = ({ color = 'white' }: { readonly color?: string }): JSX.Element
   </svg>
 );
 
+// Flecha circular (↻): el mensaje del backend que pide otra conversación la nombra.
+const NewConversationIcon = (): JSX.Element => (
+  <svg
+    width="14"
+    height="14"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="white"
+    strokeWidth="2.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8" />
+    <path d="M21 3v5h-5" />
+  </svg>
+);
+
 interface MessageBubbleProps {
   readonly message: ChatMessage;
 }
@@ -235,11 +253,11 @@ export function IBIMEAssistant(): JSX.Element {
   const [inputValue, setInputValue] = useState<string>('');
   const [isTyping, setIsTyping] = useState<boolean>(false);
 
-  // UUID v4 estable durante toda la vida de la conversación (un solo valor por
-  // montaje del widget). Es la clave autoritativa del Privacy Gate en Redis:
-  // sin él, el backend caía al fallback por hash del historial, manipulable
-  // desde un cliente modificado.
-  const [sessionId] = useState<string>(() => createSessionId());
+  // UUID v4 estable durante toda la conversación; «Nueva conversación» crea
+  // otro. Es la clave autoritativa del Privacy Gate en Redis: sin él, el
+  // backend caía al fallback por hash del historial, manipulable desde un
+  // cliente modificado.
+  const [sessionId, setSessionId] = useState<string>(() => createSessionId());
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -250,6 +268,17 @@ export function IBIMEAssistant(): JSX.Element {
   useEscapeKey(() => setIsOpen(false), isOpen);
 
   const toggleOpen = (): void => setIsOpen((prev) => !prev);
+
+  // El backend ata el primer correo a cada sesión (Privacy Gate): consultar
+  // otro correo exige una sesión nueva, que antes solo se lograba recargando la
+  // página. La X solo minimiza y conserva la conversación. Se bloquea mientras
+  // el asistente responde para que esa respuesta no caiga en la conversación nueva.
+  const startNewConversation = (): void => {
+    setMessages([{ ...WELCOME_MESSAGE, timestamp: new Date() }]);
+    setInputValue('');
+    setSessionId(createSessionId());
+    inputRef.current?.focus();
+  };
 
   // ── Dependency Injection via useMemo ─────────────────────────────────────
   const askAssistant = useMemo<AskAssistantUseCase>(() => {
@@ -412,7 +441,7 @@ export function IBIMEAssistant(): JSX.Element {
                 }}
               />
 
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'relative' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, position: 'relative' }}>
                 {/* Avatar + Info */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   {/* Avatar del búho IA */}
@@ -482,25 +511,50 @@ export function IBIMEAssistant(): JSX.Element {
                   </div>
                 </div>
 
-                {/* Cerrar */}
-                <button
-                  onClick={() => setIsOpen(false)}
-                  aria-label="Cerrar asistente"
-                  style={{
-                    width: 30,
-                    height: 30,
-                    borderRadius: '50%',
-                    background: 'rgba(255,255,255,0.15)',
-                    border: '1px solid rgba(255,255,255,0.3)',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    transition: 'background 0.15s',
-                  }}
-                >
-                  <span style={{ color: 'white', fontSize: 16, fontWeight: 700, lineHeight: 1 }}>✕</span>
-                </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                  {/* Nueva conversación */}
+                  <button
+                    onClick={startNewConversation}
+                    disabled={isTyping}
+                    aria-label="Nueva conversación"
+                    title="Nueva conversación"
+                    style={{
+                      width: 30,
+                      height: 30,
+                      borderRadius: '50%',
+                      background: 'rgba(255,255,255,0.15)',
+                      border: '1px solid rgba(255,255,255,0.3)',
+                      cursor: isTyping ? 'not-allowed' : 'pointer',
+                      opacity: isTyping ? 0.5 : 1,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      transition: 'background 0.15s',
+                    }}
+                  >
+                    <NewConversationIcon />
+                  </button>
+
+                  {/* Cerrar */}
+                  <button
+                    onClick={() => setIsOpen(false)}
+                    aria-label="Cerrar asistente"
+                    style={{
+                      width: 30,
+                      height: 30,
+                      borderRadius: '50%',
+                      background: 'rgba(255,255,255,0.15)',
+                      border: '1px solid rgba(255,255,255,0.3)',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      transition: 'background 0.15s',
+                    }}
+                  >
+                    <span style={{ color: 'white', fontSize: 16, fontWeight: 700, lineHeight: 1 }}>✕</span>
+                  </button>
+                </div>
               </div>
             </div>
 
