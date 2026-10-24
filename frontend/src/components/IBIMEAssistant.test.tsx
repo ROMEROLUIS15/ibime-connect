@@ -97,6 +97,94 @@ describe('IBIMEAssistant — foco de la caja de texto', () => {
   });
 });
 
+describe('IBIMEAssistant — nueva conversación', () => {
+  const fetchMock = vi.fn();
+
+  beforeEach(() => {
+    Element.prototype.scrollIntoView = vi.fn();
+    fetchMock.mockReset();
+    fetchMock.mockImplementation(async () => ({
+      ok: true,
+      status: 200,
+      headers: { get: () => null },
+      json: async () => ({ answer: 'Respuesta del asistente.', sources: [] }),
+    }));
+    vi.stubGlobal('fetch', fetchMock);
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  /** Cuerpo de la llamada `n` al backend del chat. */
+  function sentPayload(n: number): { sessionId?: string; conversationHistory: unknown[] } {
+    const init = fetchMock.mock.calls[n][1] as RequestInit;
+    return JSON.parse(init.body as string);
+  }
+
+  async function send(input: HTMLInputElement, text: string): Promise<void> {
+    fireEvent.change(input, { target: { value: text } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+    await waitFor(() =>
+      expect(screen.queryByRole('status', { name: 'El asistente está escribiendo' })).not.toBeInTheDocument(),
+    );
+  }
+
+  it('borra los mensajes, vacía la caja y sigue con otra sesión sin historial', async () => {
+    const input = await openAssistant();
+    await send(input, 'Hola');
+    await send(input, 'Mi correo es ana@test.com');
+    // Dentro de una misma conversación la sesión no cambia.
+    expect(sentPayload(1).sessionId).toBe(sentPayload(0).sessionId);
+
+    fireEvent.change(input, { target: { value: 'borrador sin enviar' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Nueva conversación' }));
+
+    expect(screen.queryByText('Hola')).not.toBeInTheDocument();
+    expect(screen.queryByText('Mi correo es ana@test.com')).not.toBeInTheDocument();
+    expect(screen.queryByText('Respuesta del asistente.')).not.toBeInTheDocument();
+    expect(screen.getByText(/Soy el Asistente IA del IBIME/)).toBeInTheDocument();
+    expect(input).toHaveValue('');
+    expect(input).toHaveFocus();
+
+    await send(input, 'Otra consulta');
+    expect(sentPayload(2).sessionId).toBeDefined();
+    expect(sentPayload(2).sessionId).not.toBe(sentPayload(0).sessionId);
+    expect(sentPayload(2).conversationHistory).toEqual([]);
+  });
+
+  it('cerrar con la X solo minimiza: conserva la conversación y su sesión', async () => {
+    const input = await openAssistant();
+    await send(input, 'Hola');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Cerrar asistente' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Abrir Asistente IA del IBIME' }));
+    const reopened = (await screen.findByRole('textbox', {
+      name: 'Escribe tu consulta al asistente',
+    })) as HTMLInputElement;
+
+    expect(screen.getByText('Hola')).toBeInTheDocument();
+    await send(reopened, 'Sigo aquí');
+    expect(sentPayload(1).sessionId).toBe(sentPayload(0).sessionId);
+    expect(sentPayload(1).conversationHistory).toContainEqual({ role: 'user', text: 'Hola' });
+  });
+
+  it('no deja empezar otra conversación mientras el asistente responde', async () => {
+    const response = deferredChatResponse('Respuesta tardía.');
+    fetchMock.mockReturnValueOnce(response.pending);
+    const input = await openAssistant();
+
+    fireEvent.change(input, { target: { value: 'Hola' } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+    await screen.findByRole('status', { name: 'El asistente está escribiendo' });
+    expect(screen.getByRole('button', { name: 'Nueva conversación' })).toBeDisabled();
+
+    await response.release();
+    expect(await screen.findByText('Respuesta tardía.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Nueva conversación' })).toBeEnabled();
+  });
+});
+
 describe('IBIMEAssistant — respuesta del backend sin texto', () => {
   beforeEach(() => {
     Element.prototype.scrollIntoView = vi.fn();

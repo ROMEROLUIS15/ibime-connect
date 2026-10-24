@@ -289,6 +289,8 @@ describe('ChatOrchestrator', () => {
       });
 
       expect(result.answer).toContain('inicia un nuevo chat');
+      // Nombra el botón del widget que abre la conversación nueva.
+      expect(result.answer).toContain('«Nueva conversación»');
       const logged = loggedText(infoSpy, warnSpy);
       expect(logged).not.toContain('ana.perez@test.com');
       expect(logged).not.toContain('otro.correo@test.com');

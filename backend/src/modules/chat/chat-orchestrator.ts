@@ -253,7 +253,7 @@ export class ChatOrchestrator {
         newEmail: maskEmail(emailInCurrentMessage),
       });
       return this.applyPolicy(
-        'Para proteger tu privacidad y procesar una nueva consulta correctamente, por favor inicia un nuevo chat. ¡Estaré encantado de ayudarte con ese otro correo!',
+        'Para proteger tu privacidad y procesar una nueva consulta correctamente, por favor inicia un nuevo chat con el botón «Nueva conversación» (↻) de la parte superior. ¡Estaré encantado de ayudarte con ese otro correo!',
         'registration',
         [],
         0,
