@@ -23,7 +23,7 @@
   "license": "ISC",
   "devDependencies": {
     "@playwright/test": "^1.63.0",
-    "concurrently": "^10.0.5",
+    "concurrently": "^10.0.6",
     "husky": "^9.1.7",
     "lint-staged": "^17.6.0",
     "tsx": "^4.23.15",
