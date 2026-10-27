@@ -131,6 +131,11 @@ function InlineLinks({ text }: { readonly text: string }): JSX.Element {
       {splitInlineLinks(text).map((segment, index) =>
         segment.href === undefined ? (
           segment.text
+        ) : segment.href.startsWith('mailto:') ? (
+          // Un correo abre la aplicación de correo: no hace falta otra pestaña.
+          <a key={index} href={segment.href} style={LINK_STYLE}>
+            {segment.text}
+          </a>
         ) : (
           <a key={index} href={segment.href} target="_blank" rel="noopener noreferrer" style={LINK_STYLE}>
             {segment.text}

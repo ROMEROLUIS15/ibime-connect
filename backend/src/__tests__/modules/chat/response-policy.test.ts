@@ -389,3 +389,24 @@ describe('applyResponsePolicy: holdings claims', () => {
     expect(applyResponsePolicy(claim, 'registration', true).valid).toBe(true);
   });
 });
+
+// ─── Enlace de Koha ──────────────────────────────────────────────────────────
+// Koha solo responde por http: con https el enlace no abre (pregunta #40 de la
+// batería del 26/10/2026).
+describe('applyResponsePolicy: enlace de Koha', () => {
+  it('cambia https por http en el enlace de Koha', () => {
+    const answer =
+      'Puedes consultar el catálogo en línea de Koha en https://www.ibime.gob.ve:8000/ o visitar la sección de Servicios Bibliotecarios.';
+    const result = applyResponsePolicy(answer, 'catalog', false);
+    expect(result.valid).toBe(true);
+    expect(result.answer).toBe(
+      'Puedes consultar el catálogo en línea de Koha en http://www.ibime.gob.ve:8000/ o visitar la sección de Servicios Bibliotecarios.'
+    );
+  });
+
+  it('deja igual el enlace de Koha con http y los demás enlaces con https', () => {
+    const answer =
+      'Busca en http://www.ibime.gob.ve:8000/ o descarga el PDF: https://carmendeliabencomo.wordpress.com/wp-content/uploads/2016/06/raulyelgranmazafesio.pdf';
+    expect(applyResponsePolicy(answer, 'catalog', false).answer).toBe(answer);
+  });
+});

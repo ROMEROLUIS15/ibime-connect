@@ -260,4 +260,28 @@ describe('IBIMEAssistant — enlaces en las respuestas', () => {
     expect(screen.getByText(`¿Está en ${KOHA}?`)).toBeInTheDocument();
     expect(screen.getAllByRole('link')).toHaveLength(2);
   });
+
+  it('muestra los correos del asistente como enlaces que abren el correo, sin otra pestaña', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        headers: { get: () => null },
+        json: async () => ({
+          answer: 'Puedes llamarnos al 0274-2623898 o escribir un correo a **contactoibime@gmail.com**.',
+          sources: [],
+        }),
+      }),
+    );
+    const input = await openAssistant();
+
+    fireEvent.change(input, { target: { value: '¿Cuál es el correo?' } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+
+    const mailLink = await screen.findByRole('link', { name: 'contactoibime@gmail.com' });
+    expect(mailLink).toHaveAttribute('href', 'mailto:contactoibime@gmail.com');
+    expect(mailLink).not.toHaveAttribute('target');
+    expect(mailLink.closest('strong')).not.toBeNull();
+  });
 });

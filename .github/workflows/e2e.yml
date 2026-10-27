@@ -32,8 +32,10 @@ jobs:
         run: npm ci --legacy-peer-deps
 
       - name: Install Playwright Browsers
-        # Exigimos instalar chromium únicamente para optimizar velocidad
-        run: npx playwright install --with-deps chromium
+        # Solo chromium y sin --with-deps: el runner ya trae las librerías de Chrome,
+        # y el apt de --with-deps (24,9 MB del espejo de Ubuntu) llegó a tardar 9 min
+        # y a cancelar el job por el timeout de 10 min (27/10/2026).
+        run: npx playwright install chromium
 
       - name: Run Playwright tests
         run: npx playwright test --project=chromium
