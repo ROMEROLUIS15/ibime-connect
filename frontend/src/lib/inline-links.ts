@@ -6,9 +6,10 @@
  *   - Markdown `[texto](url)`: se muestra solo el texto;
  *   - entre ángulos `<url>`: se quitan los ángulos;
  *   - URL suelta: la puntuación y el paréntesis que la cierran quedan fuera.
+ * Los correos sueltos se enlazan con `mailto:` (uno enmascarado, `j***@…`, no).
  *
  * Solo se enlazan direcciones http y https (nunca `javascript:` ni otros
- * esquemas). Como en `inline-bold.ts`, devuelve datos y no HTML.
+ * esquemas) y correos. Como en `inline-bold.ts`, devuelve datos y no HTML.
  */
 export interface LinkSegment {
   readonly text: string;
@@ -16,7 +17,7 @@ export interface LinkSegment {
 }
 
 const LINK_PATTERN =
-  /\[([^\]\n]+)\]\((https?:\/\/[^\s)]+)\)|<(https?:\/\/[^\s<>]+)>|(https?:\/\/[^\s<>()[\]{}"«»]+)/gi;
+  /\[([^\]\n]+)\]\((https?:\/\/[^\s)]+)\)|<(https?:\/\/[^\s<>]+)>|(https?:\/\/[^\s<>()[\]{}"«»]+)|([A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,})/gi;
 
 // Puntuación de la frase que suele quedar pegada a una URL suelta.
 const TRAILING_PUNCTUATION = /[.,;:!?…'*]+$/;
@@ -27,7 +28,7 @@ export function splitInlineLinks(text: string): LinkSegment[] {
   let lastIndex = 0;
 
   for (const match of text.matchAll(LINK_PATTERN)) {
-    const [whole, label, markdownUrl, angleUrl, bareUrl] = match;
+    const [whole, label, markdownUrl, angleUrl, bareUrl, email] = match;
     plain += text.slice(lastIndex, match.index);
     lastIndex = match.index + whole.length;
 
@@ -36,6 +37,8 @@ export function splitInlineLinks(text: string): LinkSegment[] {
       link = { text: label, href: markdownUrl };
     } else if (angleUrl !== undefined) {
       link = { text: angleUrl, href: angleUrl };
+    } else if (email !== undefined) {
+      link = { text: email, href: `mailto:${email}` };
     } else {
       const url = bareUrl.replace(TRAILING_PUNCTUATION, '');
       if (url.endsWith('//')) {

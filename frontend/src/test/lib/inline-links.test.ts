@@ -54,6 +54,25 @@ describe('splitInlineLinks', () => {
     ]);
   });
 
+  it('should turn an email into a mailto link and leave the punctuation after it as text', () => {
+    expect(splitInlineLinks('Llámanos al 0274-2623898 o escribe un correo a contactoibime@gmail.com.')).toEqual([
+      { text: 'Llámanos al 0274-2623898 o escribe un correo a ' },
+      { text: 'contactoibime@gmail.com', href: 'mailto:contactoibime@gmail.com' },
+      { text: '.' },
+    ]);
+    expect(splitInlineLinks('teléfono (0274-2623898) o correo (contactoibime@gmail.com).')).toEqual([
+      { text: 'teléfono (0274-2623898) o correo (' },
+      { text: 'contactoibime@gmail.com', href: 'mailto:contactoibime@gmail.com' },
+      { text: ').' },
+    ]);
+  });
+
+  it('should not link a masked email', () => {
+    expect(splitInlineLinks('Tu correo j***@gmail.com no aparece.')).toEqual([
+      { text: 'Tu correo j***@gmail.com no aparece.' },
+    ]);
+  });
+
   it('should return a single plain segment when there is no link', () => {
     expect(splitInlineLinks('Horario: lunes a viernes.')).toEqual([{ text: 'Horario: lunes a viernes.' }]);
   });
