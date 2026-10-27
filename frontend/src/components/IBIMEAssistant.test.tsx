@@ -214,3 +214,50 @@ describe('IBIMEAssistant — respuesta del backend sin texto', () => {
     expect(screen.getByText('Hola')).toBeInTheDocument();
   });
 });
+
+describe('IBIMEAssistant — enlaces en las respuestas', () => {
+  const KOHA = 'http://www.ibime.gob.ve:8000/';
+  const PDF = 'https://carmendeliabencomo.wordpress.com/wp-content/uploads/2016/06/raulyelgranmazafesio.pdf';
+
+  beforeEach(() => {
+    Element.prototype.scrollIntoView = vi.fn();
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('muestra los enlaces del asistente como enlaces que se abren en otra pestaña, también en negrita', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        headers: { get: () => null },
+        json: async () => ({
+          answer: `Visita el portal de **Koha**: **${KOHA}**.\nDescárgalo aquí: [Raúl y el Gran Mazafesio (PDF)](${PDF})`,
+          sources: [],
+        }),
+      }),
+    );
+    const input = await openAssistant();
+
+    fireEvent.change(input, { target: { value: `¿Está en ${KOHA}?` } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+
+    const pdfLink = await screen.findByRole('link', { name: 'Raúl y el Gran Mazafesio (PDF)' });
+    expect(pdfLink).toHaveAttribute('href', PDF);
+    expect(pdfLink).toHaveAttribute('target', '_blank');
+    expect(pdfLink).toHaveAttribute('rel', 'noopener noreferrer');
+    expect(screen.queryByText(/\]\(/)).not.toBeInTheDocument();
+
+    const kohaLink = screen.getByRole('link', { name: KOHA });
+    expect(kohaLink).toHaveAttribute('href', KOHA);
+    expect(kohaLink.closest('strong')).not.toBeNull();
+
+    // La negrita sin enlace se sigue mostrando igual, y el texto del usuario no se convierte.
+    expect(screen.getByText('Koha').tagName).toBe('STRONG');
+    expect(screen.getByText(`¿Está en ${KOHA}?`)).toBeInTheDocument();
+    expect(screen.getAllByRole('link')).toHaveLength(2);
+  });
+});
