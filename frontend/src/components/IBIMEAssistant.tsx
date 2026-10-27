@@ -30,6 +30,7 @@ import { BackendAssistantAdapter } from '@/infrastructure/adapters/BackendAssist
 import { AssistantLauncher } from '@/components/assistant/AssistantLauncher';
 import { createSessionId } from '@/lib/session-id';
 import { splitInlineBold } from '@/lib/inline-bold';
+import { splitInlineLinks } from '@/lib/inline-links';
 import type { ChatMessage, KnowledgeMatch } from '@shared/types/domain';
 import owlMascot from '@/assets/asistente/buho_8-removebg-preview.webp';
 
@@ -121,6 +122,25 @@ const NewConversationIcon = (): JSX.Element => (
   </svg>
 );
 
+// Las URL largas (p. ej. los PDF del Fondo Editorial) se parten para no desbordar la burbuja.
+const LINK_STYLE = { color: '#1d4ed8', textDecoration: 'underline', overflowWrap: 'anywhere' } as const;
+
+function InlineLinks({ text }: { readonly text: string }): JSX.Element {
+  return (
+    <>
+      {splitInlineLinks(text).map((segment, index) =>
+        segment.href === undefined ? (
+          segment.text
+        ) : (
+          <a key={index} href={segment.href} target="_blank" rel="noopener noreferrer" style={LINK_STYLE}>
+            {segment.text}
+          </a>
+        ),
+      )}
+    </>
+  );
+}
+
 interface MessageBubbleProps {
   readonly message: ChatMessage;
 }
@@ -167,11 +187,18 @@ function MessageBubble({ message }: MessageBubbleProps): JSX.Element {
         }}
       >
         <p style={{ margin: 0 }}>
-          {/* El modelo marca énfasis con **texto**: se muestra en negrita, sin asteriscos. */}
+          {/* El modelo marca énfasis con **texto**: se muestra en negrita, sin asteriscos.
+              Dentro de cada trozo, sus enlaces se pueden tocar (también en negrita). */}
           {isUser
             ? message.text
             : splitInlineBold(message.text).map((segment, index) =>
-                segment.bold ? <strong key={index}>{segment.text}</strong> : segment.text,
+                segment.bold ? (
+                  <strong key={index}>
+                    <InlineLinks text={segment.text} />
+                  </strong>
+                ) : (
+                  <InlineLinks key={index} text={segment.text} />
+                ),
               )}
         </p>
         {!isUser && message.sources !== undefined && (
