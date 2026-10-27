@@ -142,10 +142,20 @@ export function applyResponsePolicy(
 
   return {
     valid: true,
-    answer: answer.trim(),
+    answer: fixKohaLink(answer.trim()),
     reason: null,
     ...(trimmedFrom !== undefined && { trimmedFrom }),
   };
+}
+
+/**
+ * Koha only answers over http (http://www.ibime.gob.ve:8000/, no certificate).
+ * The LLM sometimes writes https, and that link does not open.
+ */
+const KOHA_HTTPS_LINK = /https:\/\/((?:www\.)?ibime\.gob\.ve:8000)/gi;
+
+function fixKohaLink(text: string): string {
+  return text.replace(KOHA_HTTPS_LINK, 'http://$1');
 }
 
 /**
