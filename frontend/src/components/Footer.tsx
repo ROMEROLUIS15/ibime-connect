@@ -2,9 +2,10 @@ import { Facebook, Instagram, MapPin, Phone, Mail } from 'lucide-react';
 import logoIBIME from '@/assets/marca/logo-ibime.webp';
 
 // Sede: Sector Glorias Patrias, Calle 1 Los Eucaliptos, entre Av. Gonzalo Picón y
-// Tulio Febres. Coordenadas del nodo 2071568415 de OpenStreetMap ("Sede IBIME"): el
-// mapa marca ahí el punto rojo y el clic abre Google Maps en el mismo lugar.
-const SEDE_COORDENADAS = '8.5891425,-71.1530027';
+// Tulio Febres. Coordenadas de la ficha del instituto en Google Maps (verificadas el
+// 29/10/2026; OpenStreetMap la ubica a 7 m): el mapa marca ahí el punto rojo y el
+// clic abre Google Maps en el mismo lugar.
+const SEDE_COORDENADAS = '8.5890769,-71.1529978';
 
 const quickLinks = [
   { label: 'IBIME', href: '#ibime' },
