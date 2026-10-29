@@ -45,4 +45,19 @@ describe('CHAT_SYSTEM_PROMPT', () => {
     expect(CHAT_SYSTEM_PROMPT).toMatch(/Fondo Editorial[^\n]*solo sus propias publicaciones/);
     expect(CHAT_SYSTEM_PROMPT).toMatch(/no listes sus títulos/);
   });
+
+  it('orders the Fondo Editorial channels: site section first, blog only if needed, email last', () => {
+    // 29/10/2026: "¿qué libros ofrece el fondo editorial?" nombraba la sección sin enlace
+    // y daba el correo antes que el blog. Orden pedido: sección del sitio, blog solo si
+    // hace falta, correo al final.
+    expect(CHAT_SYSTEM_PROMPT).toContain('ibime-connect.vercel.app/fondo-editorial');
+    const rule = CHAT_SYSTEM_PROMPT.slice(CHAT_SYSTEM_PROMPT.indexOf('Cuando hables del Fondo Editorial'));
+    const section = rule.indexOf('ibime-connect.vercel.app/fondo-editorial');
+    const blog = rule.indexOf('carmendeliabencomo.wordpress.com');
+    const email = rule.indexOf('fondoeditorialcdb@gmail.com');
+    expect(section).toBeGreaterThan(-1);
+    expect(blog).toBeGreaterThan(section);
+    expect(email).toBeGreaterThan(blog);
+    expect(rule).toMatch(/blog[^\n]*solo si/i);
+  });
 });
