@@ -35,4 +35,14 @@ describe('CHAT_SYSTEM_PROMPT', () => {
     expect(CHAT_SYSTEM_PROMPT).toContain('NUNCA afirmes que el IBIME o sus bibliotecas tienen un libro');
     expect(CHAT_SYSTEM_PROMPT).toMatch(/disponible[^\n]*Koha/);
   });
+
+  it('names Koha as the book catalog and keeps the Fondo Editorial to its own publications', () => {
+    // 29/10/2026, en producción: "¿Qué libros tienen en el catálogo?" listaba solo títulos
+    // del Fondo Editorial y no mencionaba Koha. Para buscar un libro el catálogo es Koha;
+    // el Fondo Editorial son las publicaciones propias del IBIME.
+    expect(CHAT_SYSTEM_PROMPT).toContain('== LIBROS: CATÁLOGO KOHA Y FONDO EDITORIAL ==');
+    expect(CHAT_SYSTEM_PROMPT).toMatch(/catálogo de libros de las bibliotecas del IBIME es Koha/);
+    expect(CHAT_SYSTEM_PROMPT).toMatch(/Fondo Editorial[^\n]*solo sus propias publicaciones/);
+    expect(CHAT_SYSTEM_PROMPT).toMatch(/no listes sus títulos/);
+  });
 });

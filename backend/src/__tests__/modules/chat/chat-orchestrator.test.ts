@@ -129,6 +129,22 @@ describe('ChatOrchestrator', () => {
       );
     });
 
+    it('should NOT reveal courses again for an unrelated "estoy" message in a verified session', async () => {
+      // Caso real (29/10/2026): la sesión ya tenía correo y teléfono verificados, y
+      // "Estoy buscando uno de Miguel de cervantes" devolvía la lista de cursos.
+      const result = await orchestrator.process({
+        userMessage: 'Estoy buscando uno de Miguel de cervantes',
+        conversationHistory: [
+          { role: 'user', text: 'Mi correo es ana@test.com y mi telefono 04121234567' },
+          { role: 'assistant', text: '¡Listo! Verifiqué tu identidad. Estás inscrito(a) en 1 curso(s): Taller de Python' },
+        ],
+      });
+
+      expect(ToolRegistry.prototype.executeTool).not.toHaveBeenCalled();
+      expect(mockLLMProvider.generateAnswer).toHaveBeenCalledTimes(1);
+      expect(result.answer).not.toContain('Taller de Python');
+    });
+
     it('should use the most recent phone after a failed attempt (user corrects a typo)', async () => {
       // Conversación real: primer teléfono mal escrito → not_verified → el usuario
       // manda el correcto. Antes se unían los mensajes y "0412... 0412..." se leía
