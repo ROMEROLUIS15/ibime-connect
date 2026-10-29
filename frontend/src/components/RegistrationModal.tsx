@@ -72,6 +72,12 @@ export function RegistrationModal({ event, onClose }: RegistrationModalProps): J
         description: `Te has inscrito en "${event.title}". Te contactaremos pronto.`,
       });
       onClose();
+    } else if (result.status === 409) {
+      // El correo ya está inscrito en este curso: es un aviso, no un error.
+      toast({
+        title: 'Ya estás inscrito',
+        description: result.error,
+      });
     } else {
       toast({
         title: 'Error al inscribirse',

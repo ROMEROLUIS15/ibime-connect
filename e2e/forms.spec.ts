@@ -71,7 +71,9 @@ test.describe('Formularios IBIME', () => {
     await page.mouse.move(0, 0);
     await page.getByRole('button', { name: /Confirmar Inscripción/i }).click();
 
-    await expect(page.getByText(/Ya estás inscrito en este curso/i).first()).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText('Ya estás inscrito', { exact: true })).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText(/Ya estás inscrito en este curso/i).first()).toBeVisible();
+    await expect(page.getByText('Error al inscribirse')).toHaveCount(0);
     await expect(page.getByText(/Inscripción exitosa/i)).toHaveCount(0);
   });
 });

@@ -96,7 +96,7 @@ export interface ChatResponse {
 
 export type ApiResult<T> =
   | { readonly ok: true; readonly data: T }
-  | { readonly ok: false; readonly error: string };
+  | { readonly ok: false; readonly error: string; readonly status?: number };
 
 // ─── Events (UI model — not DB model) ────────────────────────────────────────
 
