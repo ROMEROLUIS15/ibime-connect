@@ -60,4 +60,12 @@ describe('CHAT_SYSTEM_PROMPT', () => {
     expect(email).toBeGreaterThan(blog);
     expect(rule).toMatch(/blog[^\n]*solo si/i);
   });
+
+  it('uses the Fondo Editorial email, not the general IBIME email, for Fondo Editorial questions', () => {
+    // 29/10/2026: "¿Tienen el libro Raúl y el Gran Mazafesio?" (del Fondo) cerraba con
+    // contactoibime@gmail.com en vez del correo del Fondo.
+    expect(CHAT_SYSTEM_PROMPT).toMatch(
+      /consultas del Fondo Editorial o de sus libros[^\n]*siempre fondoeditorialcdb@gmail\.com[^\n]*no el correo general del IBIME/
+    );
+  });
 });
