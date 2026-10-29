@@ -11,7 +11,7 @@ IBIME Connect — institutional platform for the Mérida state library network (
 Three npm workspaces installed independently (no root workspace linking):
 
 - `backend/` — **Node ≥22** (required: `@supabase/supabase-js` 2.110+ needs Node 22's native WebSocket; on Node 20 `createClient` throws at import and the backend won't boot). Dev server on **port 3000** (`PORT` env, default 3000).
-- `frontend/` — Dev server on **port 4000** (`strictPort`). The hexagonal (ports/adapters) layering applies to the **assistant path only** — `domain/ports/AssistantPort.ts` → `infrastructure/adapters/BackendAssistantAdapter.ts` → `application/use-cases/AskAssistantUseCase.ts`. Everything else (contact, events) is plain `services/`; don't force new code into the hexagon unless it talks to the assistant. The assistant **UI** is deliberately split: `components/IBIMEAssistant.tsx` owns the chat window plus all client state (messages, `sessionId`, DI of the use-case, focus-trap), while `components/assistant/AssistantLauncher.tsx` is the floating mascot (the institutional **owl**, `assets/asistente/buho_8-removebg-preview.png`) + speech-bubble launcher — purely presentational, knows nothing of the chat pipeline, and only signals the parent via `onToggle`. Keep that boundary: launcher = presentation, `IBIMEAssistant` = state/logic.
+- `frontend/` — Dev server on **port 4000** (`strictPort`). The hexagonal (ports/adapters) layering applies to the **assistant path only** — `domain/ports/AssistantPort.ts` → `infrastructure/adapters/BackendAssistantAdapter.ts` → `application/use-cases/AskAssistantUseCase.ts`. Everything else (contact, events) is plain `services/`; don't force new code into the hexagon unless it talks to the assistant. The assistant **UI** is deliberately split: `components/IBIMEAssistant.tsx` owns the chat window plus all client state (messages, `sessionId`, DI of the use-case, focus-trap), while `components/assistant/AssistantLauncher.tsx` is the floating mascot (the institutional **owl**, `assets/asistente/buho_8-removebg-preview.webp`) + speech-bubble launcher — purely presentational, knows nothing of the chat pipeline, and only signals the parent via `onToggle`. Keep that boundary: launcher = presentation, `IBIMEAssistant` = state/logic.
 - `shared/` — Zod schemas + domain types imported by both sides via the `@shared/*` path alias. `"type": "module"`.
 
 ## Commands
@@ -26,7 +26,7 @@ npx vitest run -t "name of the test" --prefix backend
 Frontend-specific:
 
 ```bash
-npm run test --prefix frontend                # all frontend tests (118, jsdom)
+npm run test --prefix frontend                # all frontend tests (120, jsdom)
 npm run build --prefix frontend               # vite build
 cd frontend && npx vitest run src/components/ServicesSection.test.tsx   # single file
 cd frontend && npx vitest run -t "name of the test"                     # single test
@@ -125,7 +125,7 @@ Husky v9: `pre-commit` runs lint-staged (eslint --fix on staged files); `pre-pus
 
 Backend coverage is **gated**, not just reported: `vitest.config.ts` fails the run below 82% statements / 74% branches / 78% functions / 82% lines. Those thresholds are pinned a few points under actual coverage on purpose (to absorb the flake) — raise them when coverage improves, don't lower them to make a run pass. The frontend has no coverage gate.
 
-Current suite sizes: **578 backend + 118 frontend** unit tests and **19** Playwright tests. `README.md` (badge, stack table, suite table, pyramid) and `docs/CODE_QUALITY.md` repeat these numbers — update them together when the counts change.
+Current suite sizes: **578 backend + 120 frontend** unit tests and **19** Playwright tests. `README.md` (badge, stack table, suite table, pyramid) and `docs/CODE_QUALITY.md` repeat these numbers — update them together when the counts change.
 
 Three GitHub Actions workflows (`ci.yml`, `e2e.yml`, `heartbeat.yml`); only the last needs explaining. `heartbeat.yml` is a cron every 6h that wakes the Render backend and pings Supabase to keep the free tiers from sleeping — not a quality gate, so don't "fix" it by deleting it. The **real** Render keep-alive is an UptimeRobot HTTP monitor every 14 min, configured outside this repo; nothing in the tree points to it.
 

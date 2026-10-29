@@ -1,6 +1,11 @@
 import { Facebook, Instagram, MapPin, Phone, Mail } from 'lucide-react';
 import logoIBIME from '@/assets/marca/logo-ibime.webp';
 
+// Sede: Sector Glorias Patrias, Calle 1 Los Eucaliptos, entre Av. Gonzalo Picón y
+// Tulio Febres. Coordenadas del nodo 2071568415 de OpenStreetMap ("Sede IBIME"): el
+// mapa marca ahí el punto rojo y el clic abre Google Maps en el mismo lugar.
+const SEDE_COORDENADAS = '8.5891425,-71.1530027';
+
 const quickLinks = [
   { label: 'IBIME', href: '#ibime' },
   { label: 'Eventos', href: '#eventos' },
@@ -131,7 +136,7 @@ export const Footer = () => {
               Ubicación
             </h3>
             <a
-              href="https://www.google.com/maps/search/?api=1&query=Sector+Glorias+Patrias,+Calle+1+Los+Eucaliptos,+entre+Av+Gonzalo+Picon+y+Tulio+Febres,+Merida+Venezuela"
+              href={`https://www.google.com/maps/search/?api=1&query=${SEDE_COORDENADAS}`}
               target="_blank"
               rel="noopener noreferrer"
               className="block w-full md:w-[85%] h-[180px] md:h-[140px] rounded-xl overflow-hidden border border-white/10 shadow-lg transition-transform duration-300 hover:scale-[1.02] active:scale-95 cursor-pointer relative group"
@@ -140,7 +145,7 @@ export const Footer = () => {
               {/* Overlay para capturar el click de forma limpia */}
               <div className="absolute inset-0 z-10" />
               <iframe
-                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3946.2223847426!2d-71.14444!3d8.590!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x8e64879f7fd8657d%3A0xe5426742617f657d!2sIBIME!5e0!3m2!1ses!2sve!4v1711467600000!5m2!1ses!2sve"
+                src={`https://maps.google.com/maps?q=${SEDE_COORDENADAS}&z=17&hl=es&output=embed`}
                 width="100%"
                 height="100%"
                 style={{ border: 0 }}
