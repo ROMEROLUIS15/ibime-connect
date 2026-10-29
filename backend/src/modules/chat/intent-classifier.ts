@@ -32,16 +32,19 @@ export function classifyIntent(userMessage: string): IntentResult {
 
   // ─── Registration intent ──────────────────────────────────────────────────
   // User is asking about THEIR OWN enrollments/registrations.
-  // Keywords that indicate a personal query (possessive pronouns + course/inscription).
+  // Every pattern names the enrollment itself: a bare "estoy" or "ver mi" is not
+  // enough ("Estoy buscando un libro de Cervantes" used to return the user's courses).
   const registrationPatterns = [
-    // Direct personal: "mi curso", "mis inscripciones", "mi correo"
+    // Direct personal: "mi curso", "mis inscripciones", "verificar mi inscripción"
     /\bmi(s)?\s+(curso|inscripci[oó]n|registro|curso[s]?|taller|capacitaci[oó]n)/i,
-    // "en qué cursos estoy", "estoy inscrito", "me inscribí"
-    /\b(estoy|estoy inscrit|me inscrib|aparec|tengo inscri|revisar mi|ver mi|consultar mi|saber si estoy)\b/i,
+    // "estoy inscrito", "estoy registrada", "estoy en la lista", "aparezco inscrito"
+    /\b(estoy|aparezco)\s+(inscrit|registrad|anotad|matriculad|apuntad|en\s+(la\s+)?lista)/i,
+    // "en qué cursos estoy"
+    /\ben\s+qu[eé]\s+(cursos?|talleres?)\s+estoy\b/i,
+    // "me inscribí" (not "me inscribo": that is a future intent, handled as catalog)
+    /\b(me inscrib|tengo inscri)\b/i,
     // "mis cursos", "mi inscripción"
     /\bmi(s)?\s+(cursos?|inscripcione|registro|tallere|capacitacion)/i,
-    // "cómo sé si estoy registrado", "verificar mi inscripción"
-    /\b(verificar mi|confirmar mi)\b/i,
   ];
 
   for (const pattern of registrationPatterns) {

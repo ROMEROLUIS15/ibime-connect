@@ -202,3 +202,36 @@ describe('IntentClassifier', () => {
     });
   });
 });
+
+// "Estoy ..." solo es inscripción cuando dice inscrito/registrado/en la lista.
+// Antes, cualquier "estoy" lo era: en una sesión ya verificada, "Estoy buscando
+// uno de Miguel de Cervantes" devolvía la lista de cursos del usuario (29/10/2026).
+describe('IntentClassifier — "estoy" y "aparezco" sin inscripción', () => {
+  it('no trata como inscripción un "estoy" que no habla de inscripciones', () => {
+    expect(classifyIntent('Estoy buscando uno de Miguel de cervantes')).toEqual({ intent: 'general', confidence: 'low' });
+    expect(classifyIntent('Estoy en Ejido, ¿qué biblioteca queda cerca?')).toEqual({ intent: 'general', confidence: 'low' });
+    expect(classifyIntent('Estoy interesado en el taller de Braille')).toEqual({ intent: 'general', confidence: 'low' });
+  });
+
+  it('no trata como inscripción un "ver mi" o "verificar mi" que habla de un libro', () => {
+    expect(classifyIntent('Quiero ver mi libro de Cervantes')).toEqual({ intent: 'general', confidence: 'low' });
+    expect(classifyIntent('¿Puedo verificar mi búsqueda del Quijote?')).toEqual({ intent: 'general', confidence: 'low' });
+  });
+
+  it('no trata como inscripción un "aparece" que no habla de inscripciones', () => {
+    expect(classifyIntent('¿En qué libro aparece el Gran Mazafesio?')).toEqual({ intent: 'general', confidence: 'low' });
+  });
+
+  it('sigue tratando como inscripción las preguntas por el propio estado', () => {
+    for (const message of [
+      '¿Estoy inscrito en algún curso?',
+      '¿Estoy registrada en el taller de Braille?',
+      'Quiero saber si estoy en la lista',
+      '¿En qué cursos estoy?',
+      '¿Aparezco inscrito en el taller?',
+      '¿Aparezco en la lista del curso?',
+    ]) {
+      expect(classifyIntent(message), message).toEqual({ intent: 'registration', confidence: 'high' });
+    }
+  });
+});
