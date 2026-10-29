@@ -12,8 +12,15 @@
  *    tienen; achicarlas las volvería borrosas. Solo cambian a WebP.
  *  - Logos y búho: se reducen a unas 3 veces su tamaño mostrado (DPR 3).
  *
- * Los originales quedan en src/assets, en la carpeta de su sección: este script
- * los lee y escribe al lado un .webp con el mismo nombre.
+ *  - Mapas con texto (eje-*): mismo tamaño, con el criterio de logos para que el
+ *    texto siga legible.
+ *
+ * El repositorio guarda solo las WebP. Para una imagen nueva: copiá el original a
+ * la carpeta de su sección en src/assets, agregalo a IMAGENES, corré el script,
+ * revisá la WebP y después borrá el original y su entrada de la lista.
+ *
+ * Los originales de las WebP actuales se borraron el 29/10/2026; siguen en el
+ * historial de git: `git log --diff-filter=D --name-only -- frontend/src/assets`.
  *
  * sharp no es dependencia del proyecto. Para regenerar:
  *   npm i --no-save sharp --prefix <carpeta-temporal>
@@ -35,31 +42,11 @@ const ASSETS = resolve(dirname(fileURLToPath(import.meta.url)), '../src/assets')
 const FOTO = { quality: 82, effort: 6 };
 const LOGO = { quality: 90, alphaQuality: 100, effort: 6 };
 
-/** [ruta del original dentro de src/assets, opciones WebP, ancho final (undefined = el original)] */
-const IMAGENES = [
-  ['hero/fachada-ibime.jpeg', FOTO],
-  ['hero/cultura-para-todos.jpg', FOTO],
-  ['compartidas/library-activity.jpg', FOTO],
-  ['galeria/library-building.jpg', FOTO],
-  ['compartidas/community-event.jpeg', FOTO],
-  ['eventos/event-literary.jpg', FOTO],
-  ['eventos/event-children.jpg', FOTO],
-  ['eventos/event-digital.jpg', FOTO],
-  ['galeria/ESPACIO BPC 1.jpg', FOTO],
-  ['galeria/ESPACIO BPC 2.jpg', FOTO],
-  ['galeria/ESPACIO BPC 3.jpg', FOTO],
-  ['galeria/ESPACIO BPC 4.jpg', FOTO],
-  ['galeria/ESPACIO BPC 5.jpg', FOTO],
-  ['galeria/ESPACIO BPC 6.jpg', FOTO],
-  ['galeria/ESPACIO BPC 7.jpg', FOTO],
-  ['fondo-editorial/pagina/fondo editoria 1.jpg', FOTO],
-  ['fondo-editorial/pagina/fondo editoria 2.jpg', FOTO],
-  ['marca/logo-ibime.png', LOGO, 480],
-  ['asistente/buho_8-removebg-preview.png', LOGO, 256],
-  ['marca/logo-gobernacion.png', LOGO, 160],
-  // Colibrí del Fondo Editorial (ícono de su blog): marca de agua de la página, se muestra hasta ~450 px.
-  ['fondo-editorial/pagina/colibri-fondo-editorial.png', LOGO],
-];
+/**
+ * [ruta del original dentro de src/assets, opciones WebP, ancho final (undefined = el original)]
+ * Ejemplos: ['galeria/foto-nueva.jpg', FOTO] · ['marca/logo-nuevo.png', LOGO, 480]
+ */
+const IMAGENES = [];
 
 const kb = (bytes) => `${Math.round(bytes / 1024)} KB`;
 
