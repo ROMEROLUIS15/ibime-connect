@@ -71,7 +71,9 @@ export async function apiFetch<T = void>(
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      return { ok: false, error: errorData.text || fallbackError };
+      // The HTTP status lets callers tell expected answers (e.g. 409 "already
+      // registered") from real errors.
+      return { ok: false, error: errorData.text || fallbackError, status: response.status };
     }
 
     // For void responses (204, or endpoints that return nothing useful)

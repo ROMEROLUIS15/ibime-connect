@@ -46,7 +46,8 @@ describe('api-url utilities', () => {
       const { apiFetch } = await import('../../lib/api-url.js');
       const result = await apiFetch('contact', { method: 'POST', body: '{}' });
 
-      expect(result).toEqual({ ok: false, error: 'Datos inválidos' });
+      // El código HTTP viaja con el error: el formulario de inscripción distingue el 409.
+      expect(result).toEqual({ ok: false, error: 'Datos inválidos', status: 400 });
     });
 
     it('should return fallback error when response is not JSON', async () => {
@@ -60,7 +61,7 @@ describe('api-url utilities', () => {
       const { apiFetch } = await import('../../lib/api-url.js');
       const result = await apiFetch('chat', { method: 'POST', body: '{}' });
 
-      expect(result).toEqual({ ok: false, error: 'Error de conexión. Intenta de nuevo.' });
+      expect(result).toEqual({ ok: false, error: 'Error de conexión. Intenta de nuevo.', status: 500 });
     });
 
     it('should return fallback error on network failure', async () => {

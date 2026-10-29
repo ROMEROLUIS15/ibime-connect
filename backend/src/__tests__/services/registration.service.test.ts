@@ -1,7 +1,7 @@
-﻿import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
-  mockUpsert: vi.fn(),
+  mockInsert: vi.fn(),
   mockEq: vi.fn(),
   mockSelect: vi.fn().mockReturnValue({ eq: vi.fn() }),
   mockLogError: vi.fn(),
@@ -11,7 +11,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock('../../config/supabase.config.js', () => ({
   supabaseClient: {
     from: vi.fn().mockReturnValue({
-      upsert: mocks.mockUpsert,
+      insert: mocks.mockInsert,
       select: mocks.mockSelect,
     }),
   },
@@ -22,7 +22,8 @@ vi.mock('../../infrastructure/logger/index.js', () => ({
   contextLogger: () => ({ error: mocks.mockLogError }),
 }));
 
-import { RegistrationService } from '../../services/registration.service.js';
+import { RegistrationService, ALREADY_REGISTERED } from '../../services/registration.service.js';
+import { ConflictError } from '../../domain/errors/app-error.js';
 
 // --- Fixtures -----------------------------------------------------------------
 
@@ -43,28 +44,25 @@ describe('RegistrationService', () => {
   });
 
   describe('register', () => {
-    it('should map camelCase courseName to snake_case course_name and upsert on (email, course_name)', async () => {
+    it('should map camelCase courseName to snake_case course_name and insert the row', async () => {
       // Arrange
-      mocks.mockUpsert.mockResolvedValueOnce({ error: null });
+      mocks.mockInsert.mockResolvedValueOnce({ error: null });
 
       // Act
       await RegistrationService.register(REGISTRANT);
 
-      // Assert — field mapping + idempotencia son parte del contrato del servicio
-      expect(mocks.mockUpsert).toHaveBeenCalledWith(
-        {
-          name: REGISTRANT.name,
-          email: REGISTRANT.email,
-          phone: REGISTRANT.phone,
-          course_name: REGISTRANT.courseName,
-        },
-        { onConflict: 'email,course_name', ignoreDuplicates: true }
-      );
+      // Assert
+      expect(mocks.mockInsert).toHaveBeenCalledWith({
+        name: REGISTRANT.name,
+        email: REGISTRANT.email,
+        phone: REGISTRANT.phone,
+        course_name: REGISTRANT.courseName,
+      });
     });
 
-    it('should return { success: true } when Supabase upsert succeeds', async () => {
+    it('should return { success: true } when Supabase insert succeeds', async () => {
       // Arrange
-      mocks.mockUpsert.mockResolvedValueOnce({ error: null });
+      mocks.mockInsert.mockResolvedValueOnce({ error: null });
 
       // Act
       const result = await RegistrationService.register(REGISTRANT);
@@ -73,17 +71,23 @@ describe('RegistrationService', () => {
       expect(result).toEqual({ success: true });
     });
 
-    it('should be idempotent: a duplicate registration resolves as success without erroring', async () => {
-      // ignoreDuplicates → ON CONFLICT DO NOTHING: Supabase no devuelve error,
-      // simplemente no crea la fila repetida. El servicio debe reportar éxito.
-      mocks.mockUpsert.mockResolvedValueOnce({ error: null });
+    it('should reject a duplicate registration with a 409 "ya estás inscrito", without logging a DB error', async () => {
+      // La constraint UNIQUE(email, course_name) rechaza la fila repetida (23505).
+      // Antes se ignoraba con upsert y se respondía éxito (caso real del 29/10/2026).
+      mocks.mockInsert.mockResolvedValueOnce({
+        error: { code: '23505', message: 'duplicate key value violates unique constraint "uq_course_registrations_email_course"' },
+      });
 
-      await expect(RegistrationService.register(REGISTRANT)).resolves.toEqual({ success: true });
+      const error = await RegistrationService.register(REGISTRANT).catch((e: unknown) => e);
+
+      expect(error).toBeInstanceOf(ConflictError);
+      expect(error).toMatchObject({ statusCode: 409, message: ALREADY_REGISTERED });
+      expect(mocks.mockLogError).not.toHaveBeenCalled();
     });
 
-    it('should throw InternalServerError when Supabase upsert returns an error', async () => {
+    it('should throw InternalServerError when Supabase insert returns an error', async () => {
       // Arrange
-      mocks.mockUpsert.mockResolvedValueOnce({ error: { message: 'Constraint failed' } });
+      mocks.mockInsert.mockResolvedValueOnce({ error: { message: 'Constraint failed' } });
 
       // Act & Assert
       await expect(RegistrationService.register(REGISTRANT)).rejects.toThrow(
@@ -91,9 +95,9 @@ describe('RegistrationService', () => {
       );
     });
 
-    it('should not log the registrant personal data when the upsert fails', async () => {
+    it('should not log the registrant personal data when the insert fails', async () => {
       // Arrange — Postgres repite la fila que falló en `details`
-      mocks.mockUpsert.mockResolvedValueOnce({
+      mocks.mockInsert.mockResolvedValueOnce({
         error: {
           code: '23514',
           message: 'new row for relation "course_registrations" violates check constraint',
@@ -120,7 +124,7 @@ describe('RegistrationService', () => {
 
     it('should resolve successfully when an optional requestId is provided', async () => {
       // Arrange
-      mocks.mockUpsert.mockResolvedValueOnce({ error: null });
+      mocks.mockInsert.mockResolvedValueOnce({ error: null });
 
       // Act & Assert
       await expect(

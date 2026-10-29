@@ -53,4 +53,27 @@ test.describe('Formularios IBIME', () => {
     // Verificar notificación de éxito (Regex flexible para evitar problemas de encoding con '¡')
     await expect(page.getByText(/Inscripción exitosa/i).first()).toBeVisible({ timeout: 10000 });
   });
+
+  test('avisa que ya está inscrito si el correo ya está en ese curso', async ({ page }) => {
+    // El backend responde 409 cuando el correo ya está inscrito en el curso (UNIQUE email + curso).
+    await page.route('**/*registrations*', async (route) => {
+      await route.fulfill({
+        status: 409,
+        json: { text: 'Ya estás inscrito en este curso. Si necesitas actualizar tus datos, llámanos al 0274-2623898.' },
+      });
+    });
+
+    await page.locator('#eventos').scrollIntoViewIfNeeded();
+    await page.getByRole('button', { name: /Inscribirse/i }).first().click();
+    await page.locator('#reg-name').fill('Inscripción E2E');
+    await page.locator('#reg-email').fill('e2e_events@test.com');
+    await page.locator('#reg-phone').fill('+58 412 5555555');
+    await page.mouse.move(0, 0);
+    await page.getByRole('button', { name: /Confirmar Inscripción/i }).click();
+
+    await expect(page.getByText('Ya estás inscrito', { exact: true })).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText(/Ya estás inscrito en este curso/i).first()).toBeVisible();
+    await expect(page.getByText('Error al inscribirse')).toHaveCount(0);
+    await expect(page.getByText(/Inscripción exitosa/i)).toHaveCount(0);
+  });
 });

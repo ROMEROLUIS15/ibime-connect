@@ -40,6 +40,12 @@ export class NotFoundError extends AppError {
   }
 }
 
+export class ConflictError extends AppError {
+  constructor(message: string) {
+    super(message, 409);
+  }
+}
+
 export class RateLimitError extends AppError {
   constructor() {
     super('Demasiadas solicitudes. Por favor intenta más tarde.', 429);
