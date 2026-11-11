@@ -127,4 +127,40 @@ describe('ChatService', () => {
       expect(mockLLMProvider.generateAnswer).not.toHaveBeenCalled();
     });
   });
+
+  describe('processChat — farewell shortcut', () => {
+    it.each([
+      ['Gracias'],
+      ['¡Muchas gracias!'],
+      ['ok gracias'],
+      ['Gracias por la información'],
+      ['Chao'],
+      ['Hasta luego'],
+      ['gracias, chau'],
+      ['Perfecto, muchas gracias por tu ayuda.'],
+    ])('should answer "%s" deterministically without calling RAG or the LLM', async (userMessage) => {
+      // Act
+      const result = await service.processChat({ userMessage, conversationHistory: [] });
+
+      // Assert
+      expect(result.answer).toContain('Hasta pronto');
+      expect(result.sources).toEqual([]);
+      expect(result.tokensUsed).toBe(0);
+      expect(mockRAGService.retrieveContext).not.toHaveBeenCalled();
+      expect(mockLLMProvider.generateAnswer).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      ['Gracias, ¿y cuál es el horario?'],
+      ['gracias pero no me sirvió'],
+    ])('should still route "%s" through RAG and the LLM (it carries a question)', async (userMessage) => {
+      // Act
+      const result = await service.processChat({ userMessage, conversationHistory: [] });
+
+      // Assert
+      expect(result.answer).toBe(LLM_RESPONSE.content);
+      expect(mockRAGService.retrieveContext).toHaveBeenCalled();
+      expect(mockLLMProvider.generateAnswer).toHaveBeenCalled();
+    });
+  });
 });
