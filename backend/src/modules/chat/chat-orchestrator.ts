@@ -57,6 +57,16 @@ const BRANCH_B_MAX_TOKENS = 300;
 /** Low reasoning effort: the answer is drafted from retrieved context, not deduced. */
 const CHAT_REASONING_EFFORT = 'low' as const;
 
+/**
+ * Thanks/farewell-only messages: answered without RAG or LLM (tokensUsed = 0).
+ * Optional acknowledgement + thanks and/or goodbye, in either order.
+ */
+const FAREWELL_PATTERN =
+  /^(?:(?:ok|okey|vale|listo|perfecto|excelente|genial|entendido|muy bien)\s)?(?:(?:(?:muchas|mil)\s)?gracias(?:\spor\s(?:todo|tu\sayuda|la\sayuda|la\sinformaci[oó]n))?(?:\s(?:adi[oó]s|chao|chau|bye|hasta\s(?:luego|pronto|mañana)|nos\svemos))?|(?:adi[oó]s|chao|chau|bye|hasta\s(?:luego|pronto|mañana)|nos\svemos)(?:\s(?:y\s)?(?:muchas\s)?gracias)?)$/;
+
+const FAREWELL_RESPONSE =
+  '¡Con gusto! Si necesitas algo más sobre la Red de Bibliotecas del IBIME, aquí estaré. ¡Hasta pronto!';
+
 const ASK_FOR_EMAIL_FALLBACK =
   '¡Claro que sí! Con mucho gusto te ayudo a verificar tus inscripciones. Por favor, indícame tu correo electrónico registrado para buscarlo en nuestro sistema.';
 
@@ -478,6 +488,11 @@ export class ChatOrchestrator {
       return { answer: this.getGreetingResponse(userMessage), sources: [], tokensUsed: 0 };
     }
 
+    if (this.isFarewell(userMessage)) {
+      logger.info('Detected farewell — using deterministic response');
+      return { answer: FAREWELL_RESPONSE, sources: [], tokensUsed: 0 };
+    }
+
     const ragResult = await this.ragService.retrieveContext(userMessage, { matchCount: 5 }, requestId);
     logger.info('General flow RAG result', {
       hit: ragResult.hit,
@@ -718,6 +733,20 @@ export class ChatOrchestrator {
       /^(hola|buenos|buenas|hey|saludos|qué tal|que tal|hi|buen día|buen dia)$/i.test(normalized) ||
       /^(hola|buenos|buenas|hey|saludos)\s/i.test(normalized)
     );
+  }
+
+  /**
+   * Mensaje que es SOLO agradecimiento o despedida ("gracias", "ok, muchas gracias",
+   * "chao"). Se ancla al mensaje completo: si trae algo más ("gracias, ¿y el horario?")
+   * sigue por RAG + LLM.
+   */
+  private isFarewell(message: string): boolean {
+    const normalized = message
+      .toLowerCase()
+      .replace(/[¡!¿?.,;:]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    return FAREWELL_PATTERN.test(normalized);
   }
 
   private getGreetingResponse(message: string): string {
